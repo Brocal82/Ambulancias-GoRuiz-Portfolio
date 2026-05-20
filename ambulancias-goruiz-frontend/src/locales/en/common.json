@@ -128,7 +128,17 @@
             "securityMonitoring": "Monitoring",
             "securityMonitoringDesc": "Audit logs, tenant risk and operational health.",
             "mfa": "MFA",
-            "mfaDesc": "TOTP setup and step-up sessions."
+            "mfaDesc": "TOTP setup and step-up sessions.",
+            "metricsTitle": "Platform overview",
+            "metricsLoading": "Loading metrics…",
+            "metricsLoadError": "Could not load global metrics",
+            "kpiCompaniesTotal": "Companies",
+            "kpiCompaniesActive": "Active",
+            "kpiCompaniesInactive": "Inactive",
+            "kpiOnboarding": "Onboarding pending",
+            "kpiUsersActive": "Active users",
+            "kpiWorkers": "Workers",
+            "kpiAdmins": "Admins"
         },
         "superadminCompanyDetail": {
             "loadError": "Could not load company",
@@ -158,6 +168,13 @@
                 "jefe_mecanicos": "Head of mechanics",
                 "jefe_logistica": "Head of logistics"
             },
+            "metricsTitle": "Operational metrics",
+            "metricDiensts": "Diensts",
+            "metricTrips": "Trips",
+            "metricClosures": "Final closures",
+            "metricVacationPending": "Pending vacations",
+            "metricMechanicsOpen": "Open issues",
+            "metricsNone": "No operational module metrics (modules not enabled).",
             "modulesTitle": "Enabled modules",
             "usersTitle": "Users",
             "refresh": "Refresh",

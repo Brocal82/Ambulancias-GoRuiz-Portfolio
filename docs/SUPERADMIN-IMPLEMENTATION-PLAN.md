@@ -4,7 +4,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 
 **Limpieza al cerrar Fase 6:** eliminar este archivo; actualizar `SUPERADMIN-FLOW.md` como referencia única; mantener ADR si sigue vigente; quitar enlaces obsoletos en `docs/README.md`.
 
-**Estado global:** Fase 3 en PR. Siguiente: Fase 4 (métricas).
+**Estado global:** Fase 4 en rama `feature/superadmin-phase-4-metrics` (PR pendiente). Siguiente tras merge: Fase 5.
 
 ---
 
@@ -14,7 +14,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 |------|----------------|----------|----------------------|--------|
 | **1** | `docs/superadmin-phase-1-audit` | Auditoría y documentación del flujo actual | `SUPERADMIN-FLOW.md`, docs alineadas, ADR delete empresa | Completada (PR #75) |
 | **2** | `feature/superadmin-phase-2-backend` | Backend mínimo (summary, usuarios read-only, conteos correctos) | Endpoints summary/users, soft-delete | Completada (PR #76) |
-| **3** | `feature/superadmin-phase-3-frontend` | Panel usable (layout, company detail, support-access UI) | `SuperadminLayout`, rutas nuevas | En PR |
+| **3** | `feature/superadmin-phase-3-frontend` | Panel usable (layout, company detail, support-access UI) | `SuperadminLayout`, rutas nuevas | Completada (PR #77) |
 | **4** | `feature/superadmin-phase-4-metrics` | Métricas agregadas y dashboard global | Dashboard + APIs agregación por tenant | Pendiente |
 | **5** | `feature/superadmin-phase-5-ux` | UX avanzada (gráficos, invitaciones admin, onboarding) | Wizard onboarding, exports | Pendiente |
 | **6** | `feature/superadmin-phase-6-hardening` | Seguridad y audit (step-up ampliado, MFA prod, SIEM) | Políticas + alertas | Pendiente |
@@ -108,7 +108,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 - KPIs globales y por empresa relevantes para ambulancias.
 
 ### Tareas propuestas (backend primero)
-1. `GET /api/superadmin/metrics/global` — empresas activas, usuarios activos, alertas onboarding.
+1. `GET /api/companies/metrics/global` — empresas activas, usuarios activos, alertas onboarding.
 2. `GET /api/companies/:id/metrics` — diensts, trips, workday closures, vacation pending, mechanics open (según módulos habilitados).
 3. `SuperadminDashboard` con tarjetas (sin librerías de gráficos pesadas aún).
 

@@ -382,6 +382,57 @@ describe("Companies - gestión superadmin", () => {
     });
   });
 
+  describe("Métricas superadmin", () => {
+    it("admin no puede obtener métricas globales", async () => {
+      const res = await request(app)
+        .get(`${API}/companies/metrics/global`)
+        .set("Authorization", `Bearer ${adminToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it("superadmin obtiene métricas globales", async () => {
+      const res = await request(app)
+        .get(`${API}/companies/metrics/global`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .expect(200);
+      expect(res.body).toHaveProperty("generatedAt");
+      expect(res.body.companies).toMatchObject({
+        total: expect.any(Number),
+        active: expect.any(Number),
+        inactive: expect.any(Number),
+        needingOnboarding: expect.any(Number),
+      });
+      expect(res.body.users).toMatchObject({
+        active: expect.any(Number),
+        workers: expect.any(Number),
+        admins: expect.any(Number),
+      });
+    });
+
+    it("superadmin obtiene métricas por empresa", async () => {
+      const res = await request(app)
+        .get(`${API}/companies/${companyId}/metrics`)
+        .set("Authorization", `Bearer ${superadminToken}`)
+        .expect(200);
+      expect(res.body.companyId).toBe(String(companyId));
+      expect(res.body).toHaveProperty("enabledModules");
+      expect(res.body.modules).toMatchObject({
+        scheduling: expect.anything(),
+        workday: expect.anything(),
+        vacation: expect.anything(),
+        mechanics: expect.anything(),
+      });
+    });
+
+    it("métricas de empresa inexistente → 404", async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .get(`${API}/companies/${fakeId}/metrics`)
+        .set("Authorization", `Bearer ${superadminToken}`);
+      expect(res.status).toBe(404);
+    });
+  });
+
   describe("Step-up policy", () => {
     it("rechaza PATCH sensible sin step-up", async () => {
       const createRes = await request(app)

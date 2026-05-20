@@ -9,6 +9,8 @@ import {
   getCompanyAdmins,
   getCompanySummary,
   getCompanyUsers,
+  getGlobalMetrics,
+  getCompanyMetrics,
 } from "./controllers/companies.controller";
 import { createFirstAdmin } from "./controllers/company-admin.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
@@ -31,7 +33,9 @@ router.get("/me", authenticateToken, getMyCompany);
 router.use(authenticateToken, authorizeSuperadmin);
 
 router.post("/", validateBody(createCompanySchema), createCompany);
+router.get("/metrics/global", getGlobalMetrics);
 router.get("/", getAllCompanies);
+router.get("/:id/metrics", validateObjectId("id"), getCompanyMetrics);
 router.get("/:id/summary", validateObjectId("id"), getCompanySummary);
 router.get("/:id/users", validateObjectId("id"), getCompanyUsers);
 router.get("/:id/admins", validateObjectId("id"), getCompanyAdmins);

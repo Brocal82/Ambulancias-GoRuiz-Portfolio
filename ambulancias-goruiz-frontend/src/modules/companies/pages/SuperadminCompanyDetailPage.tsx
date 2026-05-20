@@ -3,10 +3,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   deleteCompany,
+  getCompanyMetrics,
   getCompanySummary,
   getCompanyUsers,
 } from "../domain/api";
-import type { CompanySummary, CompanyUserListItem } from "../domain/types";
+import type { CompanyMetrics, CompanySummary, CompanyUserListItem } from "../domain/types";
 import { MODULE_LABELS } from "../../../constants/modules";
 import StatusBadge from "../../../components/common/StatusBadge";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
@@ -38,18 +39,21 @@ export default function SuperadminCompanyDetailPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [summary, setSummary] = useState<CompanySummary | null>(null);
+  const [metrics, setMetrics] = useState<CompanyMetrics | null>(null);
   const [users, setUsers] = useState<CompanyUserListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { requestStepUpToken, stepUpModal } = useStepUpSession();
 
   const reload = async () => {
     if (!id) return;
-    const [s, u] = await Promise.all([
+    const [s, u, m] = await Promise.all([
       getCompanySummary(id),
       getCompanyUsers(id, { limit: 100 }),
+      getCompanyMetrics(id),
     ]);
     setSummary(s);
     setUsers(u.users);
+    setMetrics(m);
   };
 
   useEffect(() => {
@@ -57,13 +61,15 @@ export default function SuperadminCompanyDetailPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [s, u] = await Promise.all([
+        const [s, u, m] = await Promise.all([
           getCompanySummary(id),
           getCompanyUsers(id, { limit: 100 }),
+          getCompanyMetrics(id),
         ]);
         if (!cancelled) {
           setSummary(s);
           setUsers(u.users);
+          setMetrics(m);
         }
       } catch (e: unknown) {
         if (!cancelled) {
@@ -203,6 +209,76 @@ export default function SuperadminCompanyDetailPage() {
           </dl>
         </section>
       </div>
+
+      {metrics && (
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-800 mb-3">
+            {t("pages.superadminCompanyDetail.metricsTitle")}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            {metrics.modules.scheduling != null && (
+              <div className="rounded border border-slate-100 bg-slate-50 p-3 text-center">
+                <p className="text-xs text-slate-500">{t("pages.superadminCompanyDetail.metricDiensts")}</p>
+                <p className="text-xl font-bold text-slate-900 tabular-nums">
+                  {metrics.modules.scheduling.diensts}
+                </p>
+              </div>
+            )}
+            {metrics.modules.workday != null && (
+              <>
+                <div className="rounded border border-slate-100 bg-slate-50 p-3 text-center">
+                  <p className="text-xs text-slate-500">{t("pages.superadminCompanyDetail.metricTrips")}</p>
+                  <p className="text-xl font-bold text-slate-900 tabular-nums">
+                    {metrics.modules.workday.trips}
+                  </p>
+                </div>
+                <div className="rounded border border-slate-100 bg-slate-50 p-3 text-center">
+                  <p className="text-xs text-slate-500">
+                    {t("pages.superadminCompanyDetail.metricClosures")}
+                  </p>
+                  <p className="text-xl font-bold text-slate-900 tabular-nums">
+                    {metrics.modules.workday.finalClosures}
+                  </p>
+                </div>
+              </>
+            )}
+            {metrics.modules.vacation != null && (
+              <div className="rounded border border-slate-100 bg-slate-50 p-3 text-center">
+                <p className="text-xs text-slate-500">
+                  {t("pages.superadminCompanyDetail.metricVacationPending")}
+                </p>
+                <p
+                  className={`text-xl font-bold tabular-nums ${
+                    metrics.modules.vacation.pending > 0 ? "text-amber-700" : "text-slate-900"
+                  }`}
+                >
+                  {metrics.modules.vacation.pending}
+                </p>
+              </div>
+            )}
+            {metrics.modules.mechanics != null && (
+              <div className="rounded border border-slate-100 bg-slate-50 p-3 text-center">
+                <p className="text-xs text-slate-500">
+                  {t("pages.superadminCompanyDetail.metricMechanicsOpen")}
+                </p>
+                <p
+                  className={`text-xl font-bold tabular-nums ${
+                    metrics.modules.mechanics.openIssues > 0 ? "text-rose-700" : "text-slate-900"
+                  }`}
+                >
+                  {metrics.modules.mechanics.openIssues}
+                </p>
+              </div>
+            )}
+          </div>
+          {metrics.modules.scheduling == null &&
+            metrics.modules.workday == null &&
+            metrics.modules.vacation == null &&
+            metrics.modules.mechanics == null && (
+              <p className="text-sm text-slate-500">{t("pages.superadminCompanyDetail.metricsNone")}</p>
+            )}
+        </section>
+      )}
 
       {summary.enabledModules.length > 0 && (
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

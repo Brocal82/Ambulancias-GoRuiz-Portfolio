@@ -33,9 +33,11 @@ Auth requerida salvo indicación contraria. Formato de auth: `Authorization: Bea
 
 | Método | Ruta | Auth | Rol | Descripción |
 |--------|------|------|-----|-------------|
+| `GET` | `/companies/metrics/global` | Sí | superadmin | KPIs globales: empresas, usuarios, onboarding pendiente |
 | `GET` | `/companies` | Sí | superadmin | Listar empresas activas (`?includeDeleted=true` incluye archivadas) |
 | `POST` | `/companies` | Sí | superadmin | Crear empresa |
 | `GET` | `/companies/:id` | Sí | superadmin | Detalle empresa (no archivadas) |
+| `GET` | `/companies/:id/metrics` | Sí | superadmin | Métricas por módulo habilitado (`scheduling`, `workday`, `vacation`, `mechanics`; resto `null`) |
 | `GET` | `/companies/:id/summary` | Sí | superadmin | Resumen: `usersByRole`, flags onboarding |
 | `GET` | `/companies/:id/users` | Sí | superadmin | Usuarios del tenant (`?role=`, `?isActive=`, `?limit=`, `?skip=`) |
 | `GET` | `/companies/:id/admins` | Sí | superadmin | Solo administradores |

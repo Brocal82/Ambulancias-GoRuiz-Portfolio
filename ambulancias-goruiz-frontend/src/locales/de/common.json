@@ -128,7 +128,17 @@
             "securityMonitoring": "Monitoring",
             "securityMonitoringDesc": "Audit, Mandanten-Risiko und Betriebsstatus.",
             "mfa": "MFA",
-            "mfaDesc": "TOTP und Step-up-Sitzungen."
+            "mfaDesc": "TOTP und Step-up-Sitzungen.",
+            "metricsTitle": "Plattform-Ueberblick",
+            "metricsLoading": "Metriken laden…",
+            "metricsLoadError": "Globale Metriken konnten nicht geladen werden",
+            "kpiCompaniesTotal": "Unternehmen",
+            "kpiCompaniesActive": "Aktiv",
+            "kpiCompaniesInactive": "Inaktiv",
+            "kpiOnboarding": "Onboarding ausstehend",
+            "kpiUsersActive": "Aktive Benutzer",
+            "kpiWorkers": "Workers",
+            "kpiAdmins": "Admins"
         },
         "superadminCompanyDetail": {
             "loadError": "Unternehmen konnte nicht geladen werden",
@@ -158,6 +168,13 @@
                 "jefe_mecanicos": "Chef Mechanik",
                 "jefe_logistica": "Chef Logistik"
             },
+            "metricsTitle": "Betriebsmetriken",
+            "metricDiensts": "Diensts",
+            "metricTrips": "Fahrten",
+            "metricClosures": "Finale Abschluesse",
+            "metricVacationPending": "Urlaub ausstehend",
+            "metricMechanicsOpen": "Offene Maengel",
+            "metricsNone": "Keine Betriebsmetriken (Module nicht aktiv).",
             "modulesTitle": "Aktive Module",
             "usersTitle": "Benutzer",
             "refresh": "Aktualisieren",
