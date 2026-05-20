@@ -83,6 +83,9 @@ export default function SuperadminCompaniesList() {
                 <th className="px-4 py-3 font-semibold text-center">Módulos</th>
                 <th className="px-4 py-3 font-semibold text-center">Admins</th>
                 <th className="px-4 py-3 font-semibold text-center">Trabajadores</th>
+                <th className="px-4 py-3 font-semibold text-center">
+                  {t("pages.superadminCompaniesList.colOnboarding")}
+                </th>
                 <th className="px-4 py-3 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
@@ -113,6 +116,15 @@ export default function SuperadminCompaniesList() {
                   </td>
                   <td className="px-4 py-3 text-center text-sm font-medium text-slate-700">
                     {c.workerCount ?? 0}
+                  </td>
+                  <td className="px-4 py-3 text-center text-xs">
+                    {c.needsOnboarding ? (
+                      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-800">
+                        {t("pages.superadminCompaniesList.onboardingPending")}
+                      </span>
+                    ) : (
+                      <span className="text-emerald-700">✓</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">

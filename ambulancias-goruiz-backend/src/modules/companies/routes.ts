@@ -12,7 +12,10 @@ import {
   getGlobalMetrics,
   getCompanyMetrics,
 } from "./controllers/companies.controller";
-import { createFirstAdmin } from "./controllers/company-admin.controller";
+import {
+  createFirstAdmin,
+  createCompanyAdminInvitation,
+} from "./controllers/company-admin.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeSuperadmin } from "../../middlewares/roleMiddleware";
 import { validateBody } from "../../middlewares/validateBody";
@@ -25,6 +28,7 @@ import {
   updateCompanySchema,
 } from "./schemas/company.schema";
 import { createCompanyAdminSchema } from "./schemas/create-admin.schema";
+import { createCompanyAdminInvitationSchema } from "./schemas/create-admin-invitation.schema";
 
 const router = express.Router();
 
@@ -96,6 +100,19 @@ router.post(
   }),
   validateBody(createCompanyAdminSchema),
   createFirstAdmin,
+);
+
+router.post(
+  "/:id/admin/invitation",
+  validateObjectId("id"),
+  requireStepUp({
+    action: STEP_UP_ACTION.COMPANY_ADMIN_CREATE,
+    event: AUDIT_EVENT.COMPANY_ADMIN_CREATED,
+    resourceType: "company",
+    resourceIdFromReq: (req) => req.params.id,
+  }),
+  validateBody(createCompanyAdminInvitationSchema),
+  createCompanyAdminInvitation,
 );
 
 export default router;

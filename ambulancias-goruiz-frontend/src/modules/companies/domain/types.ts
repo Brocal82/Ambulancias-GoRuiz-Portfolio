@@ -14,6 +14,8 @@ export interface Company {
   adminCount?: number;
   userCount?: number;
   usersByRole?: CompanyUsersByRole;
+  /** true si falta admin, worker o módulos configurados */
+  needsOnboarding?: boolean;
 }
 
 export type CompanyUsersByRole = {
@@ -87,6 +89,14 @@ export interface CreateAdminInput {
   email: string;
   password: string;
 }
+
+export type CreateCompanyAdminInvitationResponse = {
+  invitationId: string;
+  token: string;
+  expiresAt: string;
+  email: string;
+  role: "admin";
+};
 
 export type GlobalSuperadminMetrics = {
   generatedAt: string;
