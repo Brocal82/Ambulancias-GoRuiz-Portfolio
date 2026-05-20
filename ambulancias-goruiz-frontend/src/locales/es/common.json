@@ -348,6 +348,25 @@
                 "revoked": "Revocadas",
                 "expired": "Expiradas",
                 "offHoursFinalApprovals": "Aprobaciones fuera de horario"
+            },
+            "sectionSupportAccess": "Break-glass (JIT)",
+            "sectionSupportAccessDesc": "Actividad de acceso de soporte en la ventana seleccionada.",
+            "sectionOperational": "Estado del sistema de monitoreo y alertas activas.",
+            "clearFilters": "Limpiar filtros",
+            "viewCompany": "Ver empresa",
+            "enabledYes": "Sí",
+            "enabledNo": "No",
+            "dbOk": "OK",
+            "dbDown": "Caída",
+            "riskLevel": {
+                "high": "Alto",
+                "medium": "Medio",
+                "low": "Bajo"
+            },
+            "outcome": {
+                "success": "Éxito",
+                "denied": "Denegado",
+                "error": "Error"
             }
         },
         "adminDashboard": {

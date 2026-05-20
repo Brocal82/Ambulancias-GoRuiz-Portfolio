@@ -348,6 +348,25 @@
                 "revoked": "Widerrufen",
                 "expired": "Abgelaufen",
                 "offHoursFinalApprovals": "Freigaben ausserhalb der Arbeitszeit"
+            },
+            "sectionSupportAccess": "Break-Glass (JIT)",
+            "sectionSupportAccessDesc": "Support-Zugriffsaktivitaet im gewaehlten Zeitfenster.",
+            "sectionOperational": "Status des Monitoring-Systems und aktive Alerts.",
+            "clearFilters": "Filter zuruecksetzen",
+            "viewCompany": "Unternehmen anzeigen",
+            "enabledYes": "Ja",
+            "enabledNo": "Nein",
+            "dbOk": "OK",
+            "dbDown": "Ausfall",
+            "riskLevel": {
+                "high": "Hoch",
+                "medium": "Mittel",
+                "low": "Niedrig"
+            },
+            "outcome": {
+                "success": "Erfolg",
+                "denied": "Abgelehnt",
+                "error": "Fehler"
             }
         },
         "adminDashboard": {

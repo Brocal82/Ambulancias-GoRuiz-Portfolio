@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -16,7 +16,152 @@ import type {
   SecurityTenantRiskRow,
 } from "../domain/types";
 
-const WINDOW_OPTIONS = [24, 48, 72, 168];
+const WINDOW_OPTIONS = [24, 48, 72, 168] as const;
+
+type SupportCardKey =
+  | "requested"
+  | "denied"
+  | "approvalRecorded"
+  | "approvedFinal"
+  | "revoked"
+  | "expired"
+  | "offHoursFinalApprovals";
+
+const CARD_ACCENT: Record<SupportCardKey, string> = {
+  requested: "border-l-slate-400",
+  denied: "border-l-rose-500",
+  approvalRecorded: "border-l-amber-400",
+  approvedFinal: "border-l-emerald-500",
+  revoked: "border-l-slate-300",
+  expired: "border-l-slate-300",
+  offHoursFinalApprovals: "border-l-amber-500",
+};
+
+const CARD_VALUE_TONE: Record<SupportCardKey, string> = {
+  requested: "text-slate-900",
+  denied: "text-rose-700",
+  approvalRecorded: "text-amber-800",
+  approvedFinal: "text-emerald-700",
+  revoked: "text-slate-700",
+  expired: "text-slate-700",
+  offHoursFinalApprovals: "text-amber-800",
+};
+
+const MONTHLY_METRIC_KEYS = [
+  "requested",
+  "approvedFinal",
+  "denied",
+  "revoked",
+  "expired",
+  "offHoursFinalApprovals",
+] as const;
+
+function SectionPanel({
+  title,
+  description,
+  actions,
+  children,
+  className = "",
+}: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={`rounded-lg border border-slate-200 bg-white shadow-sm ${className}`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 px-3 py-2.5">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+          {description ? (
+            <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+          ) : null}
+        </div>
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      </div>
+      <div className="p-3">{children}</div>
+    </section>
+  );
+}
+
+function OutcomeBadge({ outcome }: { outcome: string }) {
+  const { t } = useTranslation();
+  const normalized = outcome.toLowerCase();
+  const styles =
+    normalized === "success"
+      ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+      : normalized === "denied"
+        ? "bg-rose-50 text-rose-800 ring-rose-200"
+        : normalized === "error"
+          ? "bg-amber-50 text-amber-900 ring-amber-200"
+          : "bg-slate-100 text-slate-700 ring-slate-200";
+  const label =
+    normalized === "success" || normalized === "denied" || normalized === "error"
+      ? t(`pages.superadminSecurityMonitoring.outcome.${normalized}`)
+      : outcome;
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${styles}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function RiskBadge({ level }: { level: string }) {
+  const { t } = useTranslation();
+  const styles =
+    level === "high"
+      ? "bg-rose-50 text-rose-800 ring-rose-200"
+      : level === "medium"
+        ? "bg-amber-50 text-amber-900 ring-amber-200"
+        : "bg-emerald-50 text-emerald-800 ring-emerald-200";
+  const label = t(`pages.superadminSecurityMonitoring.riskLevel.${level}`, {
+    defaultValue: level,
+  });
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${styles}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function StatusPill({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: ReactNode;
+  tone?: "ok" | "warn" | "bad" | "neutral";
+}) {
+  const toneClass =
+    tone === "ok"
+      ? "bg-emerald-50 text-emerald-900 ring-emerald-200"
+      : tone === "warn"
+        ? "bg-amber-50 text-amber-900 ring-amber-200"
+        : tone === "bad"
+          ? "bg-rose-50 text-rose-900 ring-rose-200"
+          : "bg-slate-50 text-slate-800 ring-slate-200";
+
+  return (
+    <div className={`rounded-md px-2.5 py-1.5 ring-1 ring-inset ${toneClass}`}>
+      <p className="text-[10px] font-medium uppercase tracking-wide opacity-80">{label}</p>
+      <p className="mt-0.5 text-xs font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function btnSecondaryClass(extra = "") {
+  return `rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 ${extra}`.trim();
+}
 
 export default function SuperadminSecurityMonitoringPage() {
   const { t } = useTranslation();
@@ -213,280 +358,494 @@ export default function SuperadminSecurityMonitoringPage() {
   const cards = useMemo(() => {
     if (!snapshot) return [];
     const s = snapshot.supportAccess;
-    return [
-      { key: "requested", value: s.requested },
-      { key: "denied", value: s.denied },
-      { key: "approvalRecorded", value: s.approvalRecorded },
-      { key: "approvedFinal", value: s.approvedFinal },
-      { key: "revoked", value: s.revoked },
-      { key: "expired", value: s.expired },
-      { key: "offHoursFinalApprovals", value: s.offHoursFinalApprovals },
+    const keys: SupportCardKey[] = [
+      "requested",
+      "denied",
+      "approvalRecorded",
+      "approvedFinal",
+      "revoked",
+      "expired",
+      "offHoursFinalApprovals",
     ];
+    return keys.map((key) => ({ key, value: s[key] }));
   }, [snapshot]);
 
+  const hasActiveFilters =
+    outcomeFilter !== "" || eventFilter !== "" || actorFilter !== "" || tenantFilter !== "";
+
+  const healthBannerTone = useMemo(() => {
+    if (!health || health.alerts.length === 0) return "ok" as const;
+    if (health.alerts.some((a) => a.severity === "critical")) return "bad" as const;
+    return "warn" as const;
+  }, [health]);
+
+  const inputClass =
+    "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400";
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+    <div className="mx-auto max-w-7xl space-y-3 p-3 md:p-4">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">
             {t("pages.superadminSecurityMonitoring.title")}
           </h1>
-          <p className="text-slate-600 mt-1">
+          <p className="mt-0.5 text-xs text-slate-500">
             {t("pages.superadminSecurityMonitoring.subtitle")}
           </p>
         </div>
-        <Link
-          to="/superadmin"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-        >
-          {t("pages.superadminSecurityMonitoring.backToPanel")}
-        </Link>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3 flex-wrap">
-        <label htmlFor="monitoring-hours" className="text-sm font-medium text-slate-700">
-          {t("pages.superadminSecurityMonitoring.windowLabel")}
-        </label>
-        <select
-          id="monitoring-hours"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          value={hours}
-          onChange={(e) => setHours(Number(e.target.value))}
-        >
-          {WINDOW_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {t("pages.superadminSecurityMonitoring.hoursOption", { hours: option })}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label
+            htmlFor="monitoring-hours"
+            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm"
+          >
+            <span className="text-xs font-medium text-slate-600">
+              {t("pages.superadminSecurityMonitoring.windowLabel")}
+            </span>
+            <select
+              id="monitoring-hours"
+              className="rounded border-0 bg-transparent py-0 pl-0 pr-6 text-xs font-semibold text-slate-900 focus:ring-0"
+              value={hours}
+              onChange={(e) => setHours(Number(e.target.value))}
+            >
+              {WINDOW_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {t("pages.superadminSecurityMonitoring.hoursOption", { hours: option })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Link to="/superadmin" className={btnSecondaryClass()}>
+            {t("pages.superadminSecurityMonitoring.backToPanel")}
+          </Link>
+        </div>
+      </header>
 
       {loading && (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
+        <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-600">
           {t("pages.superadminSecurityMonitoring.loading")}
         </div>
       )}
 
       {!loading && error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-rose-700">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           {t("pages.superadminSecurityMonitoring.loadError")}: {error}
         </div>
       )}
 
       {!loading && !error && snapshot && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {cards.map((card) => (
-              <div key={card.key} className="bg-white border border-slate-200 rounded-xl p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  {t(`pages.superadminSecurityMonitoring.cards.${card.key}`)}
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              {t("pages.superadminSecurityMonitoring.metaTitle")}
-            </h2>
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <p>
-                <span className="font-medium">{t("pages.superadminSecurityMonitoring.generatedAt")}: </span>
-                {new Date(snapshot.generatedAt).toLocaleString()}
-              </p>
-              <p>
-                <span className="font-medium">{t("pages.superadminSecurityMonitoring.windowHours")}: </span>
-                {snapshot.windowHours}
-              </p>
-              <p>
-                <span className="font-medium">{t("pages.superadminSecurityMonitoring.deniedThreshold")}: </span>
-                {snapshot.deniedThreshold}
-              </p>
-              <p>
-                <span className="font-medium">{t("pages.superadminSecurityMonitoring.range")}: </span>
-                {new Date(snapshot.supportAccess.since).toLocaleString()} -{" "}
-                {new Date(snapshot.supportAccess.until).toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-            <h2 className="text-lg font-semibold text-slate-900">
-              {t("pages.superadminSecurityMonitoring.operationalTitle")}
-            </h2>
+          <SectionPanel
+            title={t("pages.superadminSecurityMonitoring.operationalTitle")}
+            description={t("pages.superadminSecurityMonitoring.sectionOperational")}
+          >
             {healthLoading && (
-              <p className="text-sm text-slate-600">
+              <p className="text-xs text-slate-600">
                 {t("pages.superadminSecurityMonitoring.operationalLoading")}
               </p>
             )}
             {!healthLoading && healthError && (
-              <p className="text-sm text-rose-700">
+              <p className="text-xs text-rose-700">
                 {t("pages.superadminSecurityMonitoring.operationalError")}: {healthError}
               </p>
             )}
             {!healthLoading && !healthError && health && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  <p>
-                    <span className="font-medium">
-                      {t("pages.superadminSecurityMonitoring.operationalDb")}:
-                    </span>{" "}
-                    {health.dbStatus}
-                  </p>
-                  <p>
-                    <span className="font-medium">
-                      {t("pages.superadminSecurityMonitoring.operationalCron")}:
-                    </span>{" "}
-                    {health.monitoringCron}
-                  </p>
-                  <p>
-                    <span className="font-medium">
-                      {t("pages.superadminSecurityMonitoring.operationalEnabled")}:
-                    </span>{" "}
-                    {health.monitoringEnabled ? "true" : "false"}
-                  </p>
-                  <p>
-                    <span className="font-medium">
-                      {t("pages.superadminSecurityMonitoring.operationalLastReport")}:
-                    </span>{" "}
-                    {health.lastDailyReportAt
-                      ? new Date(health.lastDailyReportAt).toLocaleString()
-                      : "-"}
-                  </p>
+              <div className="space-y-2.5">
+                <div
+                  className={
+                    healthBannerTone === "ok"
+                      ? "rounded-md border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900"
+                      : healthBannerTone === "bad"
+                        ? "rounded-md border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs text-rose-900"
+                        : "rounded-md border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs text-amber-900"
+                  }
+                >
+                  {health.alerts.length === 0
+                    ? t("pages.superadminSecurityMonitoring.operationalNoAlerts")
+                    : health.alerts.map((alert) => (
+                        <p key={alert.code} className="leading-snug">
+                          <span className="font-semibold">{alert.code}</span>
+                          <span className="mx-1 text-slate-400">·</span>
+                          {alert.message}
+                        </p>
+                      ))}
                 </div>
-                <div className="space-y-2">
-                  {health.alerts.length === 0 ? (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-                      {t("pages.superadminSecurityMonitoring.operationalNoAlerts")}
-                    </div>
-                  ) : (
-                    health.alerts.map((alert) => (
-                      <div
-                        key={alert.code}
-                        className={
-                          alert.severity === "critical"
-                            ? "rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
-                            : "rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
-                        }
-                      >
-                        <span className="font-medium">{alert.code}:</span> {alert.message}
-                      </div>
-                    ))
-                  )}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <StatusPill
+                    label={t("pages.superadminSecurityMonitoring.operationalDb")}
+                    value={
+                      health.dbStatus === "ok"
+                        ? t("pages.superadminSecurityMonitoring.dbOk")
+                        : t("pages.superadminSecurityMonitoring.dbDown")
+                    }
+                    tone={health.dbStatus === "ok" ? "ok" : "bad"}
+                  />
+                  <StatusPill
+                    label={t("pages.superadminSecurityMonitoring.operationalEnabled")}
+                    value={
+                      health.monitoringEnabled
+                        ? t("pages.superadminSecurityMonitoring.enabledYes")
+                        : t("pages.superadminSecurityMonitoring.enabledNo")
+                    }
+                    tone={health.monitoringEnabled ? "ok" : "bad"}
+                  />
+                  <StatusPill
+                    label={t("pages.superadminSecurityMonitoring.operationalCron")}
+                    value={health.monitoringCron}
+                    tone="neutral"
+                  />
+                  <StatusPill
+                    label={t("pages.superadminSecurityMonitoring.operationalLastReport")}
+                    value={
+                      health.lastDailyReportAt
+                        ? new Date(health.lastDailyReportAt).toLocaleString()
+                        : "—"
+                    }
+                    tone={health.staleDailyReport ? "warn" : "ok"}
+                  />
                 </div>
-              </>
+              </div>
             )}
-          </div>
+          </SectionPanel>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <h2 className="text-lg font-semibold text-slate-900">
-                {t("pages.superadminSecurityMonitoring.auditTitle")}
-              </h2>
-              <div className="flex items-center gap-3">
-                <p className="text-sm text-slate-600">
-                  {t("pages.superadminSecurityMonitoring.auditTotal", { total: auditTotal })}
+          <SectionPanel
+            title={t("pages.superadminSecurityMonitoring.sectionSupportAccess")}
+            description={t("pages.superadminSecurityMonitoring.sectionSupportAccessDesc")}
+            actions={
+              <dl className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-500">
+                <div>
+                  <dt className="inline font-medium">{t("pages.superadminSecurityMonitoring.generatedAt")}: </dt>
+                  <dd className="inline">{new Date(snapshot.generatedAt).toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt className="inline font-medium">{t("pages.superadminSecurityMonitoring.deniedThreshold")}: </dt>
+                  <dd className="inline">{snapshot.deniedThreshold}</dd>
+                </div>
+              </dl>
+            }
+          >
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+              {cards.map((card) => (
+                <div
+                  key={card.key}
+                  className={`rounded-md border border-slate-100 bg-slate-50/50 border-l-4 px-2.5 py-2 ${CARD_ACCENT[card.key]}`}
+                >
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 leading-tight">
+                    {t(`pages.superadminSecurityMonitoring.cards.${card.key}`)}
+                  </p>
+                  <p
+                    className={`mt-1 text-xl font-bold tabular-nums ${CARD_VALUE_TONE[card.key]}`}
+                  >
+                    {card.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-slate-500">
+              <span className="font-medium">{t("pages.superadminSecurityMonitoring.range")}: </span>
+              {new Date(snapshot.supportAccess.since).toLocaleString()} —{" "}
+              {new Date(snapshot.supportAccess.until).toLocaleString()}
+            </p>
+          </SectionPanel>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <SectionPanel title={t("pages.superadminSecurityMonitoring.monthlyReviewTitle")}>
+              {monthlyReviewLoading && (
+                <p className="text-xs text-slate-600">
+                  {t("pages.superadminSecurityMonitoring.monthlyReviewLoading")}
                 </p>
+              )}
+              {!monthlyReviewLoading && monthlyReviewError && (
+                <p className="text-xs text-rose-700">
+                  {t("pages.superadminSecurityMonitoring.monthlyReviewError")}: {monthlyReviewError}
+                </p>
+              )}
+              {!monthlyReviewLoading && !monthlyReviewError && monthlyReview && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-600">
+                      {t("pages.superadminSecurityMonitoring.monthlyReviewStatus")}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-800 ring-1 ring-slate-200">
+                      {monthlyReview.overallStatus}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {MONTHLY_METRIC_KEYS.map((key) => (
+                      <div
+                        key={key}
+                        className="rounded-md border border-slate-100 bg-slate-50/80 px-2 py-1.5"
+                      >
+                        <p className="text-[10px] text-slate-500">
+                          {t(`pages.superadminSecurityMonitoring.cards.${key}`)}
+                        </p>
+                        <p className="text-sm font-semibold tabular-nums text-slate-900">
+                          {monthlyReview.metrics[key]}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </SectionPanel>
+
+            <SectionPanel
+              title={t("pages.superadminSecurityMonitoring.tenantRiskTitle")}
+              actions={
                 <button
                   type="button"
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  className={btnSecondaryClass()}
                   onClick={() =>
                     exportCsv(
-                      "security-audit-logs.csv",
-                      ["at", "event", "outcome", "actorUserId", "tenantCompanyId", "resourceType", "resourceId", "reason"],
-                      auditRows.map((row) => [
-                        row.at,
-                        row.event,
-                        row.outcome,
-                        row.actorUserId ?? "",
-                        row.tenantCompanyId ?? "",
-                        row.resourceType ?? "",
-                        row.resourceId ?? "",
-                        row.reason ?? "",
+                      "tenant-risk.csv",
+                      [
+                        "tenantCompanyId",
+                        "riskLevel",
+                        "riskScore",
+                        "requested",
+                        "denied",
+                        "offHoursFinalApprovals",
+                      ],
+                      tenantRiskRows.map((row) => [
+                        row.tenantCompanyId,
+                        row.riskLevel,
+                        row.riskScore,
+                        row.requested,
+                        row.denied,
+                        row.offHoursFinalApprovals,
                       ]),
                     )
                   }
                 >
-                  {t("pages.superadminSecurityMonitoring.exportAuditLogs")}
+                  {t("pages.superadminSecurityMonitoring.exportTenantRisk")}
                 </button>
-              </div>
-            </div>
+              }
+            >
+              {tenantRiskLoading && (
+                <p className="text-xs text-slate-600">
+                  {t("pages.superadminSecurityMonitoring.tenantRiskLoading")}
+                </p>
+              )}
+              {!tenantRiskLoading && tenantRiskError && (
+                <p className="text-xs text-rose-700">
+                  {t("pages.superadminSecurityMonitoring.tenantRiskError")}: {tenantRiskError}
+                </p>
+              )}
+              {!tenantRiskLoading && !tenantRiskError && (
+                <div className="max-h-64 overflow-auto rounded-md border border-slate-100">
+                  <table className="min-w-full text-xs">
+                    <thead className="sticky top-0 bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-2 py-1.5 text-left font-medium">
+                          {t("pages.superadminSecurityMonitoring.tenantRiskTable.tenant")}
+                        </th>
+                        <th className="px-2 py-1.5 text-left font-medium">
+                          {t("pages.superadminSecurityMonitoring.tenantRiskTable.level")}
+                        </th>
+                        <th className="px-2 py-1.5 text-right font-medium">
+                          {t("pages.superadminSecurityMonitoring.tenantRiskTable.score")}
+                        </th>
+                        <th className="px-2 py-1.5 text-right font-medium">
+                          {t("pages.superadminSecurityMonitoring.tenantRiskTable.denied")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {tenantRiskRows.map((row) => (
+                        <tr key={row.tenantCompanyId} className="hover:bg-slate-50/80">
+                          <td className="px-2 py-1.5 font-mono text-[11px]">
+                            <Link
+                              to={`/superadmin/companies/${row.tenantCompanyId}?tab=security`}
+                              className="text-orange-700 hover:underline"
+                              title={t("pages.superadminSecurityMonitoring.viewCompany")}
+                            >
+                              {row.tenantCompanyId.slice(-8)}
+                            </Link>
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <RiskBadge level={row.riskLevel} />
+                          </td>
+                          <td className="px-2 py-1.5 text-right tabular-nums font-medium">
+                            {row.riskScore}
+                          </td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-rose-700">
+                            {row.denied}
+                          </td>
+                        </tr>
+                      ))}
+                      {tenantRiskRows.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-2 py-4 text-center text-slate-500">
+                            {t("pages.superadminSecurityMonitoring.tenantRiskEmpty")}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </SectionPanel>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+          <SectionPanel
+            title={t("pages.superadminSecurityMonitoring.auditTitle")}
+            description={t("pages.superadminSecurityMonitoring.auditTotal", { total: auditTotal })}
+            actions={
+              <button
+                type="button"
+                className={btnSecondaryClass()}
+                onClick={() =>
+                  exportCsv(
+                    "security-audit-logs.csv",
+                    [
+                      "at",
+                      "event",
+                      "outcome",
+                      "actorUserId",
+                      "tenantCompanyId",
+                      "resourceType",
+                      "resourceId",
+                      "reason",
+                    ],
+                    auditRows.map((row) => [
+                      row.at,
+                      row.event,
+                      row.outcome,
+                      row.actorUserId ?? "",
+                      row.tenantCompanyId ?? "",
+                      row.resourceType ?? "",
+                      row.resourceId ?? "",
+                      row.reason ?? "",
+                    ]),
+                  )
+                }
+              >
+                {t("pages.superadminSecurityMonitoring.exportAuditLogs")}
+              </button>
+            }
+          >
+            <div className="mb-2 flex flex-wrap items-end gap-2">
               <select
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={`${inputClass} max-w-[140px]`}
                 value={outcomeFilter}
                 onChange={(e) =>
                   setOutcomeFilter(e.target.value as "" | "success" | "denied" | "error")
                 }
               >
                 <option value="">{t("pages.superadminSecurityMonitoring.filters.outcomeAny")}</option>
-                <option value="success">{t("pages.superadminSecurityMonitoring.filters.outcomeSuccess")}</option>
-                <option value="denied">{t("pages.superadminSecurityMonitoring.filters.outcomeDenied")}</option>
-                <option value="error">{t("pages.superadminSecurityMonitoring.filters.outcomeError")}</option>
+                <option value="success">
+                  {t("pages.superadminSecurityMonitoring.filters.outcomeSuccess")}
+                </option>
+                <option value="denied">
+                  {t("pages.superadminSecurityMonitoring.filters.outcomeDenied")}
+                </option>
+                <option value="error">
+                  {t("pages.superadminSecurityMonitoring.filters.outcomeError")}
+                </option>
               </select>
               <input
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={`${inputClass} min-w-[120px] flex-1`}
                 placeholder={t("pages.superadminSecurityMonitoring.filters.eventPlaceholder")}
                 value={eventFilter}
                 onChange={(e) => setEventFilter(e.target.value)}
               />
               <input
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={`${inputClass} min-w-[100px] flex-1`}
                 placeholder={t("pages.superadminSecurityMonitoring.filters.actorPlaceholder")}
                 value={actorFilter}
                 onChange={(e) => setActorFilter(e.target.value)}
               />
               <input
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={`${inputClass} min-w-[100px] flex-1`}
                 placeholder={t("pages.superadminSecurityMonitoring.filters.tenantPlaceholder")}
                 value={tenantFilter}
                 onChange={(e) => setTenantFilter(e.target.value)}
               />
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  className={btnSecondaryClass()}
+                  onClick={() => {
+                    setOutcomeFilter("");
+                    setEventFilter("");
+                    setActorFilter("");
+                    setTenantFilter(tenantFromUrl);
+                  }}
+                >
+                  {t("pages.superadminSecurityMonitoring.clearFilters")}
+                </button>
+              )}
             </div>
 
             {auditLoading && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="rounded-md border border-slate-100 bg-slate-50 px-3 py-6 text-center text-xs text-slate-600">
                 {t("pages.superadminSecurityMonitoring.auditLoading")}
               </div>
             )}
             {!auditLoading && auditError && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+              <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
                 {t("pages.superadminSecurityMonitoring.auditError")}: {auditError}
               </div>
             )}
             {!auditLoading && !auditError && (
-              <div className="overflow-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-slate-600 border-b border-slate-200">
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.at")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.event")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.outcome")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.actor")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.tenant")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.table.resource")}</th>
+              <div className="max-h-[420px] overflow-auto rounded-md border border-slate-100">
+                <table className="min-w-full text-xs">
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-medium">
+                        {t("pages.superadminSecurityMonitoring.table.at")}
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium">
+                        {t("pages.superadminSecurityMonitoring.table.event")}
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium">
+                        {t("pages.superadminSecurityMonitoring.table.outcome")}
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium hidden md:table-cell">
+                        {t("pages.superadminSecurityMonitoring.table.actor")}
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium hidden lg:table-cell">
+                        {t("pages.superadminSecurityMonitoring.table.tenant")}
+                      </th>
+                      <th className="px-2 py-1.5 text-left font-medium hidden xl:table-cell">
+                        {t("pages.superadminSecurityMonitoring.table.resource")}
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {auditRows.map((row) => (
-                      <tr key={row._id} className="border-b border-slate-100">
-                        <td className="py-2 pr-3 whitespace-nowrap">
+                      <tr key={row._id} className="hover:bg-orange-50/30">
+                        <td className="whitespace-nowrap px-2 py-1.5 text-slate-600">
                           {new Date(row.at).toLocaleString()}
                         </td>
-                        <td className="py-2 pr-3">{row.event}</td>
-                        <td className="py-2 pr-3">{row.outcome}</td>
-                        <td className="py-2 pr-3">{row.actorUserId ?? "-"}</td>
-                        <td className="py-2 pr-3">{row.tenantCompanyId ?? "-"}</td>
-                        <td className="py-2 pr-3">
-                          {[row.resourceType, row.resourceId].filter(Boolean).join(":") || "-"}
+                        <td className="max-w-[200px] truncate px-2 py-1.5 font-mono text-[11px] text-slate-800">
+                          {row.event}
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <OutcomeBadge outcome={row.outcome} />
+                        </td>
+                        <td className="hidden max-w-[120px] truncate px-2 py-1.5 font-mono text-[11px] md:table-cell">
+                          {row.actorUserId ?? "—"}
+                        </td>
+                        <td className="hidden px-2 py-1.5 font-mono text-[11px] lg:table-cell">
+                          {row.tenantCompanyId ? (
+                            <Link
+                              to={`/superadmin/companies/${row.tenantCompanyId}?tab=security`}
+                              className="text-orange-700 hover:underline"
+                            >
+                              {row.tenantCompanyId.slice(-8)}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="hidden max-w-[140px] truncate px-2 py-1.5 text-slate-600 xl:table-cell">
+                          {[row.resourceType, row.resourceId].filter(Boolean).join(":") || "—"}
                         </td>
                       </tr>
                     ))}
                     {auditRows.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="py-4 text-slate-500">
+                        <td colSpan={6} className="px-2 py-6 text-center text-slate-500">
                           {t("pages.superadminSecurityMonitoring.table.empty")}
                         </td>
                       </tr>
@@ -495,124 +854,7 @@ export default function SuperadminSecurityMonitoringPage() {
                 </table>
               </div>
             )}
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              {t("pages.superadminSecurityMonitoring.tenantRiskTitle")}
-            </h2>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                onClick={() =>
-                  exportCsv(
-                    "tenant-risk.csv",
-                    ["tenantCompanyId", "riskLevel", "riskScore", "requested", "denied", "offHoursFinalApprovals"],
-                    tenantRiskRows.map((row) => [
-                      row.tenantCompanyId,
-                      row.riskLevel,
-                      row.riskScore,
-                      row.requested,
-                      row.denied,
-                      row.offHoursFinalApprovals,
-                    ]),
-                  )
-                }
-              >
-                {t("pages.superadminSecurityMonitoring.exportTenantRisk")}
-              </button>
-            </div>
-            {tenantRiskLoading && (
-              <p className="text-sm text-slate-600">
-                {t("pages.superadminSecurityMonitoring.tenantRiskLoading")}
-              </p>
-            )}
-            {!tenantRiskLoading && tenantRiskError && (
-              <p className="text-sm text-rose-700">
-                {t("pages.superadminSecurityMonitoring.tenantRiskError")}: {tenantRiskError}
-              </p>
-            )}
-            {!tenantRiskLoading && !tenantRiskError && (
-              <div className="overflow-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-slate-600 border-b border-slate-200">
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.tenant")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.level")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.score")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.requested")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.denied")}</th>
-                      <th className="py-2 pr-3">{t("pages.superadminSecurityMonitoring.tenantRiskTable.offHours")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tenantRiskRows.map((row) => (
-                      <tr key={row.tenantCompanyId} className="border-b border-slate-100">
-                        <td className="py-2 pr-3">{row.tenantCompanyId}</td>
-                        <td className="py-2 pr-3">
-                          <span
-                            className={
-                              row.riskLevel === "high"
-                                ? "rounded-full bg-rose-100 text-rose-700 px-2 py-0.5 text-xs font-medium"
-                                : row.riskLevel === "medium"
-                                  ? "rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-xs font-medium"
-                                  : "rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs font-medium"
-                            }
-                          >
-                            {row.riskLevel}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-3">{row.riskScore}</td>
-                        <td className="py-2 pr-3">{row.requested}</td>
-                        <td className="py-2 pr-3">{row.denied}</td>
-                        <td className="py-2 pr-3">{row.offHoursFinalApprovals}</td>
-                      </tr>
-                    ))}
-                    {tenantRiskRows.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="py-4 text-slate-500">
-                          {t("pages.superadminSecurityMonitoring.tenantRiskEmpty")}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-            <h2 className="text-lg font-semibold text-slate-900">
-              {t("pages.superadminSecurityMonitoring.monthlyReviewTitle")}
-            </h2>
-            {monthlyReviewLoading && (
-              <p className="text-sm text-slate-600">
-                {t("pages.superadminSecurityMonitoring.monthlyReviewLoading")}
-              </p>
-            )}
-            {!monthlyReviewLoading && monthlyReviewError && (
-              <p className="text-sm text-rose-700">
-                {t("pages.superadminSecurityMonitoring.monthlyReviewError")}: {monthlyReviewError}
-              </p>
-            )}
-            {!monthlyReviewLoading && !monthlyReviewError && monthlyReview && (
-              <>
-                <p className="text-sm">
-                  <span className="font-medium">{t("pages.superadminSecurityMonitoring.monthlyReviewStatus")}:</span>{" "}
-                  {monthlyReview.overallStatus}
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                  <p>requested: {monthlyReview.metrics.requested}</p>
-                  <p>approvedFinal: {monthlyReview.metrics.approvedFinal}</p>
-                  <p>denied: {monthlyReview.metrics.denied}</p>
-                  <p>revoked: {monthlyReview.metrics.revoked}</p>
-                  <p>expired: {monthlyReview.metrics.expired}</p>
-                  <p>offHours: {monthlyReview.metrics.offHoursFinalApprovals}</p>
-                </div>
-              </>
-            )}
-          </div>
+          </SectionPanel>
         </>
       )}
     </div>
