@@ -160,6 +160,22 @@
             "onboardingAdmin": "Has admin",
             "onboardingWorker": "Has worker",
             "onboardingModules": "Modules configured",
+            "onboardingBannerTitle": "Onboarding incomplete",
+            "onboardingBannerDesc": "Add an admin, workers and modules before treating this tenant as operational.",
+            "tabs": {
+                "overview": "Overview",
+                "users": "Users",
+                "modules": "Modules",
+                "metrics": "Metrics",
+                "security": "Security"
+            },
+            "editModules": "Edit modules",
+            "noModules": "No modules enabled.",
+            "securityTitle": "Security and audit",
+            "securityDesc": "Platform access and audit trails for this tenant.",
+            "securityAuditLink": "View audit log (company filter)",
+            "securitySupportLink": "Support access (JIT)",
+            "securityMfaLink": "MFA settings",
             "rolesTitle": "Users by role",
             "role": {
                 "admin": "Admins",

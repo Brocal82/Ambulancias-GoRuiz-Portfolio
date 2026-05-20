@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   getSecurityAuditLogs,
@@ -20,6 +20,8 @@ const WINDOW_OPTIONS = [24, 48, 72, 168];
 
 export default function SuperadminSecurityMonitoringPage() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const tenantFromUrl = searchParams.get("tenant")?.trim() ?? "";
   const [hours, setHours] = useState<number>(24);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,11 @@ export default function SuperadminSecurityMonitoringPage() {
   const [outcomeFilter, setOutcomeFilter] = useState<"" | "success" | "denied" | "error">("");
   const [eventFilter, setEventFilter] = useState<string>("");
   const [actorFilter, setActorFilter] = useState<string>("");
-  const [tenantFilter, setTenantFilter] = useState<string>("");
+  const [tenantFilter, setTenantFilter] = useState<string>(tenantFromUrl);
+
+  useEffect(() => {
+    if (tenantFromUrl) setTenantFilter(tenantFromUrl);
+  }, [tenantFromUrl]);
 
   useEffect(() => {
     let cancelled = false;
