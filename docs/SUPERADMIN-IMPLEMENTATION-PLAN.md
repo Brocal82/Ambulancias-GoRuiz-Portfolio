@@ -4,7 +4,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 
 **Limpieza al cerrar Fase 6:** eliminar este archivo; actualizar `SUPERADMIN-FLOW.md` como referencia única; mantener ADR si sigue vigente; quitar enlaces obsoletos en `docs/README.md`.
 
-**Estado global:** Fase 4 mergeada (PR #78). Fase 5 en rama `feature/superadmin-phase-5-ux`.
+**Estado global:** Fase 5 mergeada (PR #79). Siguiente: Fase 6 (hardening).
 
 ---
 
@@ -16,7 +16,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 | **2** | `feature/superadmin-phase-2-backend` | Backend mínimo (summary, usuarios read-only, conteos correctos) | Endpoints summary/users, soft-delete | Completada (PR #76) |
 | **3** | `feature/superadmin-phase-3-frontend` | Panel usable (layout, company detail, support-access UI) | `SuperadminLayout`, rutas nuevas | Completada (PR #77) |
 | **4** | `feature/superadmin-phase-4-metrics` | Métricas agregadas y dashboard global | Dashboard + APIs agregación por tenant | **Mergeada (#78)** |
-| **5** | `feature/superadmin-phase-5-ux` | UX avanzada (tabs, onboarding, deep-links) | Tabs detalle empresa | En curso |
+| **5** | `feature/superadmin-phase-5-ux` | UX avanzada (tabs, onboarding, deep-links) | Tabs detalle empresa | **Mergeada (#79)** |
 | **6** | `feature/superadmin-phase-6-hardening` | Seguridad y audit (step-up ampliado, MFA prod, SIEM) | Políticas + alertas | Pendiente |
 
 ---
