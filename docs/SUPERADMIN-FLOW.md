@@ -1,6 +1,6 @@
 # Flujo SuperAdmin — estado actual (auditoría)
 
-Referencia del comportamiento **real en código** a mayo 2026. Para el plan de evolución ver [SUPERADMIN-IMPLEMENTATION-PLAN.md](./SUPERADMIN-IMPLEMENTATION-PLAN.md).
+Referencia del comportamiento **real en código** a mayo 2026. Plan por fases (1–6) completado; mejoras futuras (gráficos, invitaciones admin, wizard) se documentan en issues/PRs aparte.
 
 ---
 

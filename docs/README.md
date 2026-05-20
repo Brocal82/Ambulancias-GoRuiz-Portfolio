@@ -50,15 +50,12 @@ Para documentación específica del backend (dominio de negocio, seguridad), ver
 
 ---
 
-## Panel SuperAdmin SaaS (en curso)
+## Panel SuperAdmin SaaS (Fases 1–6 completadas)
 
 | Documento | Descripción |
 |-----------|-------------|
-| [SUPERADMIN-IMPLEMENTATION-PLAN.md](./SUPERADMIN-IMPLEMENTATION-PLAN.md) | Seguimiento por fases *(temporal; se elimina al cerrar Fase 6)* |
-| [SUPERADMIN-FLOW.md](./SUPERADMIN-FLOW.md) | Auditoría del flujo actual (API, UI, permisos) |
+| [SUPERADMIN-FLOW.md](./SUPERADMIN-FLOW.md) | Flujo actual (API, UI, permisos, step-up, JIT) |
 | [adr/ADR-superadmin-company-delete.md](./adr/ADR-superadmin-company-delete.md) | ADR borrado vs soft-delete de empresas |
-
-**Rama Fase 1:** `docs/superadmin-phase-1-audit`
 
 ---
 
