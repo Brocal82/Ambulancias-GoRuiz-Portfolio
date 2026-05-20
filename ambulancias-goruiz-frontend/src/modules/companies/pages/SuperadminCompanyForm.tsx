@@ -199,20 +199,30 @@ export default function SuperadminCompanyForm() {
       const hasPraemien = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
       let targetId = id;
       if (isCreate) {
-        const created = await createCompany({
-          name: name.trim(),
-          emailDomain: domainTrim.toLowerCase(),
-          enabledModules,
-          ...(hasPraemien
-            ? {
-                praemienMode,
-                praemienModeEffectiveFrom:
-                  praemienMode === "manual"
-                    ? getCurrentCalendarMonth()
-                    : null,
-              }
-            : {}),
-        });
+        const stepUpToken = await requestStepUpToken(
+          "Vas a crear un nuevo tenant. Confirma con MFA para continuar.",
+        );
+        if (!stepUpToken) {
+          toastT.error("Se canceló el alta por falta de código MFA.");
+          return;
+        }
+        const created = await createCompany(
+          {
+            name: name.trim(),
+            emailDomain: domainTrim.toLowerCase(),
+            enabledModules,
+            ...(hasPraemien
+              ? {
+                  praemienMode,
+                  praemienModeEffectiveFrom:
+                    praemienMode === "manual"
+                      ? getCurrentCalendarMonth()
+                      : null,
+                }
+              : {}),
+          },
+          stepUpToken,
+        );
         targetId = created._id;
         toastT.success("Empresa creada correctamente");
       } else if (id) {

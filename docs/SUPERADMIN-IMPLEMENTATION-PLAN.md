@@ -4,7 +4,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 
 **Limpieza al cerrar Fase 6:** eliminar este archivo; actualizar `SUPERADMIN-FLOW.md` como referencia única; mantener ADR si sigue vigente; quitar enlaces obsoletos en `docs/README.md`.
 
-**Estado global:** Fase 5 mergeada (PR #79). Siguiente: Fase 6 (hardening).
+**Estado global:** Fase 6 en rama `feature/superadmin-phase-6-hardening` (PR pendiente). Plan SuperAdmin cerrado tras merge.
 
 ---
 
@@ -17,7 +17,7 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 | **3** | `feature/superadmin-phase-3-frontend` | Panel usable (layout, company detail, support-access UI) | `SuperadminLayout`, rutas nuevas | Completada (PR #77) |
 | **4** | `feature/superadmin-phase-4-metrics` | Métricas agregadas y dashboard global | Dashboard + APIs agregación por tenant | **Mergeada (#78)** |
 | **5** | `feature/superadmin-phase-5-ux` | UX avanzada (tabs, onboarding, deep-links) | Tabs detalle empresa | **Mergeada (#79)** |
-| **6** | `feature/superadmin-phase-6-hardening` | Seguridad y audit (step-up ampliado, MFA prod, SIEM) | Políticas + alertas | Pendiente |
+| **6** | `feature/superadmin-phase-6-hardening` | Seguridad y audit (step-up ampliado, MFA prod, alertas) | Step-up create/approve JIT + webhook | En PR |
 
 ---
 
@@ -139,11 +139,15 @@ Documento **temporal** de seguimiento por fases (rama + PR por fase). No mezclar
 
 **Rama:** `feature/superadmin-phase-6-hardening`
 
-### Tareas propuestas
-- Step-up en crear empresa y aprobar JIT.
-- `SUPERADMIN_MFA_REQUIRED=true` documentado para producción.
-- Conectar JIT a política de soporte real (si se decide impersonación/proxy).
-- Export audit externo / alertas (según `governance.md`).
+### Entregado
+- Step-up en `POST /companies` (crear tenant) y en aprobar JIT (`approve: true`); denegar JIT sin step-up.
+- Frontend: MFA modal en alta empresa y al aprobar solicitudes.
+- `SUPERADMIN_MFA_REQUIRED` y checklist producción en `DEPLOYMENT.md` y `governance.md`.
+- `SECURITY_ALERT_WEBHOOK_URL` opcional para enrutar alertas JSON.
+
+### Fuera de alcance (decisión explícita)
+- Impersonación / proxy admin vía JIT (no implementado; JIT sigue siendo break-glass auditado, no panel admin).
+- Eliminar `SUPERADMIN-IMPLEMENTATION-PLAN.md` tras merge de Fase 6 (mantener `SUPERADMIN-FLOW.md`).
 
 ---
 

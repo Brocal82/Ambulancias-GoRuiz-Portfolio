@@ -41,6 +41,8 @@ El backend valida todas las variables al arrancar usando **Zod**. Si falta algun
 | `SUPERADMIN_MFA_ISSUER` | `"AmbulanciasGoRuiz"` | Nombre del emisor que aparece en la app TOTP |
 | `STEP_UP_SESSION_TTL_SECONDS` | `300` | Duración en segundos de una sesión step-up pre-emitida (60–1800) |
 
+**Producción (superadmin):** configurar `SUPERADMIN_MFA_REQUIRED=true`, MFA TOTP activo en todas las cuentas superadmin, y al menos **dos** superadmins distintos para aprobación JIT en cuatro ojos. Sin MFA, las operaciones con step-up devuelven `STEP_UP_REQUIRED` / `MFA_NOT_ENROLLED`.
+
 ### Variables de seguridad y monitorización
 
 | Variable | Default | Descripción |
@@ -49,6 +51,7 @@ El backend valida todas las variables al arrancar usando **Zod**. Si falta algun
 | `SECURITY_MONITORING_CRON` | `"0 7 * * *"` | Schedule cron del reporte de seguridad (diario a las 07:00 Berlin) |
 | `SECURITY_MONITORING_DENIED_THRESHOLD` | `3` | Nº de accesos denegados que activa alerta en el reporte |
 | `SECURITY_AUDIT_LOG_RETENTION_DAYS` | `180` | Días de retención de logs de auditoría |
+| `SECURITY_ALERT_WEBHOOK_URL` | — | URL opcional (HTTPS) que recibe POST JSON en alertas (`support_access_approved`, umbrales de monitoring, etc.) |
 
 ### Variables de rate limiting
 

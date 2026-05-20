@@ -59,8 +59,13 @@ export const getMyCompany = async (): Promise<Company> => {
   return res.data;
 };
 
-export const createCompany = async (data: CreateCompanyInput): Promise<Company> => {
-  const res = await axios.post<Company>("/companies", data);
+export const createCompany = async (
+  data: CreateCompanyInput,
+  stepUpToken?: string,
+): Promise<Company> => {
+  const res = await axios.post<Company>("/companies", data, {
+    headers: stepUpToken ? { "x-step-up-token": stepUpToken } : undefined,
+  });
   return res.data;
 };
 
