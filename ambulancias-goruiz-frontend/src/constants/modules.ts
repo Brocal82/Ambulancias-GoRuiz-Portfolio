@@ -55,6 +55,58 @@ export const ALL_MODULE_KEYS: ModuleKey[] = [
 ];
 
 /** Human-readable labels for superadmin UI. */
+/** Icons for superadmin module UI (display only). */
+export const MODULE_ICONS: Record<ModuleKey, string> = {
+  hospitals: "🏥",
+  ambulances: "🚑",
+  teams: "👥",
+  scheduling: "🗓️",
+  workday: "🚨",
+  mechanics: "🔧",
+  appointments: "📕",
+  messages: "📨",
+  vacation: "🏖️",
+  "sick-leaves": "🤒",
+  praemien: "🎖",
+  payroll: "🛠",
+  documents: "📄",
+  [MODULE_KEYS.EXCEL_PLANNING]: "📊",
+};
+
+/** Display groups for read-only module overview (superadmin detail). */
+export const MODULE_DISPLAY_GROUPS: ReadonlyArray<{
+  id: "foundation" | "planning" | "people" | "comms";
+  keys: readonly ModuleKey[];
+}> = [
+  {
+    id: "foundation",
+    keys: [MODULE_KEYS.HOSPITALS, MODULE_KEYS.AMBULANCES, MODULE_KEYS.TEAMS],
+  },
+  {
+    id: "planning",
+    keys: [
+      MODULE_KEYS.SCHEDULING,
+      MODULE_KEYS.EXCEL_PLANNING,
+      MODULE_KEYS.WORKDAY,
+      MODULE_KEYS.MECHANICS,
+    ],
+  },
+  {
+    id: "people",
+    keys: [
+      MODULE_KEYS.VACATION,
+      MODULE_KEYS.SICK_LEAVES,
+      MODULE_KEYS.PRAEMIEN,
+      MODULE_KEYS.PAYROLL,
+      MODULE_KEYS.DOCUMENTS,
+    ],
+  },
+  {
+    id: "comms",
+    keys: [MODULE_KEYS.APPOINTMENTS, MODULE_KEYS.MESSAGES],
+  },
+];
+
 export const MODULE_LABELS: Record<ModuleKey, string> = {
   hospitals:    "Hospitales",
   ambulances:   "Ambulancias",

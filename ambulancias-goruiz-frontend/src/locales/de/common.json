@@ -198,6 +198,8 @@
             "onboardingAdmin": "Hat Admin",
             "onboardingWorker": "Hat Mitarbeiter",
             "onboardingModules": "Module konfiguriert",
+            "onboardingComplete": "Erledigt",
+            "onboardingPending": "Ausstehend",
             "onboardingBannerTitle": "Onboarding unvollstaendig",
             "onboardingBannerDesc": "Admin, Mitarbeiter und Module einrichten, bevor der Mandant als betriebsbereit gilt.",
             "tabs": {
@@ -230,6 +232,15 @@
             "metricMechanicsOpen": "Offene Maengel",
             "metricsNone": "Keine Betriebsmetriken (Module nicht aktiv).",
             "modulesTitle": "Aktive Module",
+            "modulesSummary": "{{active}} von {{total}} Modulen aktiv",
+            "moduleOn": "Aktiv",
+            "moduleOff": "Inaktiv",
+            "moduleGroup": {
+                "foundation": "Operative Basis",
+                "planning": "Planung und Arbeitstag",
+                "people": "Personal und Lohn",
+                "comms": "Kommunikation"
+            },
             "usersTitle": "Benutzer",
             "refresh": "Aktualisieren",
             "noUsers": "Keine Benutzer in diesem Unternehmen.",

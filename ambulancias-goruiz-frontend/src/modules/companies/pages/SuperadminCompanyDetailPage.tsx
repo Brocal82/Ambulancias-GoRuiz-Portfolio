@@ -8,7 +8,13 @@ import {
   getCompanyUsers,
 } from "../domain/api";
 import type { CompanyMetrics, CompanySummary, CompanyUserListItem } from "../domain/types";
-import { MODULE_LABELS } from "../../../constants/modules";
+import {
+  ALL_MODULE_KEYS,
+  MODULE_DISPLAY_GROUPS,
+  MODULE_ICONS,
+  MODULE_LABELS,
+  type ModuleKey,
+} from "../../../constants/modules";
 import StatusBadge from "../../../components/common/StatusBadge";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import CreateAdminIconButton from "../../../components/common/actions/CreateAdminIconButton";
@@ -24,20 +30,96 @@ function isTabKey(value: string | null): value is TabKey {
   return value != null && (TAB_KEYS as readonly string[]).includes(value);
 }
 
-function OnboardingCheck({
-  ok,
-  label,
+function ModulesOverviewSection({
+  enabledModules,
+  onEdit,
 }: {
-  ok: boolean;
-  label: string;
+  enabledModules: string[];
+  onEdit: () => void;
 }) {
+  const { t } = useTranslation();
+  const enabledSet = useMemo(() => new Set(enabledModules), [enabledModules]);
+  const activeCount = ALL_MODULE_KEYS.filter((key) => enabledSet.has(key)).length;
+
   return (
-    <li className="flex items-center gap-2 text-sm text-slate-700">
-      <span className={ok ? "text-emerald-600" : "text-slate-400"}>
-        {ok ? "✓" : "○"}
-      </span>
-      {label}
-    </li>
+    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900">
+            {t("pages.superadminCompanyDetail.modulesTitle")}
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {t("pages.superadminCompanyDetail.modulesSummary", {
+              active: activeCount,
+              total: ALL_MODULE_KEYS.length,
+            })}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        >
+          {t("pages.superadminCompanyDetail.editModules")}
+        </button>
+      </div>
+
+      <div className="space-y-5 p-4">
+        {activeCount === 0 && (
+          <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/60 px-4 py-3 text-center text-sm text-amber-900">
+            {t("pages.superadminCompanyDetail.noModules")}
+          </div>
+        )}
+
+        {MODULE_DISPLAY_GROUPS.map((group) => (
+          <div key={group.id}>
+            <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-orange-600">
+              {t(`pages.superadminCompanyDetail.moduleGroup.${group.id}`)}
+            </h3>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              {group.keys.map((key) => {
+                const enabled = enabledSet.has(key);
+                const label = MODULE_LABELS[key as ModuleKey] ?? key;
+                return (
+                  <div
+                    key={key}
+                    className={`rounded-lg border px-2.5 py-2 transition ${
+                      enabled
+                        ? "border-orange-300 bg-white shadow-sm"
+                        : "border-slate-100 bg-slate-50/80"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <span className="text-lg leading-none" aria-hidden>
+                        {MODULE_ICONS[key as ModuleKey] ?? "🧩"}
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ring-1 ring-inset ${
+                          enabled
+                            ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                            : "bg-slate-100 text-slate-500 ring-slate-200"
+                        }`}
+                      >
+                        {enabled
+                          ? t("pages.superadminCompanyDetail.moduleOn")
+                          : t("pages.superadminCompanyDetail.moduleOff")}
+                      </span>
+                    </div>
+                    <p
+                      className={`mt-1.5 text-[11px] font-medium leading-snug ${
+                        enabled ? "text-slate-900" : "text-slate-500"
+                      }`}
+                    >
+                      {label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -139,12 +221,30 @@ export default function SuperadminCompanyDetailPage() {
     return null;
   }
 
-  const roleRows = [
-    { key: "admin", count: summary.usersByRole.admin },
-    { key: "worker", count: summary.usersByRole.worker },
-    { key: "mecanico", count: summary.usersByRole.mecanico },
-    { key: "jefe_mecanicos", count: summary.usersByRole.jefe_mecanicos },
-    { key: "jefe_logistica", count: summary.usersByRole.jefe_logistica },
+  const roleColumns: Array<Array<{ key: string; count: number }>> = [
+    [
+      { key: "admin", count: summary.usersByRole.admin },
+      { key: "mecanico", count: summary.usersByRole.mecanico },
+      { key: "jefe_logistica", count: summary.usersByRole.jefe_logistica },
+    ],
+    [
+      { key: "worker", count: summary.usersByRole.worker },
+      { key: "jefe_mecanicos", count: summary.usersByRole.jefe_mecanicos },
+    ],
+  ];
+
+  const onboardingColumns: Array<Array<{ key: string; ok: boolean; labelKey: string }>> = [
+    [
+      { key: "admin", ok: summary.onboarding.hasAdmin, labelKey: "onboardingAdmin" },
+      { key: "worker", ok: summary.onboarding.hasWorker, labelKey: "onboardingWorker" },
+    ],
+    [
+      {
+        key: "modules",
+        ok: summary.onboarding.hasModulesConfigured,
+        labelKey: "onboardingModules",
+      },
+    ],
   ];
 
   const tabButtonClass = (isActive: boolean) =>
@@ -233,34 +333,68 @@ export default function SuperadminCompanyDetailPage() {
             <h2 className="text-sm font-semibold text-slate-800 mb-3">
               {t("pages.superadminCompanyDetail.onboardingTitle")}
             </h2>
-            <ul className="space-y-1">
-              <OnboardingCheck
-                ok={summary.onboarding.hasAdmin}
-                label={t("pages.superadminCompanyDetail.onboardingAdmin")}
-              />
-              <OnboardingCheck
-                ok={summary.onboarding.hasWorker}
-                label={t("pages.superadminCompanyDetail.onboardingWorker")}
-              />
-              <OnboardingCheck
-                ok={summary.onboarding.hasModulesConfigured}
-                label={t("pages.superadminCompanyDetail.onboardingModules")}
-              />
-            </ul>
+            <div className="flex flex-col gap-4 sm:flex-row sm:gap-0">
+              {onboardingColumns.map((column, columnIndex) => (
+                <dl
+                  key={columnIndex}
+                  className={`min-w-0 flex-1 space-y-1 text-sm ${
+                    columnIndex > 0
+                      ? "sm:border-l sm:border-slate-200 sm:pl-10 lg:pl-14"
+                      : "sm:pr-4"
+                  }`}
+                >
+                  {column.map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex justify-between gap-6 border-b border-slate-100 py-1.5"
+                    >
+                      <dt className="text-slate-600">
+                        {t(`pages.superadminCompanyDetail.${item.labelKey}`)}
+                      </dt>
+                      <dd
+                        className={`font-medium tabular-nums ${
+                          item.ok ? "text-emerald-700" : "text-amber-700"
+                        }`}
+                      >
+                        {item.ok
+                          ? t("pages.superadminCompanyDetail.onboardingComplete")
+                          : t("pages.superadminCompanyDetail.onboardingPending")}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ))}
+            </div>
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-800 mb-3">
               {t("pages.superadminCompanyDetail.rolesTitle")}
             </h2>
-            <dl className="grid grid-cols-2 gap-2 text-sm">
-              {roleRows.map((r) => (
-                <div key={r.key} className="flex justify-between gap-2 border-b border-slate-100 py-1">
-                  <dt className="text-slate-600">{t(`pages.superadminCompanyDetail.role.${r.key}`)}</dt>
-                  <dd className="font-medium text-slate-900">{r.count}</dd>
-                </div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:gap-0">
+              {roleColumns.map((column, columnIndex) => (
+                <dl
+                  key={columnIndex}
+                  className={`min-w-0 flex-1 space-y-1 text-sm ${
+                    columnIndex > 0
+                      ? "sm:border-l sm:border-slate-200 sm:pl-10 lg:pl-14"
+                      : "sm:pr-4"
+                  }`}
+                >
+                  {column.map((r) => (
+                    <div
+                      key={r.key}
+                      className="flex justify-between gap-6 border-b border-slate-100 py-1.5"
+                    >
+                      <dt className="text-slate-600">
+                        {t(`pages.superadminCompanyDetail.role.${r.key}`)}
+                      </dt>
+                      <dd className="font-medium tabular-nums text-slate-900">{r.count}</dd>
+                    </div>
+                  ))}
+                </dl>
               ))}
-            </dl>
+            </div>
           </section>
         </div>
       )}
@@ -313,34 +447,10 @@ export default function SuperadminCompanyDetailPage() {
       )}
 
       {activeTab === "modules" && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">
-              {t("pages.superadminCompanyDetail.modulesTitle")}
-            </h2>
-            <button
-              type="button"
-              onClick={() => navigate(`/superadmin/companies/${id}/edit`)}
-              className="text-xs text-blue-600 hover:underline"
-            >
-              {t("pages.superadminCompanyDetail.editModules")}
-            </button>
-          </div>
-          {summary.enabledModules.length === 0 ? (
-            <p className="text-sm text-slate-600">{t("pages.superadminCompanyDetail.noModules")}</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {summary.enabledModules.map((key) => (
-                <span
-                  key={key}
-                  className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700"
-                >
-                  {MODULE_LABELS[key as keyof typeof MODULE_LABELS] ?? key}
-                </span>
-              ))}
-            </div>
-          )}
-        </section>
+        <ModulesOverviewSection
+          enabledModules={summary.enabledModules}
+          onEdit={() => navigate(`/superadmin/companies/${id}/edit`)}
+        />
       )}
 
       {activeTab === "metrics" && metrics && (

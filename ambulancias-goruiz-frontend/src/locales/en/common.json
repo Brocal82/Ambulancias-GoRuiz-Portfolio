@@ -198,6 +198,8 @@
             "onboardingAdmin": "Has admin",
             "onboardingWorker": "Has worker",
             "onboardingModules": "Modules configured",
+            "onboardingComplete": "Done",
+            "onboardingPending": "Pending",
             "onboardingBannerTitle": "Onboarding incomplete",
             "onboardingBannerDesc": "Add an admin, workers and modules before treating this tenant as operational.",
             "tabs": {
@@ -230,6 +232,15 @@
             "metricMechanicsOpen": "Open issues",
             "metricsNone": "No operational module metrics (modules not enabled).",
             "modulesTitle": "Enabled modules",
+            "modulesSummary": "{{active}} of {{total}} modules active",
+            "moduleOn": "Active",
+            "moduleOff": "Inactive",
+            "moduleGroup": {
+                "foundation": "Operational base",
+                "planning": "Planning and workday",
+                "people": "HR and payroll",
+                "comms": "Communication"
+            },
             "usersTitle": "Users",
             "refresh": "Refresh",
             "noUsers": "No users in this company.",

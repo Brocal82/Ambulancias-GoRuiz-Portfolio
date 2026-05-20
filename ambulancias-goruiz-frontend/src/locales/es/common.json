@@ -198,6 +198,8 @@
             "onboardingAdmin": "Tiene administrador",
             "onboardingWorker": "Tiene trabajador",
             "onboardingModules": "Módulos configurados",
+            "onboardingComplete": "Listo",
+            "onboardingPending": "Pendiente",
             "onboardingBannerTitle": "Onboarding pendiente",
             "onboardingBannerDesc": "Completa admin, trabajadores y módulos antes de dar el tenant por operativo.",
             "tabs": {
@@ -230,6 +232,15 @@
             "metricMechanicsOpen": "Averías abiertas",
             "metricsNone": "Sin métricas de módulos operativos habilitados.",
             "modulesTitle": "Módulos habilitados",
+            "modulesSummary": "{{active}} de {{total}} módulos activos",
+            "moduleOn": "Activo",
+            "moduleOff": "Inactivo",
+            "moduleGroup": {
+                "foundation": "Base operativa",
+                "planning": "Planificación y jornada",
+                "people": "Personal y nómina",
+                "comms": "Comunicación"
+            },
             "usersTitle": "Usuarios",
             "refresh": "Actualizar",
             "noUsers": "Sin usuarios en esta empresa.",
