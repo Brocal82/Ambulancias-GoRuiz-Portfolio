@@ -1,0 +1,20 @@
+---
+description: Frontend HTTP calls via module domain/api.ts and shared axios
+globs: ambulancias-goruiz-frontend/src/**/*
+alwaysApply: false
+---
+
+# Frontend API Pattern
+
+HTTP calls belong in each module's `domain/api.ts`:
+
+```
+src/modules/<name>/domain/api.ts  →  shared axios from src/api/axios.ts
+```
+
+- Do not create a second axios instance.
+- Hooks may wrap `domain/api.ts`; avoid raw HTTP in components.
+- Locale keys: sync `de`, `en`, `es` in `src/locales/*/common.json`.
+- Documents: `openSecureFile()`, never direct `/uploads` for PDFs.
+
+See also: `.cursor/rules/frontend-modules.mdc`.

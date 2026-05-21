@@ -30,6 +30,7 @@ import excelPlanningRoutes from "./modules/excel-planning/routes";
 import supportAccessRoutes from "./modules/support-access/routes";
 import adminDashboardRoutes from "./modules/admin-dashboard/routes";
 import { notificationsRoutes } from "./modules/notifications";
+import { openApiRoutes } from "./openapi/docs.routes";
 
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
@@ -116,6 +117,11 @@ app.get("/health", (_req, res) => {
     db: dbState,
   });
 });
+
+// Public read-only OpenAPI docs (no auth): GET /api/docs, /api/docs.json, /api/docs/init.js.
+// Bypasses global rateLimitGlobal; uses dedicated limits in openapi/docs.routes.ts.
+// See docs/tooling/README.md#openapi-public-endpoints.
+app.use("/api", openApiRoutes);
 
 // Global rate limit — applied before all /api routes.
 // Specific stricter limits (login, invitations, etc.) are applied below per route.

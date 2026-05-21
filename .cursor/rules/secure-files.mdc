@@ -1,0 +1,21 @@
+---
+description: Secure file access — public uploads vs authenticated /api/files
+globs: "{ambulancias-goruiz-backend/src/app.ts,ambulancias-goruiz-backend/src/utils/fileOwnership.ts,ambulancias-goruiz-frontend/src/**/*.{ts,tsx}}"
+alwaysApply: false
+---
+
+# Secure Files
+
+Two layers — do not mix them:
+
+| Path | Access | Allowed types |
+|------|--------|---------------|
+| `/uploads/*` | Public | `.jpg`, `.jpeg`, `.png`, `.webp` only |
+| `/api/files/:filename` | Auth + `canAccessFile()` | PDFs, medical docs, attachments |
+
+❌ Never expose PDFs or medical documents via `/uploads`.
+❌ Never use `<a href="/uploads/...">` for sensitive files in frontend.
+
+✅ Frontend: use `openSecureFile()` from `src/utils/openSecureFile.ts`.
+
+Reference: `docs/FILE-SECURITY.md`, `CLAUDE.md`.

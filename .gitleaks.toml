@@ -1,0 +1,21 @@
+title = "Ambulancias GoRuiz — Gitleaks"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Example env files without real secrets"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.example\..*$''',
+]
+
+[[allowlists]]
+description = "Clearly fake placeholders in markdown docs only (not JWT-shaped tokens)"
+paths = [
+  '''docs/.*\.md$''',
+]
+regexes = [
+  '''<jwt-token>''',
+  '''your-[a-z-]+-here''',
+]
