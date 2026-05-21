@@ -38,6 +38,11 @@ describe("Files security (integration)", () => {
       const res = await request(app).get("/uploads/any-name-unit.pdf");
       expect(res.status).toBe(403);
     });
+
+    it("rejects xlsx files with 403", async () => {
+      const res = await request(app).get("/uploads/any-name-unit.xlsx");
+      expect(res.status).toBe(403);
+    });
   });
 
   describe("GET /api/files/:filename", () => {
@@ -75,6 +80,34 @@ describe("Files security (integration)", () => {
       expect(res.status).toBe(401);
     });
 
+    it("returns 400 for empty filename segment", async () => {
+      const res = await request(app)
+        .get(`${API}/files/`)
+        .set("Authorization", `Bearer ${baseWorkerToken}`);
+      expect([400, 404]).toContain(res.status);
+    });
+
+    it("returns 400 for dotfile traversal attempts", async () => {
+      const res = await request(app)
+        .get(`${API}/files/.env`)
+        .set("Authorization", `Bearer ${baseWorkerToken}`);
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 for encoded path traversal attempts", async () => {
+      const res = await request(app)
+        .get(`${API}/files/..%2Fsecret.pdf`)
+        .set("Authorization", `Bearer ${baseWorkerToken}`);
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 for path separator in filename", async () => {
+      const res = await request(app)
+        .get(`${API}/files/subdir%2Fsecret.pdf`)
+        .set("Authorization", `Bearer ${baseWorkerToken}`);
+      expect(res.status).toBe(400);
+    });
+
     it("returns 404 when file does not exist on disk (authenticated)", async () => {
       const missingName = uniqueUploadBasename("absent");
       const res = await request(app)
@@ -98,6 +131,22 @@ describe("Files security (integration)", () => {
 
     it("returns 200 when file exists and path is on the same user pscheinDocument", async () => {
       const basename = uniqueUploadBasename("owned");
+      const storedPath = `/uploads/${basename}`;
+      await writeTestUploadFile(basename);
+      await User.updateOne({ _id: baseWorkerId }, { $set: { pscheinDocument: storedPath } });
+      try {
+        const res = await request(app)
+          .get(`${API}/files/${basename}`)
+          .set("Authorization", `Bearer ${baseWorkerToken}`);
+        expect(res.status).toBe(200);
+      } finally {
+        await removeTestUploadFile(basename);
+        await User.updateOne({ _id: baseWorkerId }, { $unset: { pscheinDocument: 1 } });
+      }
+    });
+
+    it("allows authenticated access to owned PDF via /api/files", async () => {
+      const basename = uniqueUploadBasename("owned-pdf");
       const storedPath = `/uploads/${basename}`;
       await writeTestUploadFile(basename);
       await User.updateOne({ _id: baseWorkerId }, { $set: { pscheinDocument: storedPath } });
