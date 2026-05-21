@@ -5,8 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# gitleaks-action on pull_request reads PR commits via GitHub API (pull-requests: read).
+# Comments/artifacts disabled to avoid write permissions.
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   gitleaks:
@@ -25,3 +28,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
