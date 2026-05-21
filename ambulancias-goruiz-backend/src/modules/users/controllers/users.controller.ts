@@ -27,6 +27,7 @@ import {
   parseUpdateUserDTO,
   parseCreateUserDTO,
 } from "../utils/users.parsers";
+import { validatePscheinStoredDocumentPath } from "../utils/pschein.validation";
 import {
   requireCompanyForAdmin,
   isSameCompany,
@@ -133,7 +134,10 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     if (
       msg.includes("no proporcionado") ||
       msg.includes("obligatorios") ||
-      msg.includes("no es válido")
+      msg.includes("obligatoria") ||
+      msg.includes("no es válid") ||
+      msg.includes("P-Schein") ||
+      msg.includes("documento")
     ) {
       res.status(400).json({ message: msg });
       return;
@@ -648,10 +652,25 @@ async function applyUploadToUser(
   }
 
   if (files?.documents?.length) {
+    const docFile = files.documents[0]!;
+    const ext = path.extname(docFile.filename).toLowerCase();
+    if (
+      docFile.mimetype !== "application/pdf" ||
+      ext !== ".pdf"
+    ) {
+      throw new Error(
+        "El certificado P-Schein debe ser un archivo PDF",
+      );
+    }
+
     const existingUser = await User.findById(targetUserId);
-    const newPath = `/uploads/${files.documents[0]!.filename}`;
+    const newPath = `/uploads/${docFile.filename}`;
+    const pathCheck = validatePscheinStoredDocumentPath(newPath);
+    if (!pathCheck.ok) {
+      throw new Error(pathCheck.message);
+    }
     const oldPath = existingUser?.pscheinDocument?.trim();
-    updates.pscheinDocument = newPath;
+    updates.pscheinDocument = pathCheck.normalized;
 
     const updatedUser = await User.findByIdAndUpdate(
       targetUserId,
@@ -705,7 +724,12 @@ export const uploadUserFiles = async (
     }
 
     res.status(200).json(updatedUser);
-  } catch (error) {
+  } catch (error: any) {
+    const msg = String(error?.message || "");
+    if (msg.includes("P-Schein") || msg.includes("PDF")) {
+      res.status(400).json({ message: msg });
+      return;
+    }
     console.error("Error al subir archivos:", error);
     res.status(500).json({ message: "Error al subir archivos" });
   }
@@ -746,7 +770,12 @@ export const uploadUserFilesForUser = async (
     }
 
     res.status(200).json(updatedUser);
-  } catch (error) {
+  } catch (error: any) {
+    const msg = String(error?.message || "");
+    if (msg.includes("P-Schein") || msg.includes("PDF")) {
+      res.status(400).json({ message: msg });
+      return;
+    }
     console.error("Error al subir archivos:", error);
     res.status(500).json({ message: "Error al subir archivos" });
   }

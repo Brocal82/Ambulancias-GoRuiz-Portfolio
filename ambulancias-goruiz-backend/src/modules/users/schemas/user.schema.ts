@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseStrictYmd } from "../utils/pschein.validation";
 
 const emailSchema = z
   .string()
@@ -50,7 +51,13 @@ const updateUserFieldsSchema = z.object({
   address: z.string().transform((s) => s.trim()).optional(),
   phone: z.string().transform((s) => s.trim()).optional(),
   emergencyPhone: z.string().transform((s) => s.trim()).optional(),
-  pscheinExpiry: z.string().transform((s) => s.trim()).optional(),
+  pscheinExpiry: z
+    .string()
+    .transform((s) => s.trim())
+    .refine((s) => s === "" || parseStrictYmd(s) !== null, {
+      message: "La fecha de caducidad del P-Schein no es válida (use YYYY-MM-DD)",
+    })
+    .optional(),
   pscheinDocument: z.union([z.string(), z.null()]).optional(),
   pscheinConfirmedBy: z.union([z.string(), z.null()]).optional(),
   pscheinConfirmedAt: z.preprocess(

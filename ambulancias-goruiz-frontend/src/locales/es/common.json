@@ -743,6 +743,7 @@
             },
             "pschein": {
                 "uploadPscheinButton": "Subir P-Schein",
+                "uploadHint": "Un archivo PDF (máx. 10 MB)",
                 "expired": "❌ El P-Schein está caducado",
                 "warning": "⚠️ El P-Schein caduca en menos de 6 meses",
                 "pendingAdminRegistration": "Fecha de caducidad",

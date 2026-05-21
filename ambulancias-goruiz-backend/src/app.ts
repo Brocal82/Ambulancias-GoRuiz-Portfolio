@@ -36,6 +36,10 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
 import { authenticateToken } from "./middlewares/authMiddleware";
 import { canAccessFile } from "./utils/fileOwnership";
+import {
+  resolveUploadFilePath,
+  validateSecureUploadFilename,
+} from "./utils/secureUploadFilename";
 import { AUDIT_EVENT } from "./security/audit-events";
 import { buildAuditContextFromRequest, emitAuditLog } from "./security/audit-log";
 import {
@@ -158,8 +162,35 @@ app.use("/api/notifications", notificationsRoutes);
 
 app.get("/api/files/:filename", authenticateToken, async (req, res) => {
   const auditContext = buildAuditContextFromRequest(req);
-  const filename = path.basename(req.params.filename);
-  const filePath = path.resolve(uploadsRoot, filename);
+  const rawFilename = req.params.filename ?? "";
+  const filenameValidation = validateSecureUploadFilename(rawFilename);
+  if (!filenameValidation.ok) {
+    emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "denied", {
+      ...auditContext,
+      statusCode: 400,
+      resourceType: "file",
+      resourceId: rawFilename,
+      reason: filenameValidation.reason,
+    });
+    res.status(400).json({ message: "Nombre de archivo no válido" });
+    return;
+  }
+
+  const filename = filenameValidation.filename;
+  const resolvedPath = resolveUploadFilePath(uploadsRoot, filename);
+  if (!resolvedPath.ok) {
+    emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "denied", {
+      ...auditContext,
+      statusCode: 400,
+      resourceType: "file",
+      resourceId: filename,
+      reason: resolvedPath.reason,
+    });
+    res.status(400).json({ message: "Nombre de archivo no válido" });
+    return;
+  }
+
+  const filePath = resolvedPath.filePath;
   if (!fs.existsSync(filePath)) {
     emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "denied", {
       ...auditContext,

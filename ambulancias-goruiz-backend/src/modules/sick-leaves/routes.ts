@@ -29,6 +29,7 @@ router.post(
   "/",
   authenticateToken,
   requireModule(MODULE_KEYS.SICK_LEAVES),
+  authorizeRole("worker"),
   validateBody(sickLeaveCreateSchema),
   createSickLeave,
 );
@@ -45,6 +46,7 @@ router.get(
   "/mine",
   authenticateToken,
   requireModule(MODULE_KEYS.SICK_LEAVES),
+  authorizeRole("worker"),
   listMySickLeaves,
 );
 
@@ -70,6 +72,7 @@ router.post(
   "/:id/attach-document",
   authenticateToken,
   requireModule(MODULE_KEYS.SICK_LEAVES),
+  authorizeRole("worker"),
   validateObjectId("id"),
   attachSickDocument,
 );
@@ -78,6 +81,7 @@ router.post(
   "/:id/attach-document-file",
   authenticateToken,
   requireModule(MODULE_KEYS.SICK_LEAVES),
+  authorizeRole("worker"),
   validateObjectId("id"),
   upload.single("document"),
   attachSickDocumentFile,
@@ -87,6 +91,7 @@ router.delete(
   "/:id/mine",
   authenticateToken,
   requireModule(MODULE_KEYS.SICK_LEAVES),
+  authorizeRole("worker"),
   validateObjectId("id"),
   removeMyRejectedSickLeave,
 );
