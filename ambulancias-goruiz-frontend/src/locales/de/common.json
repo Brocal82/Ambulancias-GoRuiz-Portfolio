@@ -809,6 +809,9 @@
         "hospitals": {
             "adminPage": {
                 "title": "Krankenhausverwaltung",
+                "loading": "Krankenhäuser werden geladen…",
+                "empty": "Keine Krankenhäuser entsprechen den Filtern.",
+                "emptyAll": "Noch keine Krankenhäuser registriert.",
                 "filters": {
                     "byName": "Nach Name filtern:",
                     "byNamePlaceholder": "Krankenhausname eingeben",
@@ -849,6 +852,9 @@
             },
             "workerPage": {
                 "title": "🏥 Verfügbare Krankenhäuser",
+                "loading": "Krankenhäuser werden geladen…",
+                "empty": "Keine Krankenhäuser entsprechen den Filtern.",
+                "emptyAll": "Keine Krankenhäuser verfügbar.",
                 "filters": {
                     "byName": "Nach Name filtern:",
                     "byNamePlaceholder": "Nach Krankenhausname suchen...",
@@ -1860,6 +1866,7 @@
             "updateError": "❌ Krankenhaus konnte nicht aktualisiert werden.",
             "deleteSuccess": "🗑️ Krankenhaus gelöscht.",
             "deleteError": "❌ Krankenhaus konnte nicht gelöscht werden.",
+            "deleteInUse": "❌ Löschen nicht möglich: Krankenhaus wird in Fahrten oder Tagesabschlüssen referenziert.",
             "stateUpdated": "✅ Krankenhausstatus aktualisiert",
             "stateUpdateError": "❌ Fehler beim Aktualisieren des Status"
         },

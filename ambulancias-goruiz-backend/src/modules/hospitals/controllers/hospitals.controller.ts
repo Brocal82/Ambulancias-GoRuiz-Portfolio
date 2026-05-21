@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import * as hospitalsService from "../services/hospitals.service";
-import { validateCreateHospital } from "../utils/hospital.validators";
-import type { UpdateHospitalInput } from "../schemas/hospital.schema";
+import type {
+  CreateHospitalInput,
+  UpdateHospitalInput,
+} from "../schemas/hospital.schema";
+import { HospitalInUseError } from "../utils/hospitalReferences";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 function resolveCompanyId(req: Request): {
@@ -53,13 +56,8 @@ export const createHospital = async (req: Request, res: Response): Promise<void>
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
     }
-    const validated = validateCreateHospital(req.body);
-    if (!validated.ok) {
-      res.status(400).json({ message: validated.message });
-      return;
-    }
     const saved = await hospitalsService.createHospital(
-      validated.value,
+      req.body as CreateHospitalInput,
       companyResult.companyId,
     );
     res.status(201).json(saved);
@@ -110,6 +108,10 @@ export const deleteHospital = async (req: Request, res: Response) => {
     }
     res.status(200).json({ message: "Hospital eliminado" });
   } catch (error) {
+    if (error instanceof HospitalInUseError) {
+      res.status(409).json({ message: error.message, sources: error.sources });
+      return;
+    }
     res.status(400).json({ message: "Error al eliminar el hospital" });
   }
 };

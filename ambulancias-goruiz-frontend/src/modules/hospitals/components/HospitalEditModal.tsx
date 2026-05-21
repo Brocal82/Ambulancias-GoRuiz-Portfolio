@@ -15,6 +15,7 @@ import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 interface Props {
   hospital: Hospital;
   onClose: () => void;
+  isSubmitting?: boolean;
   onUpdated?: (updated: Hospital) => void;
   onSave?: (updated: Hospital) => void;
   allSpecialties?: string[];
@@ -32,6 +33,7 @@ const arraysEqualUnordered = (a: string[] = [], b: string[] = []) => {
 const HospitalEditModal = ({
   hospital,
   onClose,
+  isSubmitting = false,
   onUpdated,
   onSave,
   allSpecialties,
@@ -116,7 +118,7 @@ const HospitalEditModal = ({
   }, [name, address, phone, specialties, hospital, isOpenState]);
 
   const handleSave = () => {
-    if (!canSave) return;
+    if (!canSave || isSubmitting) return;
 
     const updated: Hospital = {
       ...hospital,
@@ -380,13 +382,13 @@ const HospitalEditModal = ({
               )}
             </div>
             <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
-              <CancelButton onClick={onClose}>
+              <CancelButton onClick={onClose} disabled={isSubmitting}>
                 {t("common.cancel", "Cancelar")}
               </CancelButton>
 
               <SaveIconButton
                 type="submit"
-                disabled={!canSave}
+                disabled={!canSave || isSubmitting}
                 title={t("common.save", "Guardar")}
               />
 

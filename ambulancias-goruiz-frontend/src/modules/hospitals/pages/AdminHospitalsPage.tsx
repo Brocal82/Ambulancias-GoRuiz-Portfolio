@@ -19,12 +19,16 @@ import { useHospitalStatusChanged } from "../hooks/useHospitalStatusChanged";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 
 const AdminHospitalsPage = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pendingHospitalId, setPendingHospitalId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(
     null,
@@ -36,12 +40,15 @@ const AdminHospitalsPage = () => {
 
   const loadHospitals = useCallback(async () => {
     if (!token) return;
+    setIsLoading(true);
     try {
       const data = await fetchHospitals(token);
       setHospitals(data);
     } catch (error) {
       console.error(error);
       toastT.apiError(error, ["toasts.hospitals.loadError"]);
+    } finally {
+      setIsLoading(false);
     }
   }, [token]);
 
@@ -54,13 +61,11 @@ const AdminHospitalsPage = () => {
     void loadHospitals();
   }, [loadHospitals]);
 
-  // 2) Especialidades únicas (memo para evitar recalcular cada render)
   const specialties = useMemo(
     () => getUniqueSpecialties(hospitals),
     [hospitals],
   );
 
-  // 3) Lista filtrada + ordenada (memo)
   const sortedHospitals = useMemo(
     () =>
       filterAndSortHospitals(
@@ -71,11 +76,19 @@ const AdminHospitalsPage = () => {
     [hospitals, selectedSpecialty, searchName],
   );
 
-  // 4) Toggle abierto/cerrado
+  const hasActiveFilters =
+    selectedSpecialty !== "all" || searchName.trim().length > 0;
+
+  const emptyMessage = hasActiveFilters
+    ? (t("pages.hospitals.adminPage.empty") as string)
+    : undefined;
+
   const handleToggleOpen = async (hospital: Hospital) => {
+    if (pendingHospitalId) return;
     try {
       if (!token) return;
 
+      setPendingHospitalId(hospital._id);
       const currentIsOpen = getHospitalIsOpen(hospital);
       const nextIsOpen = !(currentIsOpen === true);
 
@@ -92,23 +105,33 @@ const AdminHospitalsPage = () => {
     } catch (error) {
       console.error(error);
       toastT.apiError(error, ["toasts.hospitals.stateUpdateError"]);
+    } finally {
+      setPendingHospitalId(null);
     }
   };
 
-  // 5) Delete
   const handleDeleteHospital = async (id: string) => {
-    if (!token) return;
+    if (!token || pendingHospitalId) return;
 
     const ok = confirm(t("pages.hospitals.adminPage.confirm.delete") as string);
     if (!ok) return;
 
     try {
+      setPendingHospitalId(id);
       await hospitalsApi.deleteHospital(id);
       setHospitals((prev) => prev.filter((h) => h._id !== id));
       toastT.success(["toasts.hospitals.deleteSuccess"]);
     } catch (error) {
       console.error(error);
-      toastT.apiError(error, ["toasts.hospitals.deleteError"]);
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      toastT.apiError(
+        error,
+        status === 409
+          ? ["toasts.hospitals.deleteInUse"]
+          : ["toasts.hospitals.deleteError"],
+      );
+    } finally {
+      setPendingHospitalId(null);
     }
   };
 
@@ -118,7 +141,6 @@ const AdminHospitalsPage = () => {
         {t("pages.hospitals.adminPage.title")}
       </h1>
 
-      {/* Filtros reutilizables */}
       <hospitalsComponents.HospitalsFilters
         specialties={specialties}
         selectedSpecialty={selectedSpecialty}
@@ -129,18 +151,19 @@ const AdminHospitalsPage = () => {
           t("pages.hospitals.adminPage.actions.toggleFormOpen") as string
         }
         onRightActionClick={() => setShowForm(true)}
-        hideRightAction={showForm}
+        hideRightAction={showForm || isCreating}
       />
 
-      {/* Formulario (extraído a componente) */}
       {showForm && (
         <hospitalsComponents.HospitalCreateForm
           specialties={specialties}
-          onClose={() => setShowForm(false)}
+          isSubmitting={isCreating}
+          onClose={() => !isCreating && setShowForm(false)}
           onSubmit={async (data) => {
-            if (!token) return;
+            if (!token || isCreating) return;
 
             try {
+              setIsCreating(true);
               const newHospital = await hospitalsApi.createHospital(
                 buildCreateHospitalPayload(data),
               );
@@ -151,31 +174,38 @@ const AdminHospitalsPage = () => {
             } catch (error) {
               console.error(error);
               toastT.apiError(error, ["toasts.hospitals.addError"]);
+            } finally {
+              setIsCreating(false);
             }
           }}
         />
       )}
 
-      {/* Listado reutilizable */}
       <hospitalsComponents.HospitalsList
         hospitals={sortedHospitals}
         mode="admin"
+        isLoading={isLoading}
+        emptyMessage={emptyMessage}
+        pendingHospitalId={pendingHospitalId}
         onOpenDetails={(hospital) => setSelectedHospital(hospital)}
         onToggleOpen={handleToggleOpen}
-        onEdit={(hospital) => setEditingHospital(hospital)}
+        onEdit={(hospital) => !pendingHospitalId && setEditingHospital(hospital)}
         onDelete={handleDeleteHospital}
       />
 
-      {/* Modales */}
       {editingHospital && (
         <hospitalsComponents.HospitalEditModal
           hospital={editingHospital}
           allSpecialties={specialties}
-          onClose={() => setEditingHospital(null)}
+          isSubmitting={pendingHospitalId === editingHospital._id}
+          onClose={() =>
+            pendingHospitalId !== editingHospital._id && setEditingHospital(null)
+          }
           onUpdated={async (updated) => {
-            if (!token) return;
+            if (!token || pendingHospitalId) return;
 
             try {
+              setPendingHospitalId(updated._id);
               const payload = buildUpdateHospitalPayload(
                 editingHospital,
                 updated,
@@ -200,6 +230,8 @@ const AdminHospitalsPage = () => {
             } catch (error) {
               console.error("❌ Error al actualizar hospital:", error);
               toastT.apiError(error, ["toasts.hospitals.updateErr"]);
+            } finally {
+              setPendingHospitalId(null);
             }
           }}
         />

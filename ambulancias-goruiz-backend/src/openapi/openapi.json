@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health and login only. Full reference: docs/API-REFERENCE.md",
+    "description": "Minimal OpenAPI surface — health, login, and hospitals. Full reference: docs/API-REFERENCE.md",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -96,9 +96,110 @@
           }
         }
       }
+    },
+    "/api/hospitals": {
+      "get": {
+        "summary": "List hospitals",
+        "description": "Requires module `hospitals`. Admin and worker roles.",
+        "tags": ["Hospitals"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Hospital list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Hospital" }
+                }
+              }
+            }
+          },
+          "403": { "description": "Module disabled or missing company", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "post": {
+        "summary": "Create hospital",
+        "description": "Admin only. Body validated with Zod (trim, non-empty strings).",
+        "tags": ["Hospitals"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HospitalCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Hospital" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/hospitals/{id}": {
+      "put": {
+        "summary": "Update hospital (full/partial body)",
+        "tags": ["Hospitals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HospitalUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Hospital" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "patch": {
+        "summary": "Partial update hospital",
+        "description": "Same schema and handler as PUT; only sent fields are updated.",
+        "tags": ["Hospitals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HospitalUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Hospital" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Delete hospital",
+        "description": "Returns 409 if referenced in trips or workday-summary toAddress (exact name/address match).",
+        "tags": ["Hospitals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "In use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HospitalDeleteConflict" } } } }
+        }
+      }
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
       "HealthOk": {
         "type": "object",
@@ -160,6 +261,49 @@
         "properties": {
           "message": { "type": "string" },
           "code": { "type": "string", "description": "e.g. MFA_REQUIRED, MFA_INVALID, COMPANY_INACTIVE" }
+        }
+      },
+      "Hospital": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "address": { "type": "string" },
+          "phone": { "type": "string" },
+          "specialties": { "type": "array", "items": { "type": "string" } },
+          "isOpen": { "type": "boolean" },
+          "companyId": { "type": "string" }
+        }
+      },
+      "HospitalCreateRequest": {
+        "type": "object",
+        "required": ["name", "address", "phone", "specialties"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "address": { "type": "string", "minLength": 1 },
+          "phone": { "type": "string", "minLength": 1 },
+          "specialties": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "isOpen": { "type": "boolean" }
+        }
+      },
+      "HospitalUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "address": { "type": "string", "minLength": 1 },
+          "phone": { "type": "string", "minLength": 1 },
+          "specialties": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "isOpen": { "type": "boolean" }
+        }
+      },
+      "HospitalDeleteConflict": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "sources": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["trips", "workday-summary"] }
+          }
         }
       }
     }

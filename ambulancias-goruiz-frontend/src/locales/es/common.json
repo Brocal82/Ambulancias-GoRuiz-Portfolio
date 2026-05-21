@@ -809,6 +809,9 @@
         "hospitals": {
             "adminPage": {
                 "title": "Gestión de hospitales",
+                "loading": "Cargando hospitales…",
+                "empty": "Ningún hospital coincide con los filtros.",
+                "emptyAll": "Aún no hay hospitales registrados.",
                 "filters": {
                     "byName": "Filtrar por nombre:",
                     "byNamePlaceholder": "Escribe el nombre del hospital",
@@ -849,6 +852,9 @@
             },
             "workerPage": {
                 "title": "🏥 Hospitales disponibles",
+                "loading": "Cargando hospitales…",
+                "empty": "Ningún hospital coincide con los filtros.",
+                "emptyAll": "No hay hospitales disponibles.",
                 "filters": {
                     "byName": "Filtrar por nombre:",
                     "byNamePlaceholder": "Buscar hospital por nombre...",
@@ -1860,6 +1866,7 @@
             "updateError": "❌ Error al actualizar hospital.",
             "deleteSuccess": "🗑️ Hospital eliminado.",
             "deleteError": "❌ Error al eliminar hospital.",
+            "deleteInUse": "❌ No se puede eliminar: el hospital está referenciado en viajes o jornadas.",
             "stateUpdated": "✅ Estado del hospital actualizado",
             "stateUpdateError": "❌ Error al actualizar estado"
         },

@@ -9,6 +9,9 @@ type Mode = "admin" | "worker";
 interface Props {
     hospitals: Hospital[];
     mode: Mode;
+    isLoading?: boolean;
+    emptyMessage?: string;
+    pendingHospitalId?: string | null;
 
     onOpenDetails: (hospital: Hospital) => void;
 
@@ -21,6 +24,9 @@ interface Props {
 const HospitalsList = ({
     hospitals,
     mode,
+    isLoading = false,
+    emptyMessage,
+    pendingHospitalId = null,
     onOpenDetails,
     onToggleOpen,
     onEdit,
@@ -28,10 +34,44 @@ const HospitalsList = ({
 }: Props) => {
     const { t } = useTranslation();
 
+    if (isLoading) {
+        return (
+            <p
+                className="py-8 text-center text-sm text-slate-500"
+                role="status"
+                aria-live="polite"
+            >
+                {t(
+                    mode === "admin"
+                        ? "pages.hospitals.adminPage.loading"
+                        : "pages.hospitals.workerPage.loading",
+                )}
+            </p>
+        );
+    }
+
+    if (hospitals.length === 0) {
+        return (
+            <p
+                className="py-8 text-center text-sm text-slate-500"
+                role="status"
+                aria-live="polite"
+            >
+                {emptyMessage ??
+                    t(
+                        mode === "admin"
+                            ? "pages.hospitals.adminPage.emptyAll"
+                            : "pages.hospitals.workerPage.emptyAll",
+                    )}
+            </p>
+        );
+    }
+
     return (
         <ul className="space-y-2">
             {hospitals.map((hospital) => {
                 const isOpen = getHospitalIsOpen(hospital);
+                const isPending = pendingHospitalId === hospital._id;
 
                 const cardStyle =
                     isOpen === true
@@ -43,13 +83,15 @@ const HospitalsList = ({
                 return (
                     <li
                         key={hospital._id}
-                        className={`relative flex items-center justify-between gap-3 rounded-xl p-3 shadow-sm transition-colors ${cardStyle}`}
+                        className={`relative flex items-center justify-between gap-3 rounded-xl p-3 shadow-sm transition-colors ${cardStyle} ${isPending ? "opacity-60" : ""}`}
+                        aria-busy={isPending}
                     >
                         {/* BOTÓN OVERLAY: hace toda la fila clickable sin anidar botones */}
                         <button
                             type="button"
                             onClick={() => onOpenDetails(hospital)}
-                            className="absolute inset-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={isPending}
+                            className="absolute inset-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
                             aria-label={
                                 t("pages.hospitals.adminPage.actions.viewDetails") as string
                             }
@@ -67,11 +109,12 @@ const HospitalsList = ({
                                     {/* Punto verde (abierto) */}
                                     <button
                                         type="button"
+                                        disabled={isPending}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             isOpen === false && onToggleOpen && onToggleOpen(hospital);
                                         }}
-                                        className={`h-4 w-4 rounded-full border-2 ${isOpen === true
+                                        className={`h-4 w-4 rounded-full border-2 disabled:cursor-not-allowed ${isOpen === true
                                             ? "bg-green-500 border-green-600"
                                             : "bg-white border-slate-300"
                                             }`}
@@ -82,11 +125,12 @@ const HospitalsList = ({
                                     {/* Punto rojo (cerrado) */}
                                     <button
                                         type="button"
+                                        disabled={isPending}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             isOpen === true && onToggleOpen && onToggleOpen(hospital);
                                         }}
-                                        className={`h-4 w-4 rounded-full border-2 ${isOpen === false
+                                        className={`h-4 w-4 rounded-full border-2 disabled:cursor-not-allowed ${isOpen === false
                                             ? "bg-rose-500 border-rose-600"
                                             : "bg-white border-slate-300"
                                             }`}
@@ -120,6 +164,7 @@ const HospitalsList = ({
                         {mode === "admin" && (
                             <div className="relative z-10 flex shrink-0 items-center gap-2">
                                 <EditIconButton
+                                    disabled={isPending}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onEdit && onEdit(hospital);
@@ -129,6 +174,7 @@ const HospitalsList = ({
                                 />
 
                                 <DeleteIconButton
+                                    disabled={isPending}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onDelete && onDelete(hospital._id);
@@ -143,9 +189,6 @@ const HospitalsList = ({
             })}
         </ul>
     );
-
-
-
 };
 
 export default HospitalsList;

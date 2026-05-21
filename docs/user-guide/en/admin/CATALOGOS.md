@@ -10,7 +10,8 @@ This master data feeds shifts, workdays, and mechanics.
 **Module:** `hospitals`
 
 - Add, edit, and remove destination hospitals.
-- Workers select them when recording **trips** on the workday.
+- Updates support **PUT** (full body) and **PATCH** (partial fields).
+- Deletion is blocked (HTTP 409) if the hospital name or address appears as a trip destination in workday records.
 
 ---
 

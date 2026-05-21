@@ -809,6 +809,9 @@
         "hospitals": {
             "adminPage": {
                 "title": "Hospital management",
+                "loading": "Loading hospitals…",
+                "empty": "No hospitals match your filters.",
+                "emptyAll": "No hospitals registered yet.",
                 "filters": {
                     "byName": "Filter by name:",
                     "byNamePlaceholder": "Type the hospital name",
@@ -849,6 +852,9 @@
             },
             "workerPage": {
                 "title": "🏥 Available hospitals",
+                "loading": "Loading hospitals…",
+                "empty": "No hospitals match your filters.",
+                "emptyAll": "No hospitals available.",
                 "filters": {
                     "byName": "Filter by name:",
                     "byNamePlaceholder": "Search hospital by name...",
@@ -1860,6 +1866,7 @@
             "updateError": "❌ Failed to update hospital.",
             "deleteSuccess": "🗑️ Hospital deleted.",
             "deleteError": "❌ Failed to delete hospital.",
+            "deleteInUse": "❌ Cannot delete: hospital is referenced in trips or workdays.",
             "stateUpdated": "✅ Hospital status updated",
             "stateUpdateError": "❌ Error updating status"
         },

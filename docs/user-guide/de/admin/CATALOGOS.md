@@ -10,7 +10,8 @@ Diese Stammdaten speisen Dienste, Arbeitstage und Mechanik.
 **Modul:** `hospitals`
 
 - Krankenhäuser anlegen, bearbeiten und entfernen.
-- Mitarbeiter wählen sie bei der Erfassung von **Fahrten** im Arbeitstag.
+- Aktualisierungen unterstützen **PUT** (vollständiger Body) und **PATCH** (Teilfelder).
+- Das Löschen wird blockiert (HTTP 409), wenn Name oder Adresse des Krankenhauses als Ziel in Fahrten oder Tagesabschlüssen vorkommt.
 
 ---
 

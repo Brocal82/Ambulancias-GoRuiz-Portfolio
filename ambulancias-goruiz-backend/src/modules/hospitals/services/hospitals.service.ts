@@ -1,6 +1,13 @@
 import mongoose from "mongoose";
 import { Hospital } from "../models/hospital.model";
-import type { UpdateHospitalInput } from "../schemas/hospital.schema";
+import type {
+  CreateHospitalInput,
+  UpdateHospitalInput,
+} from "../schemas/hospital.schema";
+import {
+  findHospitalReferences,
+  HospitalInUseError,
+} from "../utils/hospitalReferences";
 
 function toCompanyObjectId(companyId?: string | null): mongoose.Types.ObjectId | null {
   const raw = typeof companyId === "string" ? companyId.trim() : "";
@@ -19,13 +26,7 @@ export const getAllHospitals = async (companyId?: string | null) => {
 };
 
 export const createHospital = async (
-  data: {
-    name: string;
-    address: string;
-    phone: string;
-    specialties: string[];
-    isOpen?: boolean;
-  },
+  data: CreateHospitalInput,
   companyId: string,
 ) => {
   const oid = toCompanyObjectId(companyId);
@@ -70,5 +71,19 @@ export const deleteHospital = async (id: string, companyId?: string | null) => {
   if (!oid) {
     return null;
   }
+
+  const existing = await Hospital.findOne({ _id: id, companyId: oid }).lean();
+  if (!existing) {
+    return null;
+  }
+
+  const refs = await findHospitalReferences(
+    { name: existing.name, address: existing.address },
+    String(oid),
+  );
+  if (refs.inUse) {
+    throw new HospitalInUseError(refs.sources);
+  }
+
   return await Hospital.findOneAndDelete({ _id: id, companyId: oid });
 };

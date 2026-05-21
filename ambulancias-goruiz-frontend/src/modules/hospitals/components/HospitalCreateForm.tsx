@@ -14,6 +14,7 @@ import {
 
 interface Props {
     specialties: string[];
+    isSubmitting?: boolean;
     onSubmit: (data: {
         name: string;
         address: string;
@@ -23,7 +24,7 @@ interface Props {
     onClose: () => void;
 }
 
-const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
+const HospitalCreateForm = ({ specialties, isSubmitting = false, onSubmit, onClose }: Props) => {
     const { t } = useTranslation();
 
     const [form, setForm] = useState({
@@ -55,6 +56,7 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
 
         const tail = parseSpecialtiesInput(form.specialties);
         const finalSpecialties = mergeUniqueSpecialties(newSpecs, tail);
@@ -98,6 +100,7 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
                 <button
                     type="button"
                     onClick={onClose}
+                    disabled={isSubmitting}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label={t("common.close", "Cerrar")}
                     title={t("common.close", "Cerrar") as string}
@@ -263,14 +266,11 @@ const HospitalCreateForm = ({ specialties, onSubmit, onClose }: Props) => {
 
                 {/* Footer minimal */}
                 <div className="mt-4 flex items-center justify-end gap-2">
-                    <CancelButton onClick={onClose}>
+                    <CancelButton onClick={onClose} disabled={isSubmitting}>
                         {t("common.cancel", "Cancelar")}
                     </CancelButton>
 
-
-
-                    {/* Usa tu botón reutilizable */}
-                    <SaveIconButton type="submit">
+                    <SaveIconButton type="submit" disabled={isSubmitting}>
                         {t("pages.hospitals.adminPage.actions.saveHospital")}
                     </SaveIconButton>
                 </div>

@@ -1,7 +1,1 @@
-export type HospitalCreateInput = {
-  name: unknown;
-  address: unknown;
-  phone: unknown;
-  specialties: unknown;
-  isOpen?: unknown;
-};
+export type { CreateHospitalInput as HospitalCreateInput } from "../schemas/hospital.schema";

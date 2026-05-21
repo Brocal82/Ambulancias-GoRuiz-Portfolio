@@ -73,12 +73,17 @@ Listado: `workerCount` = rol `worker`; `adminCount` = rol `admin`; `userCount` =
 
 ## Hospitales — `/api/hospitals`
 
+Requiere módulo `hospitals` habilitado (`requireModule`). `GET` accesible para admin y worker; mutaciones solo admin.
+
 | Método | Ruta | Auth | Rol | Descripción |
 |--------|------|------|-----|-------------|
 | `GET` | `/hospitals` | Sí | admin/worker | Listar hospitales empresa |
-| `POST` | `/hospitals` | Sí | admin | Crear hospital |
-| `PUT` | `/hospitals/:id` | Sí | admin | Actualizar hospital |
-| `DELETE` | `/hospitals/:id` | Sí | admin | Eliminar hospital |
+| `POST` | `/hospitals` | Sí | admin | Crear hospital (body validado con Zod) |
+| `PUT` | `/hospitals/:id` | Sí | admin | Actualizar hospital (campos completos opcionales) |
+| `PATCH` | `/hospitals/:id` | Sí | admin | Actualización parcial (mismo schema que PUT) |
+| `DELETE` | `/hospitals/:id` | Sí | admin | Eliminar hospital; **409** si referenciado en trips/workday-summary |
+
+**Delete protection:** no hay FK en diensts; trips y workday-summary guardan destino en `toAddress` (texto). Si coincide con nombre o dirección del hospital, la eliminación devuelve `409` con `{ message, sources }`.
 
 ---
 
