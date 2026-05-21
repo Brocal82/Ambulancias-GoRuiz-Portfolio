@@ -76,6 +76,20 @@ export default function LanguageSwitcher() {
           </div>
         );
       })}
+
+      {/* Bandera turca — visual únicamente, sin traducción aún */}
+      <div className="relative px-2 py-1 opacity-60 cursor-default">
+        <ReactCountryFlag
+          countryCode="TR"
+          svg
+          style={{
+            width: "1.25rem",
+            height: "1.25rem",
+            borderRadius: "2px",
+          }}
+          aria-hidden="true"
+        />
+      </div>
     </fieldset>
   );
 }
