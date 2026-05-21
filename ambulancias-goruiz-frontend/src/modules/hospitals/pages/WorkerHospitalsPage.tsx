@@ -16,6 +16,7 @@ const WorkerHospitalsPage = () => {
   const { t } = useTranslation();
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(
     null,
   );
@@ -25,12 +26,15 @@ const WorkerHospitalsPage = () => {
 
   const loadHospitals = useCallback(async () => {
     if (!token) return;
+    setIsLoading(true);
     try {
       const data = await fetchHospitals(token);
       setHospitals(data);
     } catch (error) {
       console.error("Error al cargar hospitales:", error);
       toastT.apiError(error, ["toasts.hospitals.loadError"]);
+    } finally {
+      setIsLoading(false);
     }
   }, [token]);
 
@@ -58,6 +62,13 @@ const WorkerHospitalsPage = () => {
     [hospitals, selectedSpecialty, searchName],
   );
 
+  const hasActiveFilters =
+    selectedSpecialty !== "all" || searchName.trim().length > 0;
+
+  const emptyMessage = hasActiveFilters
+    ? (t("pages.hospitals.workerPage.empty") as string)
+    : undefined;
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-center mb-6">
@@ -76,6 +87,8 @@ const WorkerHospitalsPage = () => {
       <hospitalsComponents.HospitalsList
         hospitals={sortedHospitals}
         mode="worker"
+        isLoading={isLoading}
+        emptyMessage={emptyMessage}
         onOpenDetails={(hospital) => setSelectedHospital(hospital)}
       />
 

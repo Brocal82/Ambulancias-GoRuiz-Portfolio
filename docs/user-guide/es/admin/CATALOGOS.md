@@ -10,7 +10,8 @@ Estos datos maestros alimentan turnos, jornadas y mecánica.
 **Módulo:** `hospitals`
 
 - Alta, edición y baja de hospitales destino.
-- Los trabajadores los eligen al registrar **viajes** en jornada.
+- Las actualizaciones admiten **PUT** (cuerpo completo) y **PATCH** (campos parciales).
+- La baja se bloquea (HTTP 409) si el nombre o la dirección del hospital aparecen como destino en viajes o jornadas.
 
 ---
 

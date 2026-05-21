@@ -10,7 +10,10 @@ import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { requireModule } from "../../middlewares/requireModule";
 import { validateBody } from "../../middlewares/validateBody";
 import { validateObjectId } from "../../middlewares/validateObjectId";
-import { updateHospitalSchema } from "./schemas/hospital.schema";
+import {
+  createHospitalSchema,
+  updateHospitalSchema,
+} from "./schemas/hospital.schema";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
 const router = express.Router();
@@ -19,7 +22,14 @@ const router = express.Router();
 router.get("/", authenticateToken, requireModule(MODULE_KEYS.HOSPITALS), getAllHospitals);
 
 // Solo admin
-router.post("/", authenticateToken, requireModule(MODULE_KEYS.HOSPITALS), authorizeRole("admin"), createHospital);
+router.post(
+  "/",
+  authenticateToken,
+  requireModule(MODULE_KEYS.HOSPITALS),
+  authorizeRole("admin"),
+  validateBody(createHospitalSchema),
+  createHospital,
+);
 router.put(
   "/:id",
   authenticateToken,

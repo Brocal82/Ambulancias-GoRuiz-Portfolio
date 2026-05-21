@@ -1,6 +1,9 @@
-import type { HospitalCreateInput } from "../types/hospital.types";
+import {
+  createHospitalSchema,
+  type CreateHospitalInput,
+} from "../schemas/hospital.schema";
 
-export type { HospitalCreateInput } from "../types/hospital.types";
+export type { CreateHospitalInput, UpdateHospitalInput } from "../schemas/hospital.schema";
 
 export const normalizeSpecialties = (specialties: unknown): string[] => {
   if (!Array.isArray(specialties)) return [];
@@ -8,42 +11,18 @@ export const normalizeSpecialties = (specialties: unknown): string[] => {
 };
 
 export const validateCreateHospital = (
-  body: HospitalCreateInput,
+  body: unknown,
 ):
-  | {
-      ok: true;
-      value: {
-        name: string;
-        address: string;
-        phone: string;
-        specialties: string[];
-        isOpen?: boolean;
-      };
-    }
+  | { ok: true; value: CreateHospitalInput }
   | { ok: false; message: string } => {
-  const { name, address, phone, specialties, isOpen } =
-    (body ?? {}) as HospitalCreateInput;
-
-  if (
-    typeof name !== "string" ||
-    typeof address !== "string" ||
-    typeof phone !== "string" ||
-    !Array.isArray(specialties)
-  ) {
-    return { ok: false, message: "Faltan campos obligatorios o tipo inválido" };
+  const parsed = createHospitalSchema.safeParse(body ?? {});
+  if (!parsed.success) {
+    const first = parsed.error.errors[0];
+    const message =
+      first?.path?.length
+        ? `${first.path.join(".")}: ${first.message}`
+        : first?.message ?? "Datos inválidos";
+    return { ok: false, message };
   }
-
-  const cleanedSpecialties = normalizeSpecialties(specialties);
-
-  return {
-    ok: true,
-    value: {
-      name,
-      address,
-      phone,
-      specialties: cleanedSpecialties,
-      isOpen: typeof isOpen === "boolean" ? isOpen : undefined,
-    },
-  };
+  return { ok: true, value: parsed.data };
 };
-
