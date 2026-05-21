@@ -743,6 +743,7 @@
             },
             "pschein": {
                 "uploadPscheinButton": "P-Schein hochladen",
+                "uploadHint": "Eine PDF-Datei (max. 10 MB)",
                 "expired": "❌ Der P-Schein ist abgelaufen",
                 "warning": "⚠️ Der P-Schein läuft in weniger als 6 Monaten ab",
                 "pendingAdminRegistration": "Ablaufdatum",

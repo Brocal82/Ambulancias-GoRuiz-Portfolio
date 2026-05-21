@@ -743,6 +743,7 @@
             },
             "pschein": {
                 "uploadPscheinButton": "Upload P-Schein",
+                "uploadHint": "One PDF file (max. 10 MB)",
                 "expired": "❌ The P-Schein is expired",
                 "warning": "⚠️ The P-Schein expires in less than 6 months",
                 "pendingAdminRegistration": "Expiry date",

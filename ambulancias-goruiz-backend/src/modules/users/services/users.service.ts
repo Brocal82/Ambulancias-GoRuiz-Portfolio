@@ -17,6 +17,10 @@ import type {
   UpdateUserDTO,
 } from "../utils/users.payloads";
 import { validateEmail } from "../utils/users.validators";
+import {
+  validatePscheinExpiryYmd,
+  validatePscheinStoredDocumentPath,
+} from "../utils/pschein.validation";
 import { isSameCompany } from "../../../utils/requireCompany";
 
 const ZONE = "Europe/Berlin";
@@ -212,6 +216,88 @@ export async function updateUserService(
   }
 
   const updates: Record<string, any> = { ...data };
+
+  if (data.pscheinExpiry !== undefined) {
+    const raw =
+      typeof data.pscheinExpiry === "string" ? data.pscheinExpiry.trim() : "";
+    if (!raw) {
+      updates.pscheinExpiry = "";
+    } else {
+      const expiryCheck = validatePscheinExpiryYmd(raw);
+      if (!expiryCheck.ok) {
+        throw new Error(expiryCheck.message);
+      }
+      updates.pscheinExpiry = expiryCheck.normalized;
+    }
+  }
+
+  if (data.pscheinDocument !== undefined) {
+    if (data.pscheinDocument === null) {
+      updates.pscheinDocument = null;
+      updates.pscheinConfirmedAt = null;
+      updates.pscheinConfirmedBy = null;
+      updates.pscheinExpiry = "";
+    } else if (typeof data.pscheinDocument === "string") {
+      const docCheck = validatePscheinStoredDocumentPath(data.pscheinDocument);
+      if (!docCheck.ok) {
+        throw new Error(docCheck.message);
+      }
+      updates.pscheinDocument = docCheck.normalized;
+    }
+  }
+
+  const hasConfirmationUpdate =
+    data.pscheinConfirmedAt !== undefined ||
+    data.pscheinConfirmedBy !== undefined;
+
+  if (hasConfirmationUpdate) {
+    const existing = await User.findById(userId)
+      .select("pscheinDocument pscheinExpiry")
+      .lean();
+    if (!existing) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    const confirming =
+      data.pscheinConfirmedAt != null ||
+      (typeof data.pscheinConfirmedBy === "string" &&
+        data.pscheinConfirmedBy.trim() !== "");
+
+    if (confirming) {
+      const docPath =
+        updates.pscheinDocument !== undefined
+          ? updates.pscheinDocument
+          : (existing as any).pscheinDocument;
+      if (typeof docPath !== "string" || !docPath.trim()) {
+        throw new Error(
+          "No se puede confirmar el P-Schein sin un documento adjunto",
+        );
+      }
+
+      const expiryRaw =
+        updates.pscheinExpiry !== undefined
+          ? String(updates.pscheinExpiry ?? "").trim()
+          : String((existing as any).pscheinExpiry ?? "").trim();
+      if (!expiryRaw) {
+        throw new Error(
+          "No se puede confirmar el P-Schein sin una fecha de caducidad válida",
+        );
+      }
+      const expiryCheck = validatePscheinExpiryYmd(expiryRaw);
+      if (!expiryCheck.ok) {
+        throw new Error(expiryCheck.message);
+      }
+      if (updates.pscheinExpiry === undefined) {
+        updates.pscheinExpiry = expiryCheck.normalized;
+      }
+    } else if (
+      data.pscheinConfirmedAt === null &&
+      data.pscheinConfirmedBy === null
+    ) {
+      updates.pscheinConfirmedAt = null;
+      updates.pscheinConfirmedBy = null;
+    }
+  }
 
   if (
     updates.pscheinConfirmedBy != null &&

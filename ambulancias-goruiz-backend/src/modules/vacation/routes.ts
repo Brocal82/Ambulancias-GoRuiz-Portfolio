@@ -59,6 +59,7 @@ router.post(
   "/",
   authenticateToken,
   requireModule(MODULE_KEYS.VACATION),
+  authorizeRole("worker"),
   validateBody(createVacationRequestSchema),
   createVacationRequest,
 );
@@ -67,6 +68,7 @@ router.patch(
   "/:id/cancel",
   authenticateToken,
   requireModule(MODULE_KEYS.VACATION),
+  authorizeRole("worker"),
   validateObjectId("id"),
   cancelMyVacationRequest,
 );
@@ -101,6 +103,7 @@ router.post(
   "/:id/respond",
   authenticateToken,
   requireModule(MODULE_KEYS.VACATION),
+  authorizeRole("worker"),
   validateObjectId("id"),
   respondToAlternativeDate,
 );
@@ -109,6 +112,7 @@ router.get(
   "/user",
   authenticateToken,
   requireModule(MODULE_KEYS.VACATION),
+  authorizeRole("worker"),
   getUserVacationRequests,
 );
 
@@ -116,6 +120,7 @@ router.delete(
   "/:id/mine",
   authenticateToken,
   requireModule(MODULE_KEYS.VACATION),
+  authorizeRole("worker"),
   validateObjectId("id"),
   removeMyDeniedVacationRequest,
 );
