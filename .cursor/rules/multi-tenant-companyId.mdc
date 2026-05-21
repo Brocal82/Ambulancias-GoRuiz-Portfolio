@@ -1,0 +1,27 @@
+---
+description: Multi-tenant companyId enforcement for backend writes and queries
+globs: ambulancias-goruiz-backend/src/**/*.ts
+alwaysApply: false
+---
+
+# Multi-Tenant (companyId)
+
+All admin operations MUST be scoped by `companyId`.
+
+- **New records:** `record.companyId === admin.companyId`
+- **Legacy records (`companyId = null`):** fallback via user → `isSameCompany(user.companyId, admin.companyId)`
+- **Resources (ambulances, hospitals):** `isResourceFromCompany(resourceCompanyId, companyId)`
+
+Enforcement belongs in the **service layer**, not only routes/controllers.
+
+```typescript
+// ✅ Service entry
+const companyResult = requireCompanyForAdmin(req);
+if (!isSameCompany(targetUser.companyId, companyResult.companyId)) {
+  throw new Error("Forbidden");
+}
+```
+
+❌ Never remove legacy fallback, trust only `userId`, or skip company checks.
+
+Policy: `ambulancias-goruiz-backend/docs/POLICY-multi-tenant-legacy-companyId.md`

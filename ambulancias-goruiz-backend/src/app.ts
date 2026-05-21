@@ -30,6 +30,7 @@ import excelPlanningRoutes from "./modules/excel-planning/routes";
 import supportAccessRoutes from "./modules/support-access/routes";
 import adminDashboardRoutes from "./modules/admin-dashboard/routes";
 import { notificationsRoutes } from "./modules/notifications";
+import { openApiRoutes } from "./openapi/docs.routes";
 
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
@@ -116,6 +117,9 @@ app.get("/health", (_req, res) => {
     db: dbState,
   });
 });
+
+// OpenAPI docs (minimal: health + login). Mounted before global /api rate limit.
+app.use("/api", openApiRoutes);
 
 // Global rate limit — applied before all /api routes.
 // Specific stricter limits (login, invitations, etc.) are applied below per route.

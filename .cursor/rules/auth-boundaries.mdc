@@ -1,0 +1,22 @@
+---
+description: Auth middleware order and role boundaries (superadmin vs admin)
+globs: "{ambulancias-goruiz-backend/src/middlewares/**,ambulancias-goruiz-backend/src/modules/**/routes.ts}"
+alwaysApply: false
+---
+
+# Auth Boundaries
+
+Middleware order:
+
+```
+authenticateToken → requireModule(key) → authorizeRole(rol) → [requireStepUp] → controller
+```
+
+**Critical:** `authorizeRole("admin")` uses strict equality. `"superadmin" !== "admin"`.
+Superadmin routes are dedicated; do not loosen admin guards without explicit requirement.
+
+- JWT: `Authorization: Bearer <token>`
+- Step-up: `x-step-up-token` / `x-step-up-code` for critical superadmin ops
+- Rate limits apply on login, uploads, invitations — do not bypass
+
+Reference: `docs/AUTH.md`

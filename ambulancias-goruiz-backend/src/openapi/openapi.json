@@ -1,0 +1,167 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Ambulancias GoRuiz API",
+    "description": "Minimal OpenAPI surface — health and login only. Full reference: docs/API-REFERENCE.md",
+    "version": "1.0.0"
+  },
+  "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Returns server and MongoDB connection status. No authentication.",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "Service healthy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthOk" }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthDown" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/login": {
+      "post": {
+        "summary": "Login",
+        "description": "Authenticates with email and password. Rate limited (5 attempts / 15 min per IP). Superadmin may require MFA when SUPERADMIN_MFA_REQUIRED is enabled.",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginSuccess" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or MFA required/invalid",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthErrorResponse" }
+              }
+            }
+          },
+          "403": {
+            "description": "Account or company inactive, MFA not enrolled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "MFA configuration invalid",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthOk": {
+        "type": "object",
+        "required": ["status", "uptime", "db"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok"] },
+          "uptime": { "type": "number", "description": "Process uptime in seconds" },
+          "db": { "type": "string", "enum": ["ok"] }
+        }
+      },
+      "HealthDown": {
+        "type": "object",
+        "required": ["status", "uptime", "db"],
+        "properties": {
+          "status": { "type": "string", "enum": ["down"] },
+          "uptime": { "type": "number" },
+          "db": { "type": "string", "enum": ["down"] }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 1 },
+          "mfaCode": { "type": "string", "description": "Optional 6-digit TOTP for superadmin MFA" }
+        }
+      },
+      "LoginSuccess": {
+        "type": "object",
+        "required": ["message", "token", "user"],
+        "properties": {
+          "message": { "type": "string", "example": "Login exitoso" },
+          "token": { "type": "string", "description": "JWT Bearer token" },
+          "user": { "$ref": "#/components/schemas/LoginUser" }
+        }
+      },
+      "LoginUser": {
+        "type": "object",
+        "required": ["_id", "name", "lastName", "email", "role"],
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string" },
+          "companyId": { "type": "string" },
+          "ambulanceRole": { "type": "string" },
+          "employeeNumber": { "type": "string" },
+          "profileImage": { "type": "string" }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } }
+      },
+      "AuthErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "code": { "type": "string", "description": "e.g. MFA_REQUIRED, MFA_INVALID, COMPANY_INACTIVE" }
+        }
+      }
+    }
+  }
+}

@@ -154,5 +154,12 @@ WITHOUT breaking the system.
 
 This file provides global rules. File-specific operational guidance lives in `.cursor/rules/`:
 
+- `safe-changes.mdc` — minimal change policy (always apply)
+- `multi-tenant-companyId.mdc` — tenant isolation
+- `secure-files.mdc` — file security layers
+- `auth-boundaries.mdc` — middleware and role boundaries
+- `frontend-api-pattern.mdc` — frontend HTTP conventions
 - `backend-modules.mdc` — backend module structure and utility imports (activates on `src/modules/**`)
 - `frontend-modules.mdc` — frontend API patterns, locale sync, shared components (activates on `src/**`)
+
+AI tooling index: `docs/tooling/README.md`

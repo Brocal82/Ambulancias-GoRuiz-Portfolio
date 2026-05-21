@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+# Pre-commit hook: typecheck + secret scan. No auto-fix, no auto-commit.
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "[pre-commit] Running typecheck..."
+npm run typecheck
+
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-commit] Running gitleaks..."
+  npm run secrets:scan
+else
+  echo "[pre-commit] WARN: gitleaks not installed — skipping secret scan."
+  echo "           Install: https://github.com/gitleaks/gitleaks#installing"
+  echo "           Or run manually: npm run secrets:scan"
+fi
+
+echo "[pre-commit] OK"

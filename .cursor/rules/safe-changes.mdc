@@ -1,0 +1,17 @@
+---
+description: Minimal safe change policy for Ambulancias GoRuiz
+alwaysApply: true
+---
+
+# Safe Changes
+
+- Prefer surgical diffs; one module at a time.
+- Do not refactor productive logic unless explicitly requested.
+- Do not change API contracts, UI behavior, or database data.
+- Do not run migrations, seeds, cleanup, backfill, or delete scripts unless explicitly requested.
+- Preserve backward compatibility and legacy `companyId = null` fallbacks.
+- Controllers: parse → service → JSON. Business logic stays in services.
+- Reuse existing utilities (`isSameCompany`, `requireCompanyForAdmin`, `openSecureFile`).
+- When unsure, document in `docs/tooling/NEXT-STEPS.md` instead of guessing.
+
+Full policy: `CLAUDE.md`.
