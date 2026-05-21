@@ -118,7 +118,9 @@ app.get("/health", (_req, res) => {
   });
 });
 
-// OpenAPI docs (minimal: health + login). Mounted before global /api rate limit.
+// Public read-only OpenAPI docs (no auth): GET /api/docs, /api/docs.json, /api/docs/init.js.
+// Bypasses global rateLimitGlobal; uses dedicated limits in openapi/docs.routes.ts.
+// See docs/tooling/README.md#openapi-public-endpoints.
 app.use("/api", openApiRoutes);
 
 // Global rate limit — applied before all /api routes.

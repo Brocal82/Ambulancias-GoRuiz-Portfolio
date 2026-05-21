@@ -1,7 +1,5 @@
 # Tooling — Next Steps (optional)
 
-Items intentionally deferred to keep this rollout minimal and reversible.
-
 ## OpenAPI
 
 - [ ] Expand spec incrementally from `docs/API-REFERENCE.md` (one module at a time)
@@ -11,7 +9,6 @@ Items intentionally deferred to keep this rollout minimal and reversible.
 ## Gitleaks
 
 - [ ] Add `gitleaks` as required check on `main` branch protection (alongside `security-isolation`)
-- [ ] Tune allowlists if false positives appear
 
 ## Hooks
 

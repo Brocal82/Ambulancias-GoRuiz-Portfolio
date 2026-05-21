@@ -3,19 +3,19 @@ title = "Ambulancias GoRuiz — Gitleaks"
 [extend]
 useDefault = true
 
-[allowlist]
-description = "Non-secret placeholders and example env files"
+[[allowlists]]
+description = "Example env files without real secrets"
 paths = [
   '''\.env\.example$''',
   '''\.env\.example\..*$''',
-  '''docs/tooling/.*''',
-  '''ambulancias-goruiz-backend/src/openapi/openapi\.json$''',
 ]
 
-[allowlist.regexes]
-description = "Example JWT and placeholder tokens in docs"
+[[allowlists]]
+description = "Clearly fake placeholders in markdown docs only (not JWT-shaped tokens)"
+paths = [
+  '''docs/.*\.md$''',
+]
 regexes = [
-  '''eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*''',
   '''<jwt-token>''',
-  '''your-.*-here''',
+  '''your-[a-z-]+-here''',
 ]

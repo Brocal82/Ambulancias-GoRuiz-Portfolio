@@ -24,3 +24,13 @@ npm run precommit:check    # typecheck + secrets
 ```
 
 See also: [GITLEAKS.md](./GITLEAKS.md), [GIT-HOOKS.md](./GIT-HOOKS.md), [NEXT-STEPS.md](./NEXT-STEPS.md).
+
+## OpenAPI public endpoints
+
+| Endpoint | Auth | Rate limit | Notes |
+|----------|------|------------|-------|
+| `GET /api/docs.json` | No | 60 req/min (docs limiter) | OpenAPI spec JSON |
+| `GET /api/docs` | No | 60 req/min | Swagger UI HTML; CSP scoped locally for unpkg |
+| `GET /api/docs/init.js` | No | 60 req/min | Swagger init script (no inline script in HTML) |
+
+These endpoints are **public read-only** documentation. They intentionally bypass the global `/api` rate limiter (mounted before it in `app.ts`) and use a dedicated docs limiter instead. Productive routes (`/api/users/login`, etc.) are unchanged.
