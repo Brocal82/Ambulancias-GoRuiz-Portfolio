@@ -5,6 +5,7 @@ import {
   requireCompanyForAdmin,
   requireCompanyForAmbulanceMutations,
 } from "../../../utils/requireCompany";
+import { AmbulanceInUseError } from "../utils/ambulanceReferences";
 
 function resolveCompanyId(req: Request): { companyId: string | null; ok: boolean; statusCode?: number; message?: string } {
   if (req.userRole === "admin") {
@@ -137,6 +138,10 @@ export const deleteAmbulance = async (
     }
     res.status(200).json({ message: "Ambulance deleted" });
   } catch (error) {
+    if (error instanceof AmbulanceInUseError) {
+      res.status(409).json({ message: error.message, sources: error.sources });
+      return;
+    }
     next(error);
   }
 };

@@ -10,6 +10,7 @@ import {
   resolveAssignmentByAssignmentId,
   assertUserCanCloseAssignment,
 } from "../../../utils/assignmentClosure";
+import { getAmbulanceById } from "../../ambulances/services/ambulances.service";
 
 export { WorkdaySummaryError } from "../../../utils/assignmentClosure";
 
@@ -132,6 +133,11 @@ export async function createWorkdaySummary(
     scopeCo,
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
+
+  const ambulance = await getAmbulanceById(ambulanceId as string, scopeCo);
+  if (!ambulance) {
+    throw new WorkdaySummaryError("La ambulancia no pertenece a tu empresa", 403);
+  }
 
   const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
   const tripIdStrs = tripIds.map((id: unknown) => String(id));
@@ -270,6 +276,11 @@ export async function submitPartialClosure(
     scopeCo,
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
+
+  const ambulance = await getAmbulanceById(ambulanceId as string, scopeCo);
+  if (!ambulance) {
+    throw new WorkdaySummaryError("La ambulancia no pertenece a tu empresa", 403);
+  }
 
   const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
   const tripIdStrs = tripIds.map((id: unknown) => String(id));

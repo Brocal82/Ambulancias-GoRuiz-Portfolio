@@ -7,6 +7,7 @@ import {
   resolveAssignmentByAssignmentId,
   assertUserCanCloseAssignment,
 } from "../../../utils/assignmentClosure";
+import { getAmbulanceById } from "../../ambulances/services/ambulances.service";
 
 const uploadsDir = path.join(__dirname, "../../../../uploads");
 
@@ -125,6 +126,13 @@ export async function reportIssue(
   }
   if (!resolvedAmbulanceId && assignment.ambulanceId) {
     resolvedAmbulanceId = assignment.ambulanceId.toString();
+  }
+
+  if (resolvedAmbulanceId) {
+    const ambulance = await getAmbulanceById(resolvedAmbulanceId, scopeCo);
+    if (!ambulance) {
+      throw new WorkdaySummaryError("La ambulancia no pertenece a tu empresa", 403);
+    }
   }
 
   let resolvedAmbulanceNumber = String(ambulanceNumber ?? "").trim();

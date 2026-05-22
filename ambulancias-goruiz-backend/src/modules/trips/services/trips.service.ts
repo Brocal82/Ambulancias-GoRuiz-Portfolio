@@ -4,6 +4,7 @@ import type { IDienst, IDienstAssignment } from "../../diensts";
 import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import { Trip } from "../models/trip.model";
 import { TripSetup } from "../models/trip-setup.model";
+import { getAmbulanceById } from "../../ambulances/services/ambulances.service";
 
 /** Error con código HTTP para mapeo en controller */
 export class TripError extends Error {
@@ -289,6 +290,12 @@ export async function upsertTripSetup(
     userRole,
     userCompanyId,
   );
+  if (payload.ambulanceId) {
+    const ambulance = await getAmbulanceById(payload.ambulanceId, scopeCo);
+    if (!ambulance) {
+      throw new TripError("La ambulancia no pertenece a tu empresa", 403);
+    }
+  }
   const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
   const update: Record<string, unknown> = {
     assignmentId: assignmentObjectId,

@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import { Ambulance } from "../models/ambulance.model";
 import type { IAmbulance } from "../models/ambulance.model";
+import {
+  findAmbulanceReferences,
+  AmbulanceInUseError,
+} from "../utils/ambulanceReferences";
 
 function isMongoDuplicateKeyError(error: unknown): boolean {
   return (
@@ -110,5 +114,16 @@ export const deleteAmbulance = async (
   if (!oid) {
     return null;
   }
+
+  const existing = await Ambulance.findOne({ _id: id, companyId: oid }).lean();
+  if (!existing) {
+    return null;
+  }
+
+  const refs = await findAmbulanceReferences(id, String(oid));
+  if (refs.inUse) {
+    throw new AmbulanceInUseError(refs.sources);
+  }
+
   return await Ambulance.findOneAndDelete({ _id: id, companyId: oid });
 };

@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, and hospitals. Full reference: docs/API-REFERENCE.md",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, and ambulances. Full reference: docs/API-REFERENCE.md",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -190,6 +190,91 @@
           "409": { "description": "In use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HospitalDeleteConflict" } } } }
         }
       }
+    },
+    "/api/ambulances": {
+      "get": {
+        "summary": "List ambulances",
+        "description": "Requires module `ambulances`. Admin, worker, and other roles with company context.",
+        "tags": ["Ambulances"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Ambulance list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Ambulance" }
+                }
+              }
+            }
+          },
+          "403": { "description": "Module disabled or missing company", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "post": {
+        "summary": "Create ambulance",
+        "description": "Admin or jefe_mecanicos. Body validated with Zod (strict). `companyId` is derived from JWT, not from body.",
+        "tags": ["Ambulances"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AmbulanceCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ambulance" } } } },
+          "400": { "description": "Validation or duplicate key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/ambulances/{id}": {
+      "get": {
+        "summary": "Get ambulance by id",
+        "tags": ["Ambulances"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Ambulance", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ambulance" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update ambulance",
+        "description": "Admin or jefe_mecanicos.",
+        "tags": ["Ambulances"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AmbulanceUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ambulance" } } } },
+          "400": { "description": "Validation or duplicate key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Delete ambulance",
+        "description": "Admin or jefe_mecanicos. Returns 409 with `sources` if referenced in dienst assignments, teams, workday-summary, mechanics work orders/issues, or trip-setup.",
+        "tags": ["Ambulances"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "In use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AmbulanceDeleteConflict" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -303,6 +388,58 @@
           "sources": {
             "type": "array",
             "items": { "type": "string", "enum": ["trips", "workday-summary"] }
+          }
+        }
+      },
+      "Ambulance": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "brand": { "type": "string" },
+          "modelName": { "type": "string" },
+          "licensePlate": { "type": "string" },
+          "ambulanceNumber": { "type": "string" },
+          "companyId": { "type": "string" }
+        }
+      },
+      "AmbulanceCreateRequest": {
+        "type": "object",
+        "required": ["brand", "modelName", "licensePlate", "ambulanceNumber"],
+        "additionalProperties": false,
+        "properties": {
+          "brand": { "type": "string", "minLength": 1 },
+          "modelName": { "type": "string", "minLength": 1 },
+          "licensePlate": { "type": "string", "minLength": 1 },
+          "ambulanceNumber": { "type": "string", "minLength": 1 }
+        }
+      },
+      "AmbulanceUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "brand": { "type": "string", "minLength": 1 },
+          "modelName": { "type": "string", "minLength": 1 },
+          "licensePlate": { "type": "string", "minLength": 1 },
+          "ambulanceNumber": { "type": "string", "minLength": 1 }
+        }
+      },
+      "AmbulanceDeleteConflict": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "dienst-assignments",
+                "teams",
+                "workday-summary",
+                "mechanics-work-orders",
+                "mechanics-issues",
+                "trip-setup"
+              ]
+            }
           }
         }
       }

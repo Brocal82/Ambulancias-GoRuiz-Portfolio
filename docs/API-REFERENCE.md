@@ -91,10 +91,15 @@ Requiere módulo `hospitals` habilitado (`requireModule`). `GET` accesible para 
 
 | Método | Ruta | Auth | Rol | Descripción |
 |--------|------|------|-----|-------------|
-| `GET` | `/ambulances` | Sí | admin/worker | Listar ambulancias |
-| `POST` | `/ambulances` | Sí | admin | Crear ambulancia |
-| `PUT` | `/ambulances/:id` | Sí | admin | Actualizar ambulancia |
-| `DELETE` | `/ambulances/:id` | Sí | admin | Eliminar ambulancia |
+| `GET` | `/ambulances` | Sí | admin/worker (+ otros con empresa) | Listar ambulancias de la empresa |
+| `GET` | `/ambulances/:id` | Sí | admin/worker (+ otros con empresa) | Detalle ambulancia |
+| `POST` | `/ambulances` | Sí | admin, jefe_mecanicos | Crear ambulancia (body Zod strict; `companyId` del JWT) |
+| `PUT` | `/ambulances/:id` | Sí | admin, jefe_mecanicos | Actualizar ambulancia |
+| `DELETE` | `/ambulances/:id` | Sí | admin, jefe_mecanicos | Eliminar ambulancia |
+
+**Delete protection:** si la ambulancia está referenciada en asignaciones de dienst, equipos, workday-summary, órdenes de trabajo de mecánica, averías o trip-setup, la eliminación devuelve `409` con `{ message, sources }` (p. ej. `dienst-assignments`, `teams`, `workday-summary`, `mechanics-work-orders`, `mechanics-issues`, `trip-setup`).
+
+**Tenant en payloads con `ambulanceId`:** workday-summary, trip-setup y reporte de averías validan que la ambulancia pertenezca a la empresa del token antes de persistir.
 
 ---
 
