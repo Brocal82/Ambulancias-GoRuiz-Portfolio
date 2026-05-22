@@ -9,8 +9,8 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:run": "vitest run"
+    "test": "vitest --config vitest.config.ts --pool=forks",
+    "test:run": "vitest run --config vitest.config.ts --pool=forks"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.7",

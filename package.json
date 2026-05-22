@@ -10,6 +10,7 @@
     "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
     "typecheck:backend": "npm --prefix ambulancias-goruiz-backend run typecheck",
     "typecheck:frontend": "npm --prefix ambulancias-goruiz-frontend run typecheck",
+    "test:frontend": "npm --prefix ambulancias-goruiz-frontend run test:run",
     "secrets:scan": "node scripts/gitleaks-detect.mjs",
     "precommit:check": "npm run typecheck && npm run secrets:scan",
     "dev:backend": "npm --prefix ambulancias-goruiz-backend run dev",
