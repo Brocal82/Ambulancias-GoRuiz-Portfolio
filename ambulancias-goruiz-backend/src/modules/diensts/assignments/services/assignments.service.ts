@@ -1362,22 +1362,16 @@ export async function assignTeamToWeek(
     );
   }
 
-  const team = await Team.findById(teamId)
+  const team = await Team.findOne({
+    _id: teamId,
+    companyId: new mongoose.Types.ObjectId(callerCo),
+  })
     .populate("driver", "pscheinExpiry pscheinConfirmedAt ambulanceRole companyId")
     .populate("medic", "pscheinExpiry pscheinConfirmedAt ambulanceRole companyId")
     .lean();
 
   if (!team) {
     throw new DienstAssignmentError(404, "team_not_found", "Team no encontrado");
-  }
-
-  const drv = (team as any).driver;
-  const med = (team as any).medic;
-  const drvCo = drv?.companyId ? String(drv.companyId) : null;
-  const medCo = med?.companyId ? String(med.companyId) : null;
-  const companyStr = String(callerCo);
-  if (drvCo !== companyStr || medCo !== companyStr) {
-    throw new DienstAssignmentError(403, "forbidden", "El equipo no pertenece a tu empresa");
   }
 
   const teamDriverId = toIdString((team as any).driver);

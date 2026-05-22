@@ -8,6 +8,11 @@ import { Ambulance } from "../../ambulances";
 import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 import { companyHasEnabledModule } from "../../../utils/companyEnabledModules";
 import { entitiesBelongToSameCompany } from "../../../utils/requireCompany";
+import { isAmbulanceRoleValidForSlot } from "../../diensts/utils/dienstValidation";
+import {
+  findTeamReferences,
+  TeamInUseError,
+} from "../utils/teamReferences";
 
 /** Error con código HTTP para mapeo en controller */
 export class TeamError extends Error {
@@ -62,6 +67,34 @@ function assertCompanyIdForTeamOps(companyId?: string | null): asserts companyId
     throw new TeamError(
       "No tienes permiso. Se requiere pertenecer a una empresa.",
       403,
+    );
+  }
+}
+
+function assertTeamMemberAmbulanceRoles(
+  driverUser: { ambulanceRole?: string },
+  medicUser: { ambulanceRole?: string },
+): void {
+  const driverRole = driverUser.ambulanceRole as
+    | "driver"
+    | "medic"
+    | "both"
+    | undefined;
+  const medicRole = medicUser.ambulanceRole as
+    | "driver"
+    | "medic"
+    | "both"
+    | undefined;
+  if (!isAmbulanceRoleValidForSlot(driverRole, "driver")) {
+    throw new TeamError(
+      "El conductor debe tener rol de ambulancia driver o both",
+      400,
+    );
+  }
+  if (!isAmbulanceRoleValidForSlot(medicRole, "medic")) {
+    throw new TeamError(
+      "El sanitario debe tener rol de ambulancia medic o both",
+      400,
     );
   }
 }
@@ -126,12 +159,16 @@ export async function createTeam(
   }
 
   const [driverUser, medicUser] = await Promise.all([
-    User.findById(driver).select("companyId").lean(),
-    User.findById(medic).select("companyId").lean(),
+    User.findById(driver).select("companyId ambulanceRole").lean(),
+    User.findById(medic).select("companyId ambulanceRole").lean(),
   ]);
   if (!driverUser || !medicUser) {
     throw new TeamError("Usuario driver o medic inexistente", 400);
   }
+  assertTeamMemberAmbulanceRoles(
+    driverUser as { ambulanceRole?: string },
+    medicUser as { ambulanceRole?: string },
+  );
   const drvCo = (driverUser as { companyId?: unknown }).companyId;
   const medCo = (medicUser as { companyId?: unknown }).companyId;
   if (!entitiesBelongToSameCompany(drvCo, medCo)) {
@@ -157,13 +194,14 @@ export async function createTeam(
     if (!isObjectId(ambulanceId)) {
       throw new TeamError("ambulanceId debe ser un ObjectId válido", 400);
     }
-    const amb = await Ambulance.findById(ambulanceId).select("companyId").lean();
+    const amb = await Ambulance.findOne({
+      _id: ambulanceId,
+      companyId: companyOid,
+    })
+      .select("companyId")
+      .lean();
     if (!amb) {
       throw new TeamError("Ambulancia no encontrada", 400);
-    }
-    const ambCo = (amb as { companyId?: unknown }).companyId;
-    if (!entitiesBelongToSameCompany(ambCo, drvCo)) {
-      throw new TeamError("La ambulancia no pertenece a la misma empresa que el equipo", 403);
     }
     normalizedAmbulanceId = ambulanceId;
   }
@@ -348,12 +386,16 @@ export async function updateTeam(
   }
 
   const [driverUser, medicUser] = await Promise.all([
-    User.findById(driver).select("companyId").lean(),
-    User.findById(medic).select("companyId").lean(),
+    User.findById(driver).select("companyId ambulanceRole").lean(),
+    User.findById(medic).select("companyId ambulanceRole").lean(),
   ]);
   if (!driverUser || !medicUser) {
     throw new TeamError("Usuario driver o medic inexistente", 400);
   }
+  assertTeamMemberAmbulanceRoles(
+    driverUser as { ambulanceRole?: string },
+    medicUser as { ambulanceRole?: string },
+  );
   const drvCo = (driverUser as { companyId?: unknown }).companyId;
   const medCo = (medicUser as { companyId?: unknown }).companyId;
   if (!entitiesBelongToSameCompany(drvCo, medCo)) {
@@ -432,12 +474,13 @@ export async function updateTeam(
   } else if (ambulanceId === null || ambulanceId === "") {
     normalizedAmbulance = null;
   } else {
-    const amb = await Ambulance.findById(ambulanceId).select("companyId").lean();
+    const amb = await Ambulance.findOne({
+      _id: ambulanceId,
+      companyId: companyOid,
+    })
+      .select("companyId")
+      .lean();
     if (!amb) throw new TeamError("Ambulancia no encontrada", 400);
-    const ambCo = (amb as { companyId?: unknown }).companyId;
-    if (!entitiesBelongToSameCompany(ambCo, drvCo)) {
-      throw new TeamError("La ambulancia no pertenece a la misma empresa que el equipo", 403);
-    }
     normalizedAmbulance = new mongoose.Types.ObjectId(ambulanceId);
   }
 
@@ -495,6 +538,12 @@ export async function deleteTeam(id: string, companyId?: string | null) {
   }
   assertCompanyIdForTeamOps(companyId);
   const companyOid = new mongoose.Types.ObjectId(companyId);
+
+  const refs = await findTeamReferences(id, companyId);
+  if (refs.inUse) {
+    throw new TeamInUseError(refs.sources);
+  }
+
   const deleted = await Team.findOneAndDelete({ _id: id, companyId: companyOid });
   if (!deleted) {
     throw new TeamError("Team no encontrado", 404);

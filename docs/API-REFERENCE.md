@@ -105,12 +105,24 @@ Requiere módulo `hospitals` habilitado (`requireModule`). `GET` accesible para 
 
 ## Equipos — `/api/teams`
 
+Requiere módulo `teams` (admin). `companyId` se deriva del JWT, no del body.
+
 | Método | Ruta | Auth | Rol | Descripción |
 |--------|------|------|-----|-------------|
-| `GET` | `/teams` | Sí | admin | Listar equipos empresa |
+| `GET` | `/teams` | Sí | admin | Listar equipos de la empresa |
+| `GET` | `/teams/used-for-week?weekStartDate=YYYY-MM-DD` | Sí | admin | IDs de equipos ya usados en asignaciones de esa semana (par driver+medic en diensts) |
 | `POST` | `/teams` | Sí | admin | Crear equipo |
-| `PUT` | `/teams/:id` | Sí | admin | Actualizar equipo |
+| `PATCH` | `/teams/:id` | Sí | admin | Actualizar equipo (body completo: driver, medic, rotationMode, …) |
 | `DELETE` | `/teams/:id` | Sí | admin | Eliminar equipo |
+
+**Validación de miembros:** el conductor debe tener `ambulanceRole` `driver` o `both`; el sanitario `medic` o `both` (400 si no).
+
+**Delete protection:** si el equipo está referenciado en `Dienst.weekTeamId`, devuelve `409` con `{ message, sources: ["dienst-week-team"] }`.
+
+**Scheduling que depende de `teams`:** con módulo `scheduling` activo, también se exige `teams` en:
+
+- `POST /api/diensts/assign-team-to-week`
+- `POST /api/diensts/generate-week` (rotación de equipos al generar la semana)
 
 ---
 

@@ -5,6 +5,10 @@ import { useTranslation } from "react-i18next";
 import { UsersApi } from "../../users";
 import { getPscheinInfo } from "../../../utils/pscheinUtils";
 import { isDriverEligibleForAssignment } from "../../diensts/utils/driverEligibility";
+import {
+  filterDriverCandidates,
+  filterMedicCandidates,
+} from "../utils/teamPickerUtils";
 
 export type TeamPickerValue = { driver: string; medic: string };
 
@@ -64,13 +68,7 @@ export default function TeamPicker({
     `${u.lastName || ""}${u.lastName ? ", " : ""}${u.name || ""}` || "—";
 
   // === DRIVER OPTIONS ===
-  const rawDriver = useMemo(
-    () =>
-      users.filter(
-        (u) => u.ambulanceRole === "driver" || u.ambulanceRole === "both",
-      ),
-    [users],
-  );
+  const rawDriver = useMemo(() => filterDriverCandidates(users), [users]);
 
   const driverOptions = useMemo(() => {
     const opts = rawDriver.map((u) => {
@@ -116,9 +114,7 @@ export default function TeamPicker({
 
   // === MEDIC OPTIONS ===
   const medicOptions = useMemo(() => {
-    const raw = users.filter(
-      (u) => u.ambulanceRole === "medic" || u.ambulanceRole === "both",
-    );
+    const raw = filterMedicCandidates(users);
     const opts = raw.map((u) => ({
       id: u._id,
       label: baseLabel(u),

@@ -60,6 +60,7 @@ router.post(
   "/generate-week",
   authenticateToken,
   requireModule(MODULE_KEYS.SCHEDULING),
+  requireModule(MODULE_KEYS.TEAMS),
   authorizeRole("admin"),
   DienstLifecycle.generateDienstTemplatesForWeek,
 );
@@ -124,6 +125,7 @@ router.post(
   "/assign-team-to-week",
   authenticateToken,
   requireModule(MODULE_KEYS.SCHEDULING),
+  requireModule(MODULE_KEYS.TEAMS),
   authorizeRole("admin"),
   DienstAssignments.assignTeamToWeek,
 );

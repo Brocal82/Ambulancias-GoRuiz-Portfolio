@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as teamsService from "../services/teams.service";
 import { TeamError } from "../services/teams.service";
+import { TeamInUseError } from "../utils/teamReferences";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 
 export const listTeams = async (req: Request, res: Response): Promise<void> => {
@@ -106,6 +107,13 @@ export const deleteTeam = async (req: Request, res: Response): Promise<void> => 
     const result = await teamsService.deleteTeam(id, companyResult.companyId);
     res.status(200).json(result);
   } catch (err: unknown) {
+    if (err instanceof TeamInUseError) {
+      res.status(err.statusCode).json({
+        message: err.message,
+        sources: err.sources,
+      });
+      return;
+    }
     if (err instanceof TeamError) {
       res.status(err.statusCode).json({ message: err.message });
       return;
