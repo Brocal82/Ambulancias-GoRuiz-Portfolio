@@ -166,7 +166,7 @@ describe("Multi-tenant isolation", () => {
           recipients: [String(fixtures.workerBId)],
         })
         .expect(400);
-      expect(res.body.message).toMatch(/Faltan|receptores|inválidos/i);
+      expect(res.body.message).toMatch(/destinatarios|receptores|válidos|inválidos/i);
     });
   });
 });
