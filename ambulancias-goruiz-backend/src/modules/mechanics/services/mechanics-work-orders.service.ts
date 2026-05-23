@@ -28,9 +28,16 @@ async function assertUserAssignableToCompany(
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new WorkdaySummaryError("Usuario asignado inválido", 400);
   }
-  const user = await User.findById(userId).select("companyId").lean();
+  const user = await User.findById(userId).select("companyId role").lean();
   if (!user) {
     throw new WorkdaySummaryError("Usuario asignado no encontrado", 404);
+  }
+  const role = String((user as { role?: unknown }).role ?? "");
+  if (role !== "mecanico" && role !== "jefe_mecanicos") {
+    throw new WorkdaySummaryError(
+      "El usuario asignado debe ser mecánico o jefe de mecánicos",
+      400,
+    );
   }
   const uCo = (user as { companyId?: unknown }).companyId;
   if (!isSameCompany(uCo, adminCompanyId)) {
@@ -88,7 +95,10 @@ export async function listMechanicsWorkOrders(
   const co = requireCompanyOid(companyId);
   const filter: Record<string, unknown> = { companyId: co };
   const amb = typeof ambulanceId === "string" ? ambulanceId.trim() : "";
-  if (amb && mongoose.Types.ObjectId.isValid(amb)) {
+  if (amb !== "") {
+    if (!mongoose.Types.ObjectId.isValid(amb)) {
+      throw new WorkdaySummaryError("ambulanceId inválido", 400);
+    }
     filter.ambulanceId = new mongoose.Types.ObjectId(amb);
   }
   return MechanicsWorkOrder.find(filter).sort({ createdAt: -1 }).exec();

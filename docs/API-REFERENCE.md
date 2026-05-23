@@ -215,12 +215,24 @@ Ver `docs/domains/DOMAIN-documents.md`.
 
 ## Mecánica — `/api/mechanics`
 
+Requires module `mechanics`. Issue photos: `multipart/form-data` field `photos` (max 5, JPG/PNG/WEBP). Images are public under `/uploads/` (images-only policy); PDFs/medical docs use authenticated `/api/files/`.
+
 | Método | Ruta | Rol | Descripción |
 |--------|------|-----|-------------|
-| `POST` | `/mechanics/report-issue` | worker | Reportar avería (rate limit: 10/min) |
-| `GET` | `/mechanics/issues` | admin | Averías empresa |
-| `POST` | `/mechanics/work-orders` | admin | Crear orden de trabajo |
-| `PATCH` | `/mechanics/work-orders/:id` | admin | Actualizar orden |
+| `POST` | `/mechanics/report-issue` | worker/admin on assignment | Reportar avería (JSON o multipart; rate limit: 10/min) |
+| `GET` | `/mechanics/issues/mine` | worker | Mis averías (filtro opcional `date`) |
+| `GET` | `/mechanics/issues` | admin, jefe_mecanicos, mecanico | Averías empresa |
+| `GET` | `/mechanics/issues/count` | admin, jefe_mecanicos, mecanico | Contador (`status`: open \| seen \| closed) |
+| `PATCH` | `/mechanics/issues/:id/seen` | admin, jefe_mecanicos, mecanico | Marcar vista (tenant-scoped) |
+| `DELETE` | `/mechanics/issues/:id` | admin, jefe_mecanicos | Eliminar avería (tenant-scoped) |
+| `GET` | `/mechanics/work-orders` | admin, jefe_mecanicos, mecanico | Listar órdenes (`ambulanceId` opcional) |
+| `POST` | `/mechanics/work-orders` | admin, jefe_mecanicos | Crear orden (`assignedTo`: mecanico/jefe_mecanicos) |
+| `GET` | `/mechanics/work-orders/:id` | admin, jefe_mecanicos, mecanico | Detalle orden |
+| `PATCH` | `/mechanics/work-orders/:id` | admin, jefe_mecanicos, mecanico | Actualizar / ciclo de vida |
+
+**Work order lifecycle:** `pending` → `in_progress` → `completed` | `cancelled`. Mecánico puede iniciar/completar; admin/jefe puede planificar y cancelar.
+
+**companyId policy:** nuevas averías requieren `dienst.companyId`; legacy sin `companyId` no admite mutaciones admin (403). Ver `ambulancias-goruiz-backend/docs/POLICY-mechanics-companyId.md`.
 
 ---
 

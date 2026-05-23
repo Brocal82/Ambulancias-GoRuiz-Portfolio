@@ -17,13 +17,17 @@ import {
 } from "./controllers/mechanics-work-orders.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
-import { validateBody } from "../../middlewares/validateBody";
+import { validateBody, validateBodyWithUploadCleanup } from "../../middlewares/validateBody";
+import { validateQuery } from "../../middlewares/validateQuery";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { requireModule } from "../../middlewares/requireModule";
 import { uploadImagesOnly } from "../../middlewares/uploadMiddleware";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
-import { reportIssueSchema } from "./schemas/mechanics.schema";
-import { createMechanicsWorkOrderSchema } from "./schemas/mechanics-work-order.schema";
+import { reportIssueSchema, issuesCountQuerySchema } from "./schemas/mechanics.schema";
+import {
+  createMechanicsWorkOrderSchema,
+  listWorkOrdersQuerySchema,
+} from "./schemas/mechanics-work-order.schema";
 
 const router = express.Router();
 
@@ -41,6 +45,7 @@ router.get(
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
   authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
+  validateQuery(listWorkOrdersQuerySchema),
   listWorkOrders,
 );
 
@@ -67,6 +72,7 @@ router.get(
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
   authorizeRole(["admin", "jefe_mecanicos", "mecanico"]),
+  validateQuery(issuesCountQuerySchema),
   getIssuesCount,
 );
 
@@ -84,7 +90,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.MECHANICS),
   uploadImagesOnly.array("photos", 5),
-  validateBody(reportIssueSchema),
+  validateBodyWithUploadCleanup(reportIssueSchema),
   reportIssue,
 );
 

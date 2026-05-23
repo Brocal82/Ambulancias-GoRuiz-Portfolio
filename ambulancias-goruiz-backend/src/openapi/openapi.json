@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, and appointments. Full reference: docs/API-REFERENCE.md",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, appointments, and mechanics. Full reference: docs/API-REFERENCE.md",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -659,6 +659,175 @@
           "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
         }
       }
+    },
+    "/api/mechanics/report-issue": {
+      "post": {
+        "summary": "Report mechanic issue (worker/admin on assignment)",
+        "description": "Requires module `mechanics`. Rate limit 10/min per IP. Accepts JSON or `multipart/form-data` with field `photos` (max 5, JPG/PNG/WEBP only). Images are stored under public `/uploads/` (images-only policy). Uploaded files are deleted if validation fails after Multer. New issues always get `companyId` from the dienst assignment (server-derived).",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MechanicsReportIssueRequest" }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/MechanicsReportIssueRequest" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "photos": {
+                        "type": "array",
+                        "items": { "type": "string", "format": "binary" },
+                        "maxItems": 5,
+                        "description": "Optional issue photos (images only)"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Issue created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MechanicsIssue" } } } },
+          "400": { "description": "Validation or upload error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden, module disabled, or ambulance/tenant mismatch", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Assignment not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/mechanics/issues": {
+      "get": {
+        "summary": "List company mechanic issues",
+        "description": "Admin, jefe_mecanicos, or mecanico. Scoped by JWT companyId. Legacy issues without companyId are excluded.",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Issue list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MechanicsIssue" } } } } },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/mechanics/issues/count": {
+      "get": {
+        "summary": "Count mechanic issues by status",
+        "description": "Query `status`: `open` (default), `seen`, or `closed`. Scoped by companyId.",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/MechanicsIssueCountStatus" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Count", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MechanicsIssueCountResponse" } } } },
+          "400": { "description": "Invalid status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/mechanics/issues/{id}/seen": {
+      "patch": {
+        "summary": "Mark issue as seen",
+        "description": "Tenant-scoped update `{ _id, companyId }`. Legacy issues without companyId return 403.",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Updated issue", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MechanicsIssue" } } } },
+          "403": { "description": "Cross-tenant or legacy issue", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/mechanics/issues/{id}": {
+      "delete": {
+        "summary": "Delete mechanic issue",
+        "description": "Admin or jefe_mecanicos. Tenant-scoped delete; removes attachment images from disk.",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Cross-tenant or legacy issue", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/mechanics/work-orders": {
+      "get": {
+        "summary": "List work orders",
+        "description": "Optional filter `ambulanceId` (24-char ObjectId). Invalid ambulanceId returns 400.",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "ambulanceId", "in": "query", "required": false, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }
+        ],
+        "responses": {
+          "200": { "description": "Work order list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MechanicsWorkOrder" } } } } },
+          "400": { "description": "Invalid ambulanceId", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "post": {
+        "summary": "Create work order",
+        "description": "Admin or jefe_mecanicos. `assignedTo` must be `mecanico` or `jefe_mecanicos` in the same company. Lifecycle: pending → in_progress → completed | cancelled.",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MechanicsWorkOrderCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MechanicsWorkOrder" } } } },
+          "400": { "description": "Validation or invalid assignee role", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Cross-company ambulance or assignee", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Ambulance or assignee not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/mechanics/work-orders/{id}": {
+      "get": {
+        "summary": "Get work order by id",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Work order", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MechanicsWorkOrder" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "patch": {
+        "summary": "Update work order",
+        "description": "Admin/jefe_mecanicos: full patch. Mecanico: status in_progress or completed with completionNotes.",
+        "tags": ["Mechanics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MechanicsWorkOrderPatch" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MechanicsWorkOrder" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -959,6 +1128,102 @@
         "required": ["count"],
         "properties": {
           "count": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "MechanicsIssueCountStatus": {
+        "type": "string",
+        "enum": ["open", "seen", "closed"],
+        "default": "open"
+      },
+      "MechanicsIssueCountResponse": {
+        "type": "object",
+        "required": ["count"],
+        "properties": {
+          "count": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "MechanicsReportIssueRequest": {
+        "type": "object",
+        "required": ["assignmentId", "dienstNumber", "date", "timestamp", "issueText"],
+        "properties": {
+          "assignmentId": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" },
+          "dienstNumber": { "type": "integer" },
+          "date": { "type": "string", "format": "date-time" },
+          "startTime": { "type": "string" },
+          "endTime": { "type": "string" },
+          "team": { "type": "string" },
+          "ambulanceNumber": { "type": "string" },
+          "ambulanceId": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" },
+          "finalKm": { "type": "number" },
+          "timestamp": { "type": "string" },
+          "issueText": { "type": "string", "minLength": 1 }
+        }
+      },
+      "MechanicsIssueAttachment": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "Public image URL under /uploads/ (JPG/PNG/WEBP only)" },
+          "originalName": { "type": "string" },
+          "mimetype": { "type": "string" },
+          "size": { "type": "integer" },
+          "storedFilename": { "type": "string" }
+        }
+      },
+      "MechanicsIssue": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "dienstNumber": { "type": "integer" },
+          "date": { "type": "string" },
+          "ambulanceNumber": { "type": "string" },
+          "ambulanceId": { "type": "string" },
+          "issueText": { "type": "string" },
+          "companyId": { "type": "string", "description": "Required on new records; legacy may be null" },
+          "isSeen": { "type": "boolean" },
+          "seenAt": { "type": "string", "format": "date-time", "nullable": true },
+          "attachments": { "type": "array", "items": { "$ref": "#/components/schemas/MechanicsIssueAttachment" } }
+        }
+      },
+      "MechanicsWorkOrderStatus": {
+        "type": "string",
+        "enum": ["pending", "in_progress", "completed", "cancelled"]
+      },
+      "MechanicsWorkOrderCreate": {
+        "type": "object",
+        "required": ["ambulanceId", "title"],
+        "properties": {
+          "ambulanceId": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 4000 },
+          "plannedFor": { "type": "string", "format": "date-time" },
+          "assignedTo": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$", "description": "User id; role must be mecanico or jefe_mecanicos" }
+        }
+      },
+      "MechanicsWorkOrderPatch": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "plannedFor": { "type": "string", "format": "date-time", "nullable": true },
+          "assignedTo": { "type": "string", "nullable": true },
+          "status": { "$ref": "#/components/schemas/MechanicsWorkOrderStatus" },
+          "completionNotes": { "type": "string", "nullable": true }
+        }
+      },
+      "MechanicsWorkOrder": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "companyId": { "type": "string" },
+          "ambulanceId": { "type": "string" },
+          "ambulanceNumber": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/MechanicsWorkOrderStatus" },
+          "plannedFor": { "type": "string", "format": "date-time" },
+          "assignedTo": { "type": "string" },
+          "completionNotes": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
         }
       }
     }
