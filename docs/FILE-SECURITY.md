@@ -37,6 +37,17 @@ app.use("/uploads", servePublicImages, express.static(uploadsRoot));
 
 **Uso válido:** fotos de perfil (`profileImage`), imágenes de mecánica
 
+**Mensajes — adjuntos (política explícita):**
+
+| Tipo de adjunto | Almacenamiento en disco | Acceso web |
+|-----------------|----------------------|------------|
+| Imagen (JPG/PNG/WEBP) | `uploads/<filename>` | Público vía `/uploads/*` **solo si** la extensión es imagen; en la UI web/mobile se abre igualmente con `openSecureFile()` → `GET /api/files/:filename` |
+| PDF | `uploads/<filename>` | **Nunca** público; solo `GET /api/files/:filename` (sender o recipient explícito) |
+
+Los metadatos del mensaje guardan `url: /uploads/<filename>`. Aunque una imagen podría resolverse por `/uploads`, el producto trata los adjuntos de mensaje como documentos sensibles: el frontend y la app worker usan `openSecureFile()` / equivalente autenticado, no enlaces directos a `/uploads` para PDFs ni para descargas en producción.
+
+**Limpieza de huérfanos:** si falla la validación del body, no hay destinatarios válidos en la empresa, o falla la creación del mensaje, Multer elimina los ficheros subidos. Al borrar un mensaje (admin, `DELETE /api/messages/:id`), se eliminan del disco los adjuntos que ya no estén referenciados por otro mensaje.
+
 ### Capa 2 — `GET /api/files/:filename` (autenticado + autorizado)
 
 Requiere:

@@ -159,11 +159,13 @@ Complementario al WebSocket, las push notifications permiten notificar al worker
 ### Flujo
 
 ```
-Backend: POST /api/messages (nuevo mensaje)
+Backend: POST /api/messages (nuevo mensaje, solo admin)
     │
-    ├─ notifyUsers([recipientIds], "new_message")   → WS (si app abierta)
+    ├─ notifyUsers([recipientIds], "new_message")   → WS evento único (sin cuerpo de chat)
     └─ sendPushNotification(pushTokens, payload)    → Expo Push API → dispositivo
 ```
+
+**Contrato WS mensajes:** solo se emite el evento `new_message` a los IDs de destinatario tras un envío admin exitoso. No hay eventos de hilo, edición, ni escritura worker→admin. El cliente debe refrescar la bandeja (p. ej. `messages-changed` en web, refetch en app worker).
 
 ### Registro de token
 

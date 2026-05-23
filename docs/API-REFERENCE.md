@@ -238,12 +238,23 @@ Requires module `mechanics`. Issue photos: `multipart/form-data` field `photos` 
 
 ## Mensajes — `/api/messages`
 
+Requiere módulo `messages` habilitado (`requireModule`). `companyId` del mensaje lo fija el servidor desde el admin emisor.
+
 | Método | Ruta | Rol | Descripción |
 |--------|------|-----|-------------|
-| `GET` | `/messages` | admin/worker | Mensajes recibidos |
-| `POST` | `/messages` | admin/worker | Enviar mensaje (rate limit: 30/min) |
-| `PATCH` | `/messages/:id/read` | admin/worker | Marcar como leído |
-| `DELETE` | `/messages/:id` | admin/worker | Eliminar mensaje (soft) |
+| `GET` | `/messages` | worker | Bandeja del trabajador (`unreadOnly` query, default `true`). Filtra por admins de su empresa. |
+| `GET` | `/messages/sent` | admin | Historial de envíos masivos (`toAllWorkers: true`), acotado por `companyId` (+ legacy `companyId: null`). |
+| `GET` | `/messages/user/:id` | admin | Mensajes que el admin envió a un worker; el worker debe ser de la misma empresa (`isSameCompany`). |
+| `POST` | `/messages` | **admin** | Crear mensaje (multipart, hasta 5 adjuntos JPG/PNG/WEBP/PDF). Rate limit: 30/min. Destinatarios se filtran por empresa del admin. |
+| `PATCH` | `/messages/:id/read` | worker | Marcar como leído (solo recipient; comprueba empresa del sender). |
+| `PATCH` | `/messages/:id/remove` | worker | Ocultar para el usuario (`readBy` + `removedBy`; solo recipient). |
+| `DELETE` | `/messages/:id` | admin | Borrado duro del mensaje (solo sender + tenant); elimina adjuntos huérfanos en disco. |
+
+**Adjuntos:** se guardan en `uploads/`; acceso con `GET /api/files/:filename` (sender o recipient). Ver `docs/FILE-SECURITY.md`.
+
+**WebSocket:** tras `POST` exitoso el backend emite `notifyUsers(..., "new_message")` a los destinatarios (sin payload de hilo; no es chat bidireccional).
+
+**Validación (body):** `subject` ≤ 200, `body` ≤ 10 000, `recipients` deduplicados; si `toAllWorkers` es false hace falta al menos un ID en el formulario (el servicio puede ampliar la lista a workers de la empresa).
 
 ---
 

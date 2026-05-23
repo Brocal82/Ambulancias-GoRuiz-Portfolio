@@ -6,6 +6,12 @@ import {
   requireCompanyForAdmin,
   isSameCompany,
 } from "../../../utils/requireCompany";
+import { unlinkMulterFiles } from "../../../utils/unlinkUploadedFiles";
+import {
+  MESSAGE_NO_VALID_RECIPIENTS_ERROR,
+  MESSAGE_VALIDATION_ERROR,
+} from "../services/messages.service";
+import { MESSAGE_MAX_ATTACHMENTS } from "../schemas/message.schema";
 
 function assertUserCanAccessMessage(
   message: { recipients: unknown[] },
@@ -19,29 +25,9 @@ function assertUserCanAccessMessage(
   return isAdmin || isRecipient;
 }
 
-function parseToAllWorkers(raw: unknown): boolean {
-  return (
-    raw === true ||
-    raw === "true" ||
-    raw === 1 ||
-    raw === "1"
-  );
-}
-
-function parseRecipients(raw: unknown): string[] | undefined {
-  if (Array.isArray(raw)) return raw as string[];
-  if (typeof raw === "string") {
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : undefined;
-    } catch {
-      return raw
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-  }
-  return undefined;
+function getUploadedFiles(req: Request): Express.Multer.File[] | undefined {
+  const files = (req as Request & { files?: Express.Multer.File[] }).files;
+  return Array.isArray(files) ? files : undefined;
 }
 
 function buildAttachmentsFromReq(req: Request): {
@@ -87,37 +73,48 @@ export const createMessage = async (
     return;
   }
 
-  try {
-    const { subject, body } = req.body;
-    const senderId = req.userId as string;
-    const rawToAll = (req.body as any).toAllWorkers;
-    const rawRecipients = (req.body as any).recipients;
+  const uploadedFiles = getUploadedFiles(req);
 
-    const toAllWorkers = parseToAllWorkers(rawToAll);
-    const recipients = parseRecipients(rawRecipients) ?? [];
-    const attachments = buildAttachmentsFromReq(req);
+  try {
+    const { subject, body, toAllWorkers, recipients } = req.body as {
+      subject: string;
+      body: string;
+      toAllWorkers?: boolean;
+      recipients?: string[];
+    };
+    const senderId = req.userId as string;
+
+    if ((uploadedFiles?.length ?? 0) > MESSAGE_MAX_ATTACHMENTS) {
+      await unlinkMulterFiles(uploadedFiles);
+      res.status(400).json({
+        message: `Máximo ${MESSAGE_MAX_ATTACHMENTS} adjuntos por mensaje`,
+      });
+      return;
+    }
 
     const newMessage = await messagesService.createMessage({
       subject,
       body,
       senderId,
       senderCompanyId: companyResult.companyId,
-      toAllWorkers,
-      recipients,
-      attachments,
+      toAllWorkers: toAllWorkers ?? false,
+      recipients: recipients ?? [],
+      attachments: buildAttachmentsFromReq(req),
     });
 
     res.status(201).json(newMessage);
   } catch (error: unknown) {
+    await unlinkMulterFiles(uploadedFiles);
     console.error("❌ Error al crear mensaje:", error);
     const msg = error instanceof Error ? error.message : "";
-    const status = msg.includes("Faltan datos") ? 400 : 500;
-    res
-      .status(status)
-      .json({
-        message:
-          status === 400 ? msg : "Error al enviar el mensaje",
-      });
+    const isClientError =
+      msg === MESSAGE_VALIDATION_ERROR ||
+      msg === MESSAGE_NO_VALID_RECIPIENTS_ERROR ||
+      msg.includes("Faltan datos");
+    const status = isClientError ? 400 : 500;
+    res.status(status).json({
+      message: status === 400 ? msg : "Error al enviar el mensaje",
+    });
   }
 };
 
@@ -190,6 +187,7 @@ export const getMessagesForUserAsAdmin = async (
     const messages = await messagesService.getMessagesForUserAsAdmin(
       adminId,
       userId,
+      companyResult.companyId,
     );
     res.status(200).json(messages);
   } catch (error) {

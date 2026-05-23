@@ -12,7 +12,7 @@ import {
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { requireModule } from "../../middlewares/requireModule";
-import { validateBody } from "../../middlewares/validateBody";
+import { validateBodyWithUploadCleanup } from "../../middlewares/validateBody";
 import { upload } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import { messageSchema } from "./schemas/message.schema";
@@ -27,7 +27,7 @@ router.post(
   requireModule(MODULE_KEYS.MESSAGES),
   authorizeRole("admin"),
   upload.array("attachment", 5),
-  validateBody(messageSchema),
+  validateBodyWithUploadCleanup(messageSchema),
   createMessage,
 );
 
@@ -71,7 +71,7 @@ router.delete(
   deleteMessageByAdmin,
 );
 
-const multerErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+const multerErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   if (err instanceof multer.MulterError) {
     res.status(400).json({ message: `Upload error: ${err.message}` });
     return;
@@ -86,7 +86,7 @@ const multerErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
-  res.status(500).json({ message: "Unexpected server error" });
+  next(err);
 };
 
 router.use(multerErrorHandler);

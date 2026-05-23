@@ -1,16 +1,30 @@
 /**
- * Tests de integración para Messages - IDOR fix (mark as read / remove).
+ * Tests de integración para Messages.
  * Requiere .env.test con MONGODB_URI_TEST y JWT_SECRET.
- * Anti-regresión: solo recipient puede modificar su mensaje.
  */
+import fs from "fs";
+import path from "path";
+import bcrypt from "bcrypt";
 import request from "supertest";
 import mongoose from "mongoose";
 import { app } from "../app";
 import { env } from "../config/env";
-import { createTestAdminWithCompany, createTestWorkerInCompany } from "./test-helpers";
+import {
+  createTestAdminWithCompany,
+  createTestWorkerInCompany,
+  getTestUploadsDir,
+  issueTestJwt,
+  uniqueUploadBasename,
+} from "./test-helpers";
 import { Message } from "../modules/messages/models/message.model";
 import User from "../modules/users/models/user.model";
 import Company from "../modules/companies/models/company.model";
+import {
+  MODULE_KEYS,
+  V1_DEFAULT_MODULES,
+} from "../modules/companies/constants/modules.constants";
+import { MESSAGE_SUBJECT_MAX_LENGTH } from "../modules/messages/constants/message-limits";
+import { MESSAGE_NO_VALID_RECIPIENTS_ERROR } from "../modules/messages/services/messages.service";
 
 const API = "/api";
 
@@ -136,5 +150,180 @@ describe("Messages - IDOR fix (read/remove)", () => {
       .expect(404);
     expect(res.body).toHaveProperty("message");
     expect(res.body.message).toBe("Mensaje no encontrado");
+  });
+});
+
+describe("Messages - hardening (send, cleanup, module)", () => {
+  let adminToken: string;
+  let workerToken: string;
+  let adminId: string;
+  let companyId: string;
+  let workerId: string;
+
+  beforeAll(async () => {
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(env.MONGODB_URI);
+    }
+
+    const data = await createTestAdminWithCompany();
+    adminId = data.adminId;
+    companyId = data.companyId;
+    adminToken = data.adminToken;
+
+    const worker = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(companyId),
+      Date.now() + 100,
+    );
+    workerId = String(worker._id);
+
+    const login = await request(app)
+      .post(`${API}/users/login`)
+      .send({ email: worker.email, password: "password123" });
+    expect(login.status).toBe(200);
+    workerToken = login.body.token as string;
+  }, 60_000);
+
+  afterAll(async () => {
+    await User.deleteMany({
+      _id: {
+        $in: [
+          new mongoose.Types.ObjectId(workerId),
+          new mongoose.Types.ObjectId(adminId),
+        ],
+      },
+    });
+    await Company.deleteOne({ _id: companyId });
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+  });
+
+  it("POST /messages como worker → 403 (solo admin)", async () => {
+    const res = await request(app)
+      .post(`${API}/messages`)
+      .set("Authorization", `Bearer ${workerToken}`)
+      .field("subject", "Test")
+      .field("body", "Body")
+      .field("recipients", JSON.stringify([workerId]));
+    expect(res.status).toBe(403);
+  });
+
+  it("rechaza destinatarios de otra empresa (inyección cross-company) → 400", async () => {
+    const other = await createTestAdminWithCompany();
+    const foreignWorker = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(other.companyId),
+      Date.now() + 200,
+    );
+
+    try {
+      const res = await request(app)
+        .post(`${API}/messages`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("subject", "Cross-company")
+        .field("body", "Body")
+        .field("toAllWorkers", "false")
+        .field("recipients", JSON.stringify([String(foreignWorker._id)]));
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(MESSAGE_NO_VALID_RECIPIENTS_ERROR);
+    } finally {
+      await User.deleteMany({
+        _id: {
+          $in: [
+            foreignWorker._id,
+            new mongoose.Types.ObjectId(other.adminId),
+          ],
+        },
+      });
+      await Company.deleteOne({ _id: other.companyId });
+    }
+  });
+
+  it("limpia adjunto si falla validación Zod (subject demasiado largo)", async () => {
+    const uploadsDir = getTestUploadsDir();
+    const before = new Set(fs.readdirSync(uploadsDir));
+
+    const longSubject = "x".repeat(MESSAGE_SUBJECT_MAX_LENGTH + 1);
+    const res = await request(app)
+      .post(`${API}/messages`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .field("subject", longSubject)
+      .field("body", "Body ok")
+      .field("recipients", JSON.stringify([workerId]))
+      .attach("attachment", Buffer.from("%PDF-1.4"), {
+        filename: "fail-validation.pdf",
+        contentType: "application/pdf",
+      });
+
+    expect(res.status).toBe(400);
+
+    const after = fs.readdirSync(uploadsDir);
+    const added = after.filter((f) => !before.has(f));
+    expect(added.length).toBe(0);
+  });
+
+  it("elimina fichero adjunto al borrar mensaje (admin hard delete)", async () => {
+    const basename = uniqueUploadBasename("msg-del");
+    const storedPath = `/uploads/${basename}`;
+    const fullPath = path.join(getTestUploadsDir(), basename);
+    await fs.promises.writeFile(fullPath, "%PDF-1.4", "utf8");
+
+    const msg = await Message.create({
+      subject: "Delete attachments",
+      body: "Body",
+      sender: new mongoose.Types.ObjectId(adminId),
+      recipients: [new mongoose.Types.ObjectId(workerId)],
+      toAllWorkers: false,
+      companyId: new mongoose.Types.ObjectId(companyId),
+      attachments: [
+        {
+          originalName: "del.pdf",
+          filename: basename,
+          mimetype: "application/pdf",
+          size: 8,
+          url: storedPath,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .delete(`${API}/messages/${String(msg._id)}`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(fs.existsSync(fullPath)).toBe(false);
+  });
+
+  it("GET /messages con módulo deshabilitado → 403", async () => {
+    const suffix = Date.now() + 500;
+    const modulesWithoutMessages = V1_DEFAULT_MODULES.filter(
+      (m) => m !== MODULE_KEYS.MESSAGES,
+    );
+    const company = await Company.create({
+      name: `No messages ${suffix}`,
+      emailDomain: "@example.com",
+      isActive: true,
+      enabledModules: modulesWithoutMessages,
+    });
+    const hashed = await bcrypt.hash("password123", 10);
+    const adminUser = await User.create({
+      name: "Admin",
+      lastName: "NoMsg",
+      email: `admin-nomsg-${suffix}@example.com`,
+      password: hashed,
+      role: "admin",
+      companyId: company._id,
+    });
+    const token = issueTestJwt(String(adminUser._id), "admin", String(company._id));
+
+    try {
+      const res = await request(app)
+        .get(`${API}/messages/sent`)
+        .set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(403);
+      expect(String(res.body.message)).toContain(MODULE_KEYS.MESSAGES);
+    } finally {
+      await User.deleteOne({ _id: adminUser._id });
+      await Company.deleteOne({ _id: company._id });
+    }
   });
 });

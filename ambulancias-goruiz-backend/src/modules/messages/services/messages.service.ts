@@ -2,6 +2,23 @@ import mongoose from "mongoose";
 import { Message } from "../models/message.model";
 import User from "../../users/models/user.model";
 import { sendPushNotification, notifyUsers } from "../../notifications";
+import { unlinkUnreferencedMessageAttachments } from "../utils/messageAttachments";
+
+export const MESSAGE_VALIDATION_ERROR = "Faltan datos obligatorios o receptores inválidos";
+export const MESSAGE_NO_VALID_RECIPIENTS_ERROR =
+  "No hay destinatarios válidos en tu empresa";
+
+function normalizeRecipientIds(recipients: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of recipients) {
+    const key = String(id).trim();
+    if (!key || !mongoose.Types.ObjectId.isValid(key) || seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
+}
 
 export type CreateMessageInput = {
   subject: string;
@@ -20,7 +37,7 @@ export type CreateMessageInput = {
 };
 
 export async function createMessage(input: CreateMessageInput) {
-  let finalRecipients = input.recipients ?? [];
+  let finalRecipients = normalizeRecipientIds(input.recipients ?? []);
   const companyIdObj = new mongoose.Types.ObjectId(input.senderCompanyId);
 
   if (input.toAllWorkers) {
@@ -31,8 +48,7 @@ export async function createMessage(input: CreateMessageInput) {
       .select("_id")
       .lean();
     const allWorkerIds = workers.map((w) => w._id.toString());
-    const set = new Set<string>([...finalRecipients, ...allWorkerIds]);
-    finalRecipients = Array.from(set);
+    finalRecipients = normalizeRecipientIds([...finalRecipients, ...allWorkerIds]);
   } else {
     const recipientsFromCompany = await User.find({
       _id: { $in: finalRecipients.map((id) => new mongoose.Types.ObjectId(id)) },
@@ -44,13 +60,12 @@ export async function createMessage(input: CreateMessageInput) {
     finalRecipients = finalRecipients.filter((id) => validIds.has(id));
   }
 
-  if (
-    !input.subject ||
-    !input.body ||
-    !Array.isArray(finalRecipients) ||
-    finalRecipients.length === 0
-  ) {
-    throw new Error("Faltan datos obligatorios o receptores inválidos");
+  if (!input.subject?.trim() || !input.body?.trim()) {
+    throw new Error(MESSAGE_VALIDATION_ERROR);
+  }
+
+  if (!Array.isArray(finalRecipients) || finalRecipients.length === 0) {
+    throw new Error(MESSAGE_NO_VALID_RECIPIENTS_ERROR);
   }
 
   const newMessage = await Message.create({
@@ -134,11 +149,24 @@ export async function getSentMessages(adminId: string, companyId?: string) {
     .select("subject body sentAt attachments");
 }
 
-export async function getMessagesForUserAsAdmin(adminId: string, userId: string) {
-  return await Message.find({
+export async function getMessagesForUserAsAdmin(
+  adminId: string,
+  userId: string,
+  companyId?: string,
+) {
+  const filter: Record<string, unknown> = {
     sender: adminId,
     recipients: new mongoose.Types.ObjectId(userId),
-  })
+  };
+
+  if (companyId && mongoose.Types.ObjectId.isValid(companyId)) {
+    filter.$or = [
+      { companyId: new mongoose.Types.ObjectId(companyId) },
+      { companyId: null },
+    ];
+  }
+
+  return await Message.find(filter)
     .sort({ sentAt: -1 })
     .populate("sender", "name lastName");
 }
@@ -195,7 +223,9 @@ export async function deleteMessageByAdmin(
     }
   }
 
+  const attachments = message.attachments ?? [];
   await Message.deleteOne({ _id: messageId });
+  await unlinkUnreferencedMessageAttachments(attachments);
   return { kind: "deleted" as const };
 }
 

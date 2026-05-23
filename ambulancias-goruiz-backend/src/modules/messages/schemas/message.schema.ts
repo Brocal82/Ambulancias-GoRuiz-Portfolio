@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  MESSAGE_BODY_MAX_LENGTH,
+  MESSAGE_MAX_ATTACHMENTS,
+  MESSAGE_SUBJECT_MAX_LENGTH,
+} from "../constants/message-limits";
 
 /** ObjectId MongoDB: 24 hex chars */
 const objectIdSchema = z
@@ -16,26 +21,57 @@ const toAllWorkersSchema = z.preprocess(
   z.boolean(),
 );
 
+function dedupeRecipientIds(ids: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ids) {
+    const key = id.trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
  * POST /api/messages — Crear mensaje (multipart/form-data)
  * Multer popula req.body con los campos del form antes de validateBody
  * ───────────────────────────────────────────────────────────────────────────── */
 export const messageSchema = z
   .object({
-    subject: z.string().min(1, "subject requerido"),
-    body: z.string().min(1, "body requerido"),
+    subject: z
+      .string()
+      .trim()
+      .min(1, "subject requerido")
+      .max(MESSAGE_SUBJECT_MAX_LENGTH, {
+        message: `subject no puede superar ${MESSAGE_SUBJECT_MAX_LENGTH} caracteres`,
+      }),
+    body: z
+      .string()
+      .trim()
+      .min(1, "body requerido")
+      .max(MESSAGE_BODY_MAX_LENGTH, {
+        message: `body no puede superar ${MESSAGE_BODY_MAX_LENGTH} caracteres`,
+      }),
     toAllWorkers: toAllWorkersSchema.optional().default(false),
     recipients: z
       .preprocess(
         (v) => {
-          if (Array.isArray(v)) return v;
+          if (Array.isArray(v)) return dedupeRecipientIds(v as string[]);
           if (typeof v === "string") {
             try {
               const parsed = JSON.parse(v);
-              return Array.isArray(parsed) ? parsed : v ? [v] : [];
+              return Array.isArray(parsed)
+                ? dedupeRecipientIds(parsed as string[])
+                : v
+                  ? dedupeRecipientIds([v])
+                  : [];
             } catch {
-              const parts = v.split(",").map((s) => s.trim()).filter(Boolean);
-              return parts;
+              const parts = v
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+              return dedupeRecipientIds(parts);
             }
           }
           return [];
@@ -56,3 +92,5 @@ export const messageSchema = z
       path: ["recipients"],
     },
   );
+
+export { MESSAGE_MAX_ATTACHMENTS };
