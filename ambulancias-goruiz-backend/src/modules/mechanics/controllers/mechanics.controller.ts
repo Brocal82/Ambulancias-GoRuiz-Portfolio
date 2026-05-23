@@ -195,7 +195,7 @@ export const getIssuesCount = async (req: Request, res: Response): Promise<void>
       return;
     }
     const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
+      typeof req.query.status === "string" ? req.query.status : "open";
     const result = await svcGetIssuesCount(status, rawCompanyId);
     res.status(200).json(result);
   } catch (error) {

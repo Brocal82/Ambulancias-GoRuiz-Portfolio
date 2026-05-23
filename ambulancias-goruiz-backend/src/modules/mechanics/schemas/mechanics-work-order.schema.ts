@@ -60,3 +60,11 @@ export const patchMechanicsWorkOrderMechanicSchema = z
       }
     }
   });
+
+/** GET /api/mechanics/work-orders — filtro opcional por ambulancia */
+export const listWorkOrdersQuerySchema = z.object({
+  ambulanceId: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? undefined : val),
+    objectIdString.optional(),
+  ),
+});

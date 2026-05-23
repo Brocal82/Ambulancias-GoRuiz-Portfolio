@@ -45,3 +45,13 @@ export const reportIssueSchema = z.object({
   driver: objectIdSchema.optional(),
   medic: objectIdSchema.optional(),
 });
+
+export const MECHANICS_ISSUE_COUNT_STATUS_VALUES = ["open", "seen", "closed"] as const;
+
+/** GET /api/mechanics/issues/count — contador por estado */
+export const issuesCountQuerySchema = z.object({
+  status: z
+    .enum(MECHANICS_ISSUE_COUNT_STATUS_VALUES)
+    .optional()
+    .default("open"),
+});

@@ -6,14 +6,20 @@
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import fs from "fs/promises";
+import bcrypt from "bcrypt";
 import { app } from "../app";
 import { env } from "../config/env";
 import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
   createTestSuperadmin,
+  getTestUploadsDir,
+  issueTestJwt,
 } from "./test-helpers";
 import Company from "../modules/companies/models/company.model";
+import User from "../modules/users/models/user.model";
+import MechanicsIssue from "../modules/mechanics/models/mechanics-issue.model";
 import {
   MODULE_KEYS,
   V1_DEFAULT_MODULES,
@@ -1627,6 +1633,190 @@ describe("API - Rutas críticas", () => {
           },
         });
       }
+    });
+  });
+
+  describe("Mechanics hardening", () => {
+    let otherAdminToken: string;
+    let otherCompanyId: string;
+    let mecanicoId: string;
+    let mecanicoToken: string;
+    let crossCompanyIssueId: string;
+    let crossCompanyAmbulanceId: string;
+
+    beforeAll(async () => {
+      const other = await createTestAdminWithCompany();
+      otherAdminToken =
+        other.adminToken ?? issueTestJwt(other.adminId, "admin", other.companyId);
+      otherCompanyId = other.companyId;
+
+      const mecanico = await User.create({
+        name: "Mec",
+        lastName: "Test",
+        email: `mecanico-${Date.now()}@example.com`,
+        password: await bcrypt.hash("password123", 10),
+        role: "mecanico",
+        companyId: new mongoose.Types.ObjectId(companyId),
+      });
+      mecanicoId = String(mecanico._id);
+      mecanicoToken = issueTestJwt(mecanicoId, "mecanico", companyId);
+
+      const otherAmb = await request(app)
+        .post(`${API}/ambulances`)
+        .set("Authorization", `Bearer ${otherAdminToken}`)
+        .send({
+          brand: "OtherCo",
+          modelName: "X",
+          licensePlate: "OTH-" + Date.now(),
+          ambulanceNumber: "OTH-" + Date.now(),
+        })
+        .expect(201);
+      crossCompanyAmbulanceId = otherAmb.body._id ?? otherAmb.body.id;
+
+      const foreignIssue = await MechanicsIssue.create({
+        dienstNumber: 9,
+        date: "2030-04-01",
+        ambulanceNumber: "F1",
+        timestamp: new Date().toISOString(),
+        issueText: "foreign company issue",
+        companyId: new mongoose.Types.ObjectId(otherCompanyId),
+      });
+      crossCompanyIssueId = foreignIssue._id.toString();
+    });
+
+    it("GET /mechanics/issues/count con status inválido devuelve 400", async () => {
+      const res = await request(app)
+        .get(`${API}/mechanics/issues/count`)
+        .query({ status: "invalid-status" })
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(400);
+      expect(res.body.message).toMatch(/status/i);
+    });
+
+    it("GET /mechanics/work-orders con ambulanceId inválido devuelve 400", async () => {
+      const res = await request(app)
+        .get(`${API}/mechanics/work-orders`)
+        .query({ ambulanceId: "not-an-object-id" })
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(400);
+      expect(res.body.message).toMatch(/ambulanceId/i);
+    });
+
+    it("POST /mechanics/report-issue multipart inválido elimina fichero subido", async () => {
+      const uploadsDir = getTestUploadsDir();
+      const before = new Set(await fs.readdir(uploadsDir).catch(() => []));
+      const png = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64",
+      );
+
+      await request(app)
+        .post(`${API}/mechanics/report-issue`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .field("assignmentId", new mongoose.Types.ObjectId().toString())
+        .field("dienstNumber", "1")
+        .field("date", "2030-05-01")
+        .field("timestamp", new Date().toISOString())
+        .field("issueText", "")
+        .attach("photos", png, "mechanics-test.png")
+        .expect(400);
+
+      const after = new Set(await fs.readdir(uploadsDir).catch(() => []));
+      expect(after.size).toBe(before.size);
+    });
+
+    it("POST /mechanics/work-orders rechaza ambulanceId de otra empresa (404)", async () => {
+      const res = await request(app)
+        .post(`${API}/mechanics/work-orders`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          ambulanceId: crossCompanyAmbulanceId,
+          title: "Cross company ambulance",
+        })
+        .expect(404);
+      expect(res.body.message).toMatch(/ambulancia/i);
+    });
+
+    it("POST /mechanics/work-orders rechaza assignedTo mecanico de otra empresa (403)", async () => {
+      const otherMec = await User.create({
+        name: "Other",
+        lastName: "Mec",
+        email: `other-mec-${Date.now()}@example.com`,
+        password: await bcrypt.hash("password123", 10),
+        role: "mecanico",
+        companyId: new mongoose.Types.ObjectId(otherCompanyId),
+      });
+
+      const res = await request(app)
+        .post(`${API}/mechanics/work-orders`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          ambulanceId: sharedAmbulanceId,
+          title: "Cross company assignee",
+          assignedTo: String(otherMec._id),
+        })
+        .expect(403);
+      expect(res.body.message).toMatch(/empresa/i);
+    });
+
+    it("POST /mechanics/work-orders rechaza assignedTo con rol worker (400)", async () => {
+      const res = await request(app)
+        .post(`${API}/mechanics/work-orders`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          ambulanceId: sharedAmbulanceId,
+          title: "Invalid role assignee",
+          assignedTo: workerId,
+        })
+        .expect(400);
+      expect(res.body.message).toMatch(/mec[aá]nico|jefe/i);
+    });
+
+    it("POST /mechanics/work-orders acepta assignedTo mecanico de la empresa (201)", async () => {
+      const res = await request(app)
+        .post(`${API}/mechanics/work-orders`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          ambulanceId: sharedAmbulanceId,
+          title: "Valid mechanic assignee",
+          assignedTo: mecanicoId,
+        })
+        .expect(201);
+      expect(res.body.assignedTo?.toString?.() ?? res.body.assignedTo).toBe(mecanicoId);
+    });
+
+    it("PATCH /mechanics/issues/:id/seen bloquea avería de otra empresa (403)", async () => {
+      await request(app)
+        .patch(`${API}/mechanics/issues/${crossCompanyIssueId}/seen`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(403);
+    });
+
+    it("DELETE /mechanics/issues/:id bloquea avería de otra empresa (403)", async () => {
+      await request(app)
+        .delete(`${API}/mechanics/issues/${crossCompanyIssueId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(403);
+    });
+
+    it("mecanico puede PATCH work-order in_progress", async () => {
+      const createRes = await request(app)
+        .post(`${API}/mechanics/work-orders`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          ambulanceId: sharedAmbulanceId,
+          title: "Mechanic lifecycle test",
+          assignedTo: mecanicoId,
+        })
+        .expect(201);
+      const orderId = createRes.body._id ?? createRes.body.id;
+
+      const patchRes = await request(app)
+        .patch(`${API}/mechanics/work-orders/${orderId}`)
+        .set("Authorization", `Bearer ${mecanicoToken}`)
+        .send({ status: "in_progress" })
+        .expect(200);
+      expect(patchRes.body.status).toBe("in_progress");
     });
   });
 

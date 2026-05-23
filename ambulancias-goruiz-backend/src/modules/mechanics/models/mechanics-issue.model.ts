@@ -30,6 +30,12 @@ const MechanicsIssueSchema = new mongoose.Schema(
       ref: "Company",
       required: false,
       default: null,
+      /**
+       * New issues: always set from dienst.companyId at creation (required).
+       * Legacy rows may have companyId null — admin mutations require matching companyId;
+       * legacy issues without companyId cannot be seen/deleted by tenant admins (403).
+       * See docs/POLICY-mechanics-companyId.md
+       */
     },
     isSeen: { type: Boolean, default: false },
     seenAt: { type: Date, default: null },
