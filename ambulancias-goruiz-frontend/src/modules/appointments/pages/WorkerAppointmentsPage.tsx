@@ -21,6 +21,11 @@ import { APP_TZ } from "../../../config/app";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
+import {
+    canWorkerChooseSlot,
+    canWorkerRequestCancellation,
+    isWorkerActiveAppointment,
+} from "../utils/appointmentActionVisibility";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
 import StopIconButton from "../../../components/common/actions/StopIconButton";
 import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
@@ -124,9 +129,7 @@ export default function WorkerAppointmentsPage() {
     // - Si tiene opciones: por la hora propuesta más temprana (ASC)
     // - Si no tiene opciones: por fecha de creación (DESC)
     const recent = useMemo(() => {
-        const arr = items.filter(
-            (a) => a.status === "pending" || a.status === "proposed" || a.status === "cancellation_requested",
-        );
+        const arr = items.filter((a) => isWorkerActiveAppointment(a.status));
 
         return arr.slice().sort((a, b) => {
             const ea = earliestProposedStart(a);
@@ -244,9 +247,7 @@ export default function WorkerAppointmentsPage() {
                             </thead>
                             <tbody className="[&>tr:nth-child(odd)]:bg-slate-50/30">
                                 {recent.map((a) => {
-                                    const showChoose =
-                                        a.status === "proposed" &&
-                                        (a.proposedSlots?.length ?? 0) > 0;
+                                    const showChoose = canWorkerChooseSlot(a);
                                     return (
                                         <tr
                                             key={a._id}
@@ -299,12 +300,12 @@ export default function WorkerAppointmentsPage() {
                                                         )}
                                                     {a.status === "cancellation_requested" ? (
                                                         <span className="text-xs text-amber-700">Pendiente admin</span>
-                                                    ) : (
+                                                    ) : canWorkerRequestCancellation(a.status) ? (
                                                         <StopIconButton
                                                             onClick={() => setCancelModal({ open: true, appointmentId: a._id, message: "", loading: false })}
                                                             title="Solicitar cancelación"
                                                         />
-                                                    )}
+                                                    ) : null}
                                                 </div>
                                             </td>
                                         </tr>

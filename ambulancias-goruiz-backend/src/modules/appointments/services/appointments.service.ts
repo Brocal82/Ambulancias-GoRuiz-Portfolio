@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { Appointment } from "../models/appointment.model";
 import User from "../../users/models/user.model";
-import { IAppointment, TimeSlot } from "../types/appointment.types";
+import { APPOINTMENT_STATUS_VALUES } from "../schemas/appointment.schema";
+import { AppointmentStatus, IAppointment, TimeSlot } from "../types/appointment.types";
 import { sendPushNotification } from "../../notifications";
 
 async function getWorkerIdsForCompany(companyId: string): Promise<mongoose.Types.ObjectId[]> {
@@ -210,6 +211,9 @@ export async function selectSlot(
     start: parseISOToDate(body.selectedSlot!.start),
     end: parseISOToDate(body.selectedSlot!.end),
   };
+  if (sel.start >= sel.end) {
+    throw new AppointmentError("start debe ser anterior a end.", 400);
+  }
   if (!isFuture(sel.start)) {
     throw new AppointmentError(
       "No se puede confirmar un horario en el pasado.",
@@ -272,6 +276,15 @@ export async function getCalendarAppointments(
 
   const fromDate = new Date(from);
   const toDate = new Date(to);
+  if (
+    Number.isNaN(fromDate.getTime()) ||
+    Number.isNaN(toDate.getTime())
+  ) {
+    throw new AppointmentError("from y to deben ser fechas válidas.", 400);
+  }
+  if (fromDate > toDate) {
+    throw new AppointmentError("from debe ser anterior o igual a to.", 400);
+  }
 
   if (!companyId || String(companyId).trim() === "") {
     return [];
@@ -334,6 +347,9 @@ export async function updateAppointment(
       start: parseISOToDate(body.selectedSlot.start),
       end: parseISOToDate(body.selectedSlot.end),
     };
+    if (sel.start >= sel.end) {
+      throw new AppointmentError("start debe ser anterior a end.", 400);
+    }
     if (!isFuture(sel.start)) {
       throw new AppointmentError(
         "No se puede programar un horario en el pasado.",
@@ -470,6 +486,11 @@ export async function getAppointmentsCount(
 ) {
   const rawStatus = typeof status === "string" ? status : "pending";
   const normalizedStatus = rawStatus.toLowerCase();
+  if (
+    !APPOINTMENT_STATUS_VALUES.includes(normalizedStatus as AppointmentStatus)
+  ) {
+    throw new AppointmentError("status inválido.", 400);
+  }
   if (!companyId || String(companyId).trim() === "") {
     return { count: 0 };
   }

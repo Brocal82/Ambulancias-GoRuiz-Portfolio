@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, and teams. Full reference: docs/API-REFERENCE.md",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, and appointments. Full reference: docs/API-REFERENCE.md",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -380,6 +380,285 @@
           "409": { "description": "In use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TeamDeleteConflict" } } } }
         }
       }
+    },
+    "/api/appointments/requests": {
+      "post": {
+        "summary": "Create appointment request (worker)",
+        "description": "Requires module `appointments`. Creates a request with status `pending`. Worker only.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AppointmentRequestCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/my": {
+      "get": {
+        "summary": "List my appointments (worker)",
+        "description": "Returns all appointments for the authenticated worker. Requires module `appointments`.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Appointment list",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Appointment" } }
+              }
+            }
+          },
+          "403": { "description": "Module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/pending": {
+      "get": {
+        "summary": "List pending appointments (admin)",
+        "description": "Admin only. Status `pending`, scoped by JWT companyId (legacy null companyId resolved via worker).",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Pending appointments",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Appointment" } }
+              }
+            }
+          },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/open": {
+      "get": {
+        "summary": "List open appointments (admin)",
+        "description": "Admin only. Status in `pending`, `proposed`, `cancellation_requested`. Scoped by companyId.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Open appointments",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Appointment" } }
+              }
+            }
+          },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/count": {
+      "get": {
+        "summary": "Count appointments by status (admin)",
+        "description": "Admin only. Query `status` defaults to `pending`. Valid statuses: pending, proposed, confirmed, cancelled, rescheduled, cancellation_requested.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/AppointmentStatus" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Count",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AppointmentCountResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/calendar": {
+      "get": {
+        "summary": "Calendar appointments in range (admin)",
+        "description": "Admin only. Returns confirmed/rescheduled appointments whose selectedSlot.start falls within `from`–`to` (ISO). Both query params required.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar appointments",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Appointment" } }
+              }
+            }
+          },
+          "400": { "description": "Missing or invalid date range", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/{id}": {
+      "patch": {
+        "summary": "Update appointment (admin)",
+        "description": "Admin only. PATCH (not PUT). Optional fields: reason, details, selectedSlot. Providing selectedSlot sets status to `rescheduled`. At least one field required. Scoped by companyId.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AppointmentUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Cancel appointment (admin)",
+        "description": "Admin only. Sets status to `cancelled`. Scoped by companyId.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/{id}/propose": {
+      "post": {
+        "summary": "Propose time slots (admin)",
+        "description": "Admin only. 1–3 future slots, ordered ascending by start. Sets status to `proposed`. From `pending` or `proposed`.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AppointmentProposeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Proposed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "400": { "description": "Validation or invalid status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/{id}/select": {
+      "post": {
+        "summary": "Select proposed slot (worker)",
+        "description": "Worker only. selectedSlot must match one of proposedSlots. Sets status to `confirmed`.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AppointmentSelectRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Confirmed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "400": { "description": "Validation or slot mismatch", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/{id}/reject-proposal": {
+      "post": {
+        "summary": "Reject proposal (worker)",
+        "description": "Worker only. From `proposed` back to `pending` (clears proposedSlots).",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Back to pending", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "400": { "description": "Invalid status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/{id}/request-cancel": {
+      "post": {
+        "summary": "Request cancellation (worker)",
+        "description": "Worker only. Sets status to `cancellation_requested` with a message (max 1000 chars).",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AppointmentCancellationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Cancellation requested", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "400": { "description": "Validation or invalid status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/{id}/accept-cancel": {
+      "post": {
+        "summary": "Accept cancellation (admin)",
+        "description": "Admin only. From `cancellation_requested` to `cancelled`. Scoped by companyId.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "400": { "description": "No pending cancellation request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/appointments/{id}/my": {
+      "delete": {
+        "summary": "Delete own cancelled appointment (worker)",
+        "description": "Worker only. Allowed only when status is already `cancelled`.",
+        "tags": ["Appointments"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "Deleted" },
+          "400": { "description": "Not cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -599,6 +878,87 @@
             "type": "array",
             "items": { "type": "string", "enum": ["dienst-week-team"] }
           }
+        }
+      },
+      "AppointmentStatus": {
+        "type": "string",
+        "enum": ["pending", "proposed", "confirmed", "cancelled", "rescheduled", "cancellation_requested"],
+        "description": "Workflow: pending → proposed → confirmed | rescheduled; cancellation_requested → cancelled; admin/worker cancel paths also set cancelled."
+      },
+      "AppointmentTimeSlot": {
+        "type": "object",
+        "required": ["start", "end"],
+        "properties": {
+          "start": { "type": "string", "format": "date-time" },
+          "end": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Appointment": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "workerId": { "type": "string" },
+          "adminId": { "type": "string" },
+          "companyId": { "type": "string", "nullable": true },
+          "reason": { "type": "string", "maxLength": 120 },
+          "details": { "type": "string", "maxLength": 5000 },
+          "status": { "$ref": "#/components/schemas/AppointmentStatus" },
+          "proposedSlots": { "type": "array", "items": { "$ref": "#/components/schemas/AppointmentTimeSlot" }, "maxItems": 3 },
+          "selectedSlot": { "$ref": "#/components/schemas/AppointmentTimeSlot", "nullable": true },
+          "cancellationMessage": { "type": "string", "maxLength": 1000 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AppointmentRequestCreate": {
+        "type": "object",
+        "required": ["reason", "details"],
+        "properties": {
+          "reason": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "details": { "type": "string", "minLength": 1, "maxLength": 5000 }
+        }
+      },
+      "AppointmentProposeRequest": {
+        "type": "object",
+        "required": ["proposedSlots"],
+        "properties": {
+          "proposedSlots": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": { "$ref": "#/components/schemas/AppointmentTimeSlot" },
+            "description": "Future slots ordered ascending by start; each start < end."
+          }
+        }
+      },
+      "AppointmentSelectRequest": {
+        "type": "object",
+        "required": ["selectedSlot"],
+        "properties": {
+          "selectedSlot": { "$ref": "#/components/schemas/AppointmentTimeSlot" }
+        }
+      },
+      "AppointmentUpdateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "reason": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "details": { "type": "string", "minLength": 1, "maxLength": 5000 },
+          "selectedSlot": { "$ref": "#/components/schemas/AppointmentTimeSlot", "description": "When set, status becomes rescheduled." }
+        }
+      },
+      "AppointmentCancellationRequest": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": { "type": "string", "minLength": 1, "maxLength": 1000 }
+        }
+      },
+      "AppointmentCountResponse": {
+        "type": "object",
+        "required": ["count"],
+        "properties": {
+          "count": { "type": "integer", "minimum": 0 }
         }
       }
     }

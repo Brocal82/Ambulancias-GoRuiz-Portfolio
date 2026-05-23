@@ -1,4 +1,5 @@
 import { apiRequest } from "./http";
+import { APPOINTMENT_API_PATHS } from "./appointmentPaths";
 
 export type AppointmentStatus = "pending" | "proposed" | "confirmed" | "cancelled" | "rescheduled" | "cancellation_requested";
 
@@ -22,7 +23,7 @@ export interface AppointmentItem {
 }
 
 export async function getMyAppointments(): Promise<AppointmentItem[]> {
-  return apiRequest<AppointmentItem[]>("/appointments/my", {
+  return apiRequest<AppointmentItem[]>(APPOINTMENT_API_PATHS.my, {
     method: "GET",
     requiresAuth: true,
   });
@@ -32,7 +33,7 @@ export async function createAppointment(payload: {
   reason: string;
   details: string;
 }): Promise<AppointmentItem> {
-  return apiRequest<AppointmentItem>("/appointments/requests", {
+  return apiRequest<AppointmentItem>(APPOINTMENT_API_PATHS.requests, {
     method: "POST",
     requiresAuth: true,
     body: JSON.stringify(payload),
@@ -43,7 +44,7 @@ export async function selectSlot(
   id: string,
   payload: { selectedSlot: TimeSlot },
 ): Promise<AppointmentItem> {
-  return apiRequest<AppointmentItem>(`/appointments/${id}/select`, {
+  return apiRequest<AppointmentItem>(APPOINTMENT_API_PATHS.select(id), {
     method: "POST",
     requiresAuth: true,
     body: JSON.stringify(payload),
@@ -51,7 +52,7 @@ export async function selectSlot(
 }
 
 export async function rejectProposal(id: string): Promise<AppointmentItem> {
-  return apiRequest<AppointmentItem>(`/appointments/${id}/reject-proposal`, {
+  return apiRequest<AppointmentItem>(APPOINTMENT_API_PATHS.rejectProposal(id), {
     method: "POST",
     requiresAuth: true,
     body: JSON.stringify({}),
@@ -62,7 +63,7 @@ export async function requestCancellation(
   id: string,
   message: string,
 ): Promise<AppointmentItem> {
-  return apiRequest<AppointmentItem>(`/appointments/${id}/request-cancel`, {
+  return apiRequest<AppointmentItem>(APPOINTMENT_API_PATHS.requestCancel(id), {
     method: "POST",
     requiresAuth: true,
     body: JSON.stringify({ message }),
@@ -70,7 +71,7 @@ export async function requestCancellation(
 }
 
 export async function deleteMyAppointment(id: string): Promise<void> {
-  await apiRequest<void>(`/appointments/${id}/my`, {
+  await apiRequest<void>(APPOINTMENT_API_PATHS.deleteMy(id), {
     method: "DELETE",
     requiresAuth: true,
   });

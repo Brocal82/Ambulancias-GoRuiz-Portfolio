@@ -14,6 +14,10 @@ import { acceptCancellation } from "../domain/api";
 
 import StatusBadge from "../../../components/common/StatusBadge";
 import { toneForAppointmentStatus } from "../utils/appointmentTone";
+import {
+    canAdminAcceptCancellation,
+    canAdminProposeSlots,
+} from "../utils/appointmentActionVisibility";
 import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 import ProposeSlotsIconButton from "../../../components/common/actions/ProposeSlotsIconButton";
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
@@ -194,7 +198,7 @@ export default function AdminAppointmentsPage() {
                                                     </td>
                                                     <td className="px-3 py-2 align-top">
                                                         <div className="flex items-center justify-center gap-2">
-                                                            {a.status === "pending" ? (
+                                                            {canAdminProposeSlots(a.status) ? (
                                                                 <ProposeSlotsIconButton
                                                                     onClick={() => {
                                                                         setSelectedId(a._id);
@@ -202,7 +206,7 @@ export default function AdminAppointmentsPage() {
                                                                     }}
                                                                     title={t("pages.appointments.actions.proposeSlots")}
                                                                 />
-                                                            ) : a.status === "cancellation_requested" ? (
+                                                            ) : canAdminAcceptCancellation(a.status) ? (
                                                                 <button
                                                                     type="button"
                                                                     onClick={async () => {

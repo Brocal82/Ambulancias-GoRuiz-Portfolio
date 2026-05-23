@@ -2,6 +2,15 @@ import { Request, Response } from "express";
 import * as appointmentsService from "../services/appointments.service";
 import { AppointmentError } from "../services/appointments.service";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
+import {
+  calendarQuerySchema,
+  countQuerySchema,
+} from "../schemas/appointment.schema";
+import { ZodError } from "zod";
+
+function queryValidationMessage(err: ZodError): string {
+  return err.issues[0]?.message ?? "Parámetros de consulta inválidos.";
+}
 
 export const requestAppointment = async (
   req: Request,
@@ -163,7 +172,12 @@ export const getCalendarAppointments = async (
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
     }
-    const { from, to } = req.query as { from?: string; to?: string };
+    const parsedQuery = calendarQuerySchema.safeParse(req.query);
+    if (!parsedQuery.success) {
+      res.status(400).json({ message: queryValidationMessage(parsedQuery.error) });
+      return;
+    }
+    const { from, to } = parsedQuery.data;
     const items = await appointmentsService.getCalendarAppointments(
       { from, to },
       companyResult.companyId,
@@ -320,10 +334,14 @@ export const getAppointmentsCount = async (
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
     }
-    const rawStatus =
-      typeof req.query.status === "string" ? req.query.status : "pending";
+    const parsedQuery = countQuerySchema.safeParse(req.query);
+    if (!parsedQuery.success) {
+      res.status(400).json({ message: queryValidationMessage(parsedQuery.error) });
+      return;
+    }
+    const { status } = parsedQuery.data;
     const result = await appointmentsService.getAppointmentsCount(
-      rawStatus,
+      status,
       companyResult.companyId,
     );
     res.status(200).json(result);
