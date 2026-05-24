@@ -22,7 +22,8 @@ import type {
   DuplicateWarning,
   CoverageWorker,
 } from "../domain/types";
-import { PAYROLL_MONTH_NAMES } from "../domain/constants";
+import { PAYROLL_MONTH_NAMES, PAYROLL_PDF_ACCEPT, PAYROLL_MAX_SIZE_MB, PAYROLL_MAX_BATCH_FILES } from "../domain/constants";
+import { filterPdfFiles, formatPayrollReplacementMessage } from "../utils/uploadValidation";
 import FileUpload from "../../../components/common/FileUpload";
 import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
@@ -488,7 +489,7 @@ export default function AdminPayrollPage() {
       toastT.success("Nómina subida correctamente");
       if (response.replacedDocument) {
         toastT.warn(
-          `Nómina reemplazada: se invalidó la nómina activa anterior ("${response.replacedDocument.originalName}").`,
+          formatPayrollReplacementMessage(response.replacedDocument.originalName),
         );
       }
       setUploadDuplicateWarning(response.possibleDuplicate ?? null);
@@ -847,8 +848,8 @@ export default function AdminPayrollPage() {
                   key={fileInputKey}
                   id="payroll-pdf-upload"
                   label="Subir nómina"
-                  accept=".pdf,application/pdf"
-                  maxSizeMB={10}
+                  accept={PAYROLL_PDF_ACCEPT}
+                  maxSizeMB={PAYROLL_MAX_SIZE_MB}
                   onFileSelect={setUploadFile}
                   onError={(msg) => toastT.error(msg)}
                   hintWhenEmpty="Sin archivo seleccionado"
@@ -1030,40 +1031,30 @@ export default function AdminPayrollPage() {
                   id="batch-pdf-upload"
                   type="file"
                   multiple
-                  accept=".pdf,application/pdf"
+                  accept={PAYROLL_PDF_ACCEPT}
                   onChange={(e) => {
                     let selected = Array.from(e.target.files ?? []);
 
-                    if (batchFolderMode) {
-                      const nonPdf = selected.filter(
-                        (f) =>
-                          f.type !== "application/pdf" &&
-                          !f.name.toLowerCase().endsWith(".pdf"),
-                      );
-                      if (nonPdf.length > 0) {
-                        toastT.warn(
-                          `Se ignoraron ${nonPdf.length} archivo${nonPdf.length !== 1 ? "s" : ""} que no son PDF`,
-                        );
-                      }
-                      selected = selected.filter(
-                        (f) =>
-                          f.type === "application/pdf" ||
-                          f.name.toLowerCase().endsWith(".pdf"),
+                    const { valid, rejected } = filterPdfFiles(selected);
+                    if (rejected.length > 0) {
+                      toastT.warn(
+                        `Se ignoraron ${rejected.length} archivo${rejected.length !== 1 ? "s" : ""} que no son PDF`,
                       );
                     }
+                    selected = valid;
 
-                    if (selected.length > 20) {
-                      toastT.warn("Máximo 20 archivos por lote");
-                      selected = selected.slice(0, 20);
+                    if (selected.length > PAYROLL_MAX_BATCH_FILES) {
+                      toastT.warn(`Máximo ${PAYROLL_MAX_BATCH_FILES} archivos por lote`);
+                      selected = selected.slice(0, PAYROLL_MAX_BATCH_FILES);
                     }
 
                     // Accumulate selections across multiple picker openings.
                     // Keep existing behavior: cap the final batch at 20 files.
                     setBatchFiles((prev) => {
                       const merged = [...prev, ...selected];
-                      if (merged.length > 20) {
-                        toastT.warn("Máximo 20 archivos por lote");
-                        return merged.slice(0, 20);
+                      if (merged.length > PAYROLL_MAX_BATCH_FILES) {
+                        toastT.warn(`Máximo ${PAYROLL_MAX_BATCH_FILES} archivos por lote`);
+                        return merged.slice(0, PAYROLL_MAX_BATCH_FILES);
                       }
                       return merged;
                     });

@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, appointments, documents, and mechanics. Full reference: docs/API-REFERENCE.md and docs/domains/DOMAIN-documents.md",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, appointments, documents, payroll, and mechanics. Full reference: docs/API-REFERENCE.md and docs/domains/",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -820,6 +820,149 @@
         }
       }
     },
+    "/api/payroll/upload": {
+      "post": {
+        "summary": "Upload payslip PDF (admin)",
+        "description": "Requires module `payroll`. PDF only (max 10 MB, `uploadPdfOnly`). With `workerId` → manual assignment; without → conservative filename auto-match by employeeNumber. Replaces prior active payroll for same worker+period (soft-invalidates). Orphan files cleaned on validation/DB/replacement failure. Stored filename sanitized for GET /api/files/:filename.",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["payroll", "year", "month"],
+                "properties": {
+                  "payroll": { "type": "string", "format": "binary", "description": "PDF only" },
+                  "workerId": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" },
+                  "year": { "type": "string" },
+                  "month": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Uploaded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PayrollUploadResult" } } } },
+          "400": { "description": "PDF-only / MIME mismatch / validation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Worker not in company or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/payroll/upload/batch": {
+      "post": {
+        "summary": "Batch upload payslip PDFs (admin)",
+        "description": "Requires module `payroll`. Up to 20 PDFs (field `payrolls`). Auto-match per file. Partial success allowed; failed files cleaned up.",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["payrolls", "year", "month"],
+                "properties": {
+                  "payrolls": { "type": "array", "items": { "type": "string", "format": "binary" } },
+                  "year": { "type": "string" },
+                  "month": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Batch summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PayrollBatchUploadResult" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/payroll": {
+      "get": {
+        "summary": "List company payroll documents (admin)",
+        "description": "Active documents only (`deletedAt: null`). Scoped by admin companyId.",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Payroll list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PayrollDocument" } } } } }
+        }
+      }
+    },
+    "/api/payroll/mine": {
+      "get": {
+        "summary": "List my payroll documents",
+        "description": "Requires module `payroll`. Roles: worker, mecanico, jefe_mecanicos, jefe_logistica. Filtered by workerId and companyId when JWT includes companyId.",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "My payrolls", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PayrollDocumentWorker" } } } } }
+        }
+      }
+    },
+    "/api/payroll/{id}/assign": {
+      "patch": {
+        "summary": "Assign payroll to worker (admin)",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["workerId"],
+                "properties": { "workerId": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Assigned", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Worker not in company", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/payroll/{id}/invalidate": {
+      "patch": {
+        "summary": "Soft-delete payroll document (admin)",
+        "description": "Sets deletedAt; file retained on disk but GET /api/files denies access.",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Invalidated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Already invalidated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/payroll/missing": {
+      "get": {
+        "summary": "Payroll coverage check (admin)",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "year", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "month", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 12 } }
+        ],
+        "responses": {
+          "200": { "description": "Coverage report", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PayrollCoverageResult" } } } }
+        }
+      }
+    },
+    "/api/payroll/coverage/year": {
+      "get": {
+        "summary": "Yearly payroll coverage summary (admin)",
+        "tags": ["Payroll"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "year", "in": "query", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Year summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PayrollYearCoverageResult" } } } }
+        }
+      }
+    },
     "/api/mechanics/report-issue": {
       "post": {
         "summary": "Report mechanic issue (worker/admin on assignment)",
@@ -1462,6 +1605,95 @@
           "deliveryId": { "type": "string" },
           "readAt": { "type": "string", "format": "date-time", "nullable": true },
           "acknowledgedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PayrollDocument": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "workerId": { "type": "string", "nullable": true },
+          "companyId": { "type": "string" },
+          "filename": { "type": "string", "description": "Sanitized disk basename for GET /api/files/:filename" },
+          "originalName": { "type": "string" },
+          "year": { "type": "integer" },
+          "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "matchStatus": { "type": "string", "enum": ["manual", "matched", "unmatched"] },
+          "matchReason": { "type": "string" },
+          "parsedEmployeeNumber": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PayrollDocumentWorker": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "filename": { "type": "string" },
+          "originalName": { "type": "string" },
+          "year": { "type": "integer" },
+          "month": { "type": "integer" },
+          "matchStatus": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PayrollUploadResult": {
+        "type": "object",
+        "properties": {
+          "payrollId": { "type": "string" },
+          "filename": { "type": "string" },
+          "originalName": { "type": "string" },
+          "matchStatus": { "type": "string" },
+          "workerId": { "type": "string", "nullable": true },
+          "replacedDocument": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "payrollId": { "type": "string" },
+              "originalName": { "type": "string" }
+            }
+          }
+        }
+      },
+      "PayrollBatchUploadResult": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "matched": { "type": "integer" },
+              "unmatched": { "type": "integer" },
+              "failed": { "type": "integer" },
+              "duplicateWarnings": { "type": "integer" }
+            }
+          },
+          "results": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "PayrollCoverageResult": {
+        "type": "object",
+        "properties": {
+          "period": { "type": "object", "properties": { "year": { "type": "integer" }, "month": { "type": "integer" } } },
+          "totalWorkers": { "type": "integer" },
+          "coveredCount": { "type": "integer" },
+          "missingCount": { "type": "integer" },
+          "unmatchedDocumentsForPeriod": { "type": "integer" }
+        }
+      },
+      "PayrollYearCoverageResult": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer" },
+          "totalWorkers": { "type": "integer" },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": { "type": "integer" },
+                "assignedCount": { "type": "integer" }
+              }
+            }
+          }
         }
       }
     }

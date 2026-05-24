@@ -1,8 +1,30 @@
 import path from "path";
 import {
   resolveUploadFilePath,
+  sanitizeMulterBasename,
   validateSecureUploadFilename,
 } from "../utils/secureUploadFilename";
+
+describe("sanitizeMulterBasename", () => {
+  it("strips path segments and unsafe characters", () => {
+    expect(sanitizeMulterBasename("../secret%2Fname")).toBe("secret_2Fname");
+    expect(sanitizeMulterBasename("  foo bar  ")).toBe("foo_bar");
+  });
+
+  it("never returns empty or dotfile prefix", () => {
+    expect(sanitizeMulterBasename("...")).toBe("upload");
+    expect(sanitizeMulterBasename("")).toBe("upload");
+  });
+
+  it("produces names accepted by validateSecureUploadFilename", () => {
+    const sanitized = sanitizeMulterBasename("Nómina EMP0001 (Marzo).pdf");
+    const withSuffix = `${sanitized}-1234567890-987654321.pdf`;
+    expect(validateSecureUploadFilename(withSuffix)).toEqual({
+      ok: true,
+      filename: withSuffix,
+    });
+  });
+});
 
 describe("validateSecureUploadFilename", () => {
   it("accepts a normal multer-style basename", () => {

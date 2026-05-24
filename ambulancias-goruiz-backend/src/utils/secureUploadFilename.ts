@@ -27,6 +27,27 @@ function decodeFilenameCandidate(raw: string): string | null {
 }
 
 /**
+ * Sanitizes a user-provided basename stem for multer disk storage.
+ * Keeps alphanumerics, dots, hyphens, and underscores; replaces other chars.
+ * Never returns empty or a dotfile prefix.
+ */
+export function sanitizeMulterBasename(raw: string): string {
+  const withoutPath = path.basename(raw.replace(/\\/g, "/"));
+  let cleaned = withoutPath
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^[._-]+/, "")
+    .replace(/_+$/, "");
+
+  if (!cleaned || cleaned.startsWith(".")) {
+    cleaned = "upload";
+  }
+
+  return cleaned;
+}
+
+/**
  * Validates a single-segment upload basename for GET /api/files/:filename.
  * Rejects traversal, path separators, dotfiles, and encoded escape attempts.
  */

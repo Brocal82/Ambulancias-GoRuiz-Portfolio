@@ -111,11 +111,20 @@ export async function canAccessFile(
 
   // ── 6. PayrollDocument — worker direct ownership ──────────────────────────
   // Invalidated documents (deletedAt != null) are inaccessible to all actors.
-  const ownPayroll = await PayrollDocument.findOne({
+  const ownPayrollQuery: {
+    workerId: mongoose.Types.ObjectId;
+    fileUrl: string;
+    deletedAt: null;
+    companyId?: mongoose.Types.ObjectId;
+  } = {
     workerId: userOid,
     fileUrl: storedPath,
     deletedAt: null,
-  })
+  };
+  if (companyId && mongoose.Types.ObjectId.isValid(companyId)) {
+    ownPayrollQuery.companyId = new mongoose.Types.ObjectId(companyId);
+  }
+  const ownPayroll = await PayrollDocument.findOne(ownPayrollQuery)
     .select("_id")
     .lean();
   if (ownPayroll) return true;

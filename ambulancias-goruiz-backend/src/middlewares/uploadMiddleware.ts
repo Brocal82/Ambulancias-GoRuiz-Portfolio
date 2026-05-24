@@ -2,6 +2,7 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { sanitizeMulterBasename } from "../utils/secureUploadFilename";
 
 // 📁 Directorio donde se guardarán los archivos: backend/uploads
 const uploadDir = path.join(__dirname, "../../uploads");
@@ -18,7 +19,9 @@ const storage = multer.diskStorage({
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    const base = path.basename(file.originalname, ext).replace(/\s+/g, "_");
+    const base = sanitizeMulterBasename(
+      path.basename(file.originalname, ext),
+    );
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, `${base}-${uniqueSuffix}${ext}`);
   },

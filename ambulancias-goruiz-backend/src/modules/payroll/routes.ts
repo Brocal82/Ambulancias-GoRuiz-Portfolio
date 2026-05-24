@@ -1,8 +1,10 @@
 import express from "express";
+import multer from "multer";
+import type { ErrorRequestHandler } from "express";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { requireModule } from "../../middlewares/requireModule";
-import { upload } from "../../middlewares/uploadMiddleware";
+import { uploadPdfOnly } from "../../middlewares/uploadMiddleware";
 import { validateObjectId } from "../../middlewares/validateObjectId";
 import {
   uploadPayrollDocument,
@@ -27,7 +29,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
-  upload.array("payrolls", 20),
+  uploadPdfOnly.array("payrolls", 20),
   uploadPayrollBatch,
 );
 
@@ -40,7 +42,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
-  upload.single("payroll"),
+  uploadPdfOnly.single("payroll"),
   uploadPayrollDocument,
 );
 
@@ -97,9 +99,9 @@ router.get(
   listPayrollDocumentsAdmin,
 );
 
-// Worker: list their own payroll documents
+// Employee roles: list own payroll documents (worker, mecanico, jefe_mecanicos, jefe_logistica).
+// Admins use GET /api/payroll (admin list).
 // GET /api/payroll/mine
-// Restricted to employee roles; admins use GET /api/payroll (admin list).
 router.get(
   "/mine",
   authenticateToken,
@@ -107,5 +109,25 @@ router.get(
   authorizeRole(["worker", "mecanico", "jefe_mecanicos", "jefe_logistica"]),
   listMyPayrollDocuments,
 );
+
+const multerErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  if (err instanceof multer.MulterError) {
+    res.status(400).json({ message: `Upload error: ${err.message}` });
+    return;
+  }
+
+  if (
+    err &&
+    typeof err.message === "string" &&
+    err.message.includes("Tipo de archivo no permitido")
+  ) {
+    res.status(400).json({ message: err.message });
+    return;
+  }
+
+  res.status(500).json({ message: "Unexpected server error" });
+};
+
+router.use(multerErrorHandler);
 
 export default router;

@@ -18,65 +18,85 @@ Documentación del dominio de nóminas: subida, entrega, invalidación y descarg
 
 ```
 companyId    ObjectId (required)
-workerId     ObjectId (ref User)
+workerId     ObjectId | null (ref User; null solo si unmatched)
 year         number
 month        number (1-12)
-fileUrl      string  — ruta relativa: /uploads/<filename>
+filename     string  — basename en disco (sanitizado, compatible con /api/files)
+originalName string  — nombre original del cliente (solo auto-match)
+fileUrl      string  — ruta relativa: /uploads/<filename> (interno, no expuesto)
 uploadedBy   ObjectId (ref User admin)
-uploadedAt   Date
+matchStatus  "manual" | "matched" | "unmatched"
+matchReason  string (opcional, unmatched)
+parsedEmployeeNumber string (opcional)
 deletedAt    Date | null  — null = activo; Date = invalidado
-matchStatus  "matched" | "unmatched" | "conflict"
 ```
 
 Índices:
 - `{ companyId, workerId, year, month }` — lookup exacto de nómina por trabajador y periodo
-- `{ companyId, matchStatus }` — dashboard admin de nóminas con conflictos
+- `{ companyId, matchStatus }` — dashboard admin de nóminas sin asignar
 
-**Documentos invalidados:** `deletedAt != null` → el archivo no es accesible por nadie (ni worker ni admin). `canAccessFile()` filtra `{ deletedAt: null }` en todas sus ramas de payroll.
+**Documentos invalidados:** `deletedAt != null` → el archivo no es accesible por nadie (ni worker ni admin). `canAccessFile()` filtra `{ deletedAt: null }` en todas sus ramas de payroll. El fichero permanece en disco para posible restauración futura.
 
 ---
 
 ## Lifecycle
 
 ```
-[Admin sube nómina]
+[Admin sube nómina PDF]
       │
       ▼
-  UPLOAD
-  Admin: POST /api/payroll/upload
-  multer (PDF, 10 MB) → file en /uploads/
-  → PayrollDocument { deletedAt: null, matchStatus: "matched"|"unmatched" }
+  UPLOAD (uploadPdfOnly — solo PDF, max 10 MB)
+  multer sanitiza basename → file en /uploads/
+  → PayrollDocument { deletedAt: null, matchStatus: "matched"|"unmatched"|"manual" }
       │
       ▼
-  WORKER ACCEDE
-  Worker: GET /api/payroll/worker/me → lista sus nóminas
-  Worker: GET /api/files/<filename>  → descarga autenticada via canAccessFile()
+  [Si matched/manual con workerId] REEMPLAZO
+  Nóminas activas anteriores del mismo worker+periodo → deletedAt = now
+      │
+      ▼
+  EMPLEADO ACCEDE
+  GET /api/payroll/mine → lista sus nóminas (filtrado por companyId si JWT lo incluye)
+  GET /api/files/<filename>  → descarga autenticada via canAccessFile()
       │
       ▼
   [Opcional] INVALIDACIÓN
-  Admin: DELETE /api/payroll/:id
+  Admin: PATCH /api/payroll/:id/invalidate
   → deletedAt = Date.now()
   → archivo inaccesible (canAccessFile lo filtra)
-      │
-      ▼
-  [Opcional] RE-UPLOAD
-  Admin sube nueva versión → nuevo PayrollDocument
-  El invalidado queda en BD para trazabilidad
 ```
+
+**Limpieza en fallo:** si la validación del worker, MIME mismatch, resolución de filename, creación en BD o invalidación de reemplazo falla, el fichero subido se elimina del disco (y el registro parcial en BD se revierte).
 
 ---
 
 ## Match status
 
-Al subir una nómina, el sistema intenta emparejarla automáticamente con un worker de la empresa:
+Al subir una nómina sin `workerId`, el sistema intenta emparejarla automáticamente con un worker activo (`role: "worker"`) de la empresa del admin:
 
 | Estado | Significado |
 |--------|-------------|
-| `matched` | Nómina asociada correctamente a un worker |
-| `unmatched` | No se encontró worker para el nombre del PDF |
-| `conflict` | Múltiples workers posibles para el mismo nombre |
+| `matched` | Exactamente un worker activo coincide por `employeeNumber` en el filename |
+| `unmatched` | Cero coincidencias, ambigüedad, o número demasiado corto |
+| `manual` | Admin proporcionó `workerId` o asignó vía PATCH /assign |
 
-El admin puede resolver conflictos y asignaciones manuales desde el dashboard de nóminas.
+El admin resuelve unmatched con `PATCH /api/payroll/:id/assign`.
+
+---
+
+## Roles con acceso a nóminas propias
+
+`GET /api/payroll/mine` y descarga segura están disponibles para:
+
+- `worker`
+- `mecanico`
+- `jefe_mecanicos`
+- `jefe_logistica`
+
+Requisitos: módulo `payroll` habilitado + JWT válido. Solo ven documentos con su `workerId` y, cuando el JWT incluye `companyId`, solo de su empresa actual.
+
+**Nota:** la subida y asignación manual (`POST /upload`, `PATCH /assign`) solo aceptan destinatarios con `role: "worker"`. Los roles mecánico/jefe pueden recibir nóminas si un admin les asigna explícitamente su userId como worker (no soportado hoy) o si fueron creados como worker previamente.
+
+Operaciones admin (`GET /`, upload, assign, invalidate, coverage) requieren `role: "admin"`.
 
 ---
 
@@ -86,39 +106,41 @@ El admin puede resolver conflictos y asignaciones manuales desde el dashboard de
 
 | Método | Ruta | Acción |
 |--------|------|--------|
-| `POST` | `/api/payroll/upload` | Subir nómina(s) PDF |
-| `GET` | `/api/payroll` | Listar nóminas empresa (con filtros) |
-| `GET` | `/api/payroll/:year/:month` | Nóminas de un periodo |
-| `PATCH` | `/api/payroll/:id/match` | Asignar nómina a worker manualmente |
-| `DELETE` | `/api/payroll/:id` | Invalidar nómina |
+| `POST` | `/api/payroll/upload` | Subir nómina PDF (manual o auto-match) |
+| `POST` | `/api/payroll/upload/batch` | Subir hasta 20 PDFs (auto-match por archivo) |
+| `GET` | `/api/payroll` | Listar nóminas activas de la empresa |
+| `PATCH` | `/api/payroll/:id/assign` | Asignar nómina unmatched a worker |
+| `PATCH` | `/api/payroll/:id/invalidate` | Invalidar nómina (soft-delete) |
+| `GET` | `/api/payroll/missing?year&month` | Cobertura: workers sin nómina confirmada |
+| `GET` | `/api/payroll/coverage/year?year` | Resumen anual por mes |
 
-### Worker
+### Empleados (worker, mecanico, jefe_mecanicos, jefe_logistica)
 
 | Método | Ruta | Acción |
 |--------|------|--------|
-| `GET` | `/api/payroll/worker/me` | Mis nóminas activas |
+| `GET` | `/api/payroll/mine` | Mis nóminas activas |
 | `GET` | `/api/files/:filename` | Descargar PDF (autenticado, via canAccessFile) |
 
 ---
 
 ## Seguridad de archivos
 
-Las nóminas son PDFs servidos **exclusivamente** por `GET /api/files/:filename`. Nunca por `/uploads/` (que bloquea PDFs con 403).
+- **Upload:** `uploadPdfOnly` en middleware + validación MIME/extensión en controller.
+- **Almacenamiento:** basename sanitizado (`sanitizeMulterBasename`) compatible con `validateSecureUploadFilename`.
+- **Descarga:** exclusivamente `GET /api/files/:filename`. Nunca por `/uploads/` (403 para PDF).
 
 `canAccessFile()` para payroll (ramas 6 y 6b):
-- Worker: `{ workerId: userOid, fileUrl: storedPath, deletedAt: null }`
-- Admin: `{ companyId: companyOid, fileUrl: storedPath, deletedAt: null }`
-
-Ambas ramas excluyen documentos invalidados.
+- Worker: `{ workerId: userOid, fileUrl, deletedAt: null }` + `companyId` cuando el JWT lo incluye
+- Admin: `{ companyId: companyOid, fileUrl, deletedAt: null }`
 
 ---
 
 ## Multi-tenant
 
-`PayrollDocument.companyId` es obligatorio (`required: true`). No hay datos legacy con `companyId: null`. El índice `{ companyId, workerId, year, month }` garantiza aislamiento por empresa.
+`PayrollDocument.companyId` es obligatorio (`required: true`). No hay datos legacy con `companyId: null`. Todas las operaciones admin usan `requireCompanyForAdmin`. Auto-match y asignación verifican `companyId` del worker destino.
 
 ---
 
 ## Frontend
 
-`src/modules/payroll/domain/api.ts` centraliza todas las llamadas HTTP del módulo. Los PDFs se abren con `openSecureFile()` de `src/utils/openSecureFile.ts`.
+`src/modules/payroll/domain/api.ts` centraliza todas las llamadas HTTP del módulo. Los PDFs se abren con `openSecureFile()` de `src/utils/openSecureFile.ts`. Uploads aceptan solo `.pdf,application/pdf` (`PAYROLL_PDF_ACCEPT`).

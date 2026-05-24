@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import PayrollDocument from "../models/payroll-document.model";
 import User from "../../users/models/user.model";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
+import { validateSecureUploadFilename } from "../../../utils/secureUploadFilename";
 import { matchWorkerFromFilename } from "../utils/payroll-filename-parser";
 import { sendPushNotification } from "../../notifications";
 
@@ -36,10 +37,36 @@ type UploadedFileLike = {
 
 const PAYROLL_PDF_ONLY_MESSAGE =
   "Solo se permiten archivos PDF para las nóminas.";
+const PAYROLL_MIME_MISMATCH_MESSAGE =
+  "El tipo MIME y la extensión del archivo no coinciden. Solo se permiten PDF.";
 
 function hasPdfExtension(name?: string): boolean {
   if (!name || typeof name !== "string") return false;
   return name.toLowerCase().endsWith(".pdf");
+}
+
+type PayrollFileValidationResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+function validatePayrollFile(file: UploadedFileLike): PayrollFileValidationResult {
+  const imageMimes = ["image/jpeg", "image/png", "image/webp"];
+  if (file.mimetype && imageMimes.includes(file.mimetype)) {
+    return { ok: false, message: PAYROLL_PDF_ONLY_MESSAGE };
+  }
+
+  if (!isPayrollPdfFile(file)) {
+    return { ok: false, message: PAYROLL_PDF_ONLY_MESSAGE };
+  }
+
+  const hasPdfMime = file.mimetype === "application/pdf";
+  const hasPdfExt =
+    hasPdfExtension(file.originalname) || hasPdfExtension(file.filename);
+  if (hasPdfMime !== hasPdfExt) {
+    return { ok: false, message: PAYROLL_MIME_MISMATCH_MESSAGE };
+  }
+
+  return { ok: true };
 }
 
 function isPayrollPdfFile(file: UploadedFileLike): boolean {
@@ -49,6 +76,70 @@ function isPayrollPdfFile(file: UploadedFileLike): boolean {
     hasPdfExtension(file.originalname) ||
     hasPdfExtension(file.filename)
   );
+}
+
+function resolveStoredPayrollFilename(
+  file: UploadedFileLike,
+): string | undefined {
+  let storedFilename: string | undefined;
+  if (file.filename && typeof file.filename === "string") {
+    storedFilename = file.filename;
+  } else if (file.path && typeof file.path === "string") {
+    const normalized = file.path.replace(/\\/g, "/");
+    storedFilename = normalized.split("/").pop();
+  }
+
+  if (!storedFilename) return undefined;
+
+  const secure = validateSecureUploadFilename(storedFilename);
+  if (!secure.ok) return undefined;
+
+  return secure.filename;
+}
+
+async function rollbackCreatedPayrollDocument(
+  documentId: mongoose.Types.ObjectId,
+  file: UploadedFileLike,
+): Promise<void> {
+  await PayrollDocument.deleteOne({ _id: documentId }).catch(() => undefined);
+  await deleteUploadedFileIfPresent(file);
+}
+
+async function finalizeConfirmedPayrollUpload(params: {
+  companyOid: mongoose.Types.ObjectId;
+  workerOid: mongoose.Types.ObjectId;
+  year: number;
+  month: number;
+  newDocumentId: mongoose.Types.ObjectId;
+  file: UploadedFileLike;
+}): Promise<{
+  replacedDocument: ReplacementInfo | null;
+  possibleDuplicate: DuplicateInfo | null;
+}> {
+  const { companyOid, workerOid, year, month, newDocumentId, file } = params;
+
+  try {
+    const replacedDocument = await replaceExistingConfirmedPayroll({
+      companyOid,
+      workerOid,
+      year,
+      month,
+      newDocumentId,
+    });
+
+    const possibleDuplicate = await findPayrollDuplicate(
+      companyOid,
+      workerOid,
+      year,
+      month,
+      newDocumentId,
+    );
+
+    return { replacedDocument, possibleDuplicate };
+  } catch (err) {
+    await rollbackCreatedPayrollDocument(newDocumentId, file);
+    throw err;
+  }
 }
 
 async function deleteUploadedFileIfPresent(file: UploadedFileLike): Promise<void> {
@@ -174,14 +265,14 @@ export async function uploadPayrollDocument(
       return;
     }
 
-    // Resolve stored filename (same pattern as sick-documents.controller.ts)
-    let storedFilename: string | undefined;
-    if (file.filename && typeof file.filename === "string") {
-      storedFilename = file.filename;
-    } else if (file.path && typeof file.path === "string") {
-      const normalized = file.path.replace(/\\/g, "/");
-      storedFilename = normalized.split("/").pop();
+    const fileValidation = validatePayrollFile(file);
+    if (!fileValidation.ok) {
+      await deleteUploadedFileIfPresent(file);
+      res.status(400).json({ message: fileValidation.message });
+      return;
     }
+
+    const storedFilename = resolveStoredPayrollFilename(file);
 
     if (!storedFilename) {
       await deleteUploadedFileIfPresent(file);
@@ -283,21 +374,15 @@ export async function uploadPayrollDocument(
         { screen: "documents" },
       );
 
-      const replacedDocument = await replaceExistingConfirmedPayroll({
-        companyOid,
-        workerOid,
-        year: parsedYear,
-        month: parsedMonth,
-        newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
-      });
-
-      const possibleDuplicate = await findPayrollDuplicate(
-        companyOid,
-        workerOid,
-        parsedYear,
-        parsedMonth,
-        new mongoose.Types.ObjectId(String(doc._id)),
-      );
+      const { replacedDocument, possibleDuplicate } =
+        await finalizeConfirmedPayrollUpload({
+          companyOid,
+          workerOid,
+          year: parsedYear,
+          month: parsedMonth,
+          newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
+          file,
+        });
 
       res.status(201).json({
         message: replacedDocument
@@ -345,21 +430,15 @@ export async function uploadPayrollDocument(
         { screen: "documents" },
       );
 
-      const replacedDocument = await replaceExistingConfirmedPayroll({
-        companyOid,
-        workerOid: matchedWorkerOid,
-        year: parsedYear,
-        month: parsedMonth,
-        newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
-      });
-
-      const possibleDuplicate = await findPayrollDuplicate(
-        companyOid,
-        matchedWorkerOid,
-        parsedYear,
-        parsedMonth,
-        new mongoose.Types.ObjectId(String(doc._id)),
-      );
+      const { replacedDocument, possibleDuplicate } =
+        await finalizeConfirmedPayrollUpload({
+          companyOid,
+          workerOid: matchedWorkerOid,
+          year: parsedYear,
+          month: parsedMonth,
+          newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
+          file,
+        });
 
       res.status(201).json({
         message: replacedDocument
@@ -492,11 +571,17 @@ export async function uploadPayrollBatch(
       return;
     }
 
-    const invalidFiles = files.filter((file) => !isPayrollPdfFile(file));
+    const invalidFiles = files.filter((file) => {
+      const validation = validatePayrollFile(file);
+      return !validation.ok;
+    });
     if (invalidFiles.length > 0) {
       // Batch is all-or-nothing for file-type validation to avoid mixed behavior.
       await deleteUploadedFilesIfPresent(files);
-      res.status(400).json({ message: PAYROLL_PDF_ONLY_MESSAGE });
+      const firstInvalid = validatePayrollFile(invalidFiles[0]);
+      res.status(400).json({
+        message: firstInvalid.ok ? PAYROLL_PDF_ONLY_MESSAGE : firstInvalid.message,
+      });
       return;
     }
 
@@ -548,14 +633,8 @@ export async function uploadPayrollBatch(
       const originalName = file.originalname;
       let documentCreatedForFile = false;
 
-      // Resolve stored filename — same pattern as uploadPayrollDocument
-      let storedFilename: string | undefined;
-      if (file.filename && typeof file.filename === "string") {
-        storedFilename = file.filename;
-      } else if (file.path && typeof file.path === "string") {
-        const normalized = file.path.replace(/\\/g, "/");
-        storedFilename = normalized.split("/").pop();
-      }
+      // Resolve stored filename — validated for /api/files compatibility
+      const storedFilename = resolveStoredPayrollFilename(file);
 
       if (!storedFilename) {
         await deleteUploadedFileIfPresent(file);
@@ -591,22 +670,16 @@ export async function uploadPayrollBatch(
           });
           documentCreatedForFile = true;
 
-          const replacedDocument = await replaceExistingConfirmedPayroll({
-            companyOid,
-            workerOid: batchWorkerOid,
-            year: parsedYear,
-            month: parsedMonth,
-            newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
-          });
+          const { replacedDocument, possibleDuplicate } =
+            await finalizeConfirmedPayrollUpload({
+              companyOid,
+              workerOid: batchWorkerOid,
+              year: parsedYear,
+              month: parsedMonth,
+              newDocumentId: new mongoose.Types.ObjectId(String(doc._id)),
+              file,
+            });
           if (replacedDocument) duplicateWarnings++;
-
-          const possibleDuplicate = await findPayrollDuplicate(
-            companyOid,
-            batchWorkerOid,
-            parsedYear,
-            parsedMonth,
-            new mongoose.Types.ObjectId(String(doc._id)),
-          );
           if (possibleDuplicate) duplicateWarnings++;
 
           results.push({
@@ -673,6 +746,7 @@ export async function uploadPayrollBatch(
       results,
     });
   } catch (err) {
+    await deleteUploadedFilesIfPresent(uploadedFiles);
     console.error("[payroll] uploadPayrollBatch error:", err);
     res.status(500).json({ message: "Error al procesar el lote de nóminas" });
   }
@@ -837,9 +911,21 @@ export async function listMyPayrollDocuments(
 
     const workerOid = new mongoose.Types.ObjectId(userId);
 
+    const query: {
+      workerId: mongoose.Types.ObjectId;
+      deletedAt: null;
+      companyId?: mongoose.Types.ObjectId;
+    } = { workerId: workerOid, deletedAt: null };
+
+    // Defense-in-depth: when the JWT carries companyId, scope to current company.
+    const userCompanyId = req.companyId;
+    if (userCompanyId && mongoose.Types.ObjectId.isValid(userCompanyId)) {
+      query.companyId = new mongoose.Types.ObjectId(userCompanyId);
+    }
+
     // Only matched/manual docs appear for workers — unmatched (workerId null) are excluded automatically.
     // Invalidated documents are also excluded.
-    const docs = await PayrollDocument.find({ workerId: workerOid, deletedAt: null })
+    const docs = await PayrollDocument.find(query)
       .sort({ year: -1, month: -1, createdAt: -1 })
       .select("filename originalName year month matchStatus createdAt")
       .lean();
