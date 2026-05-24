@@ -198,6 +198,12 @@ export async function writeTestUploadFile(
   return full;
 }
 
+export async function listNewUploadFiles(before: Set<string>): Promise<string[]> {
+  const dir = getTestUploadsDir();
+  const after = new Set(await fs.promises.readdir(dir).catch(() => []));
+  return [...after].filter((name) => !before.has(name));
+}
+
 export async function removeTestUploadFile(basename: string): Promise<void> {
   if (!basename || typeof basename !== "string") {
     return;

@@ -106,9 +106,9 @@ export function WorkerTabsShell({
   const hasVacationModule = enabledModules.includes(MODULE_KEYS.VACATION);
   const hasSickLeavesModule = enabledModules.includes(MODULE_KEYS.SICK_LEAVES);
   const hasAppointmentsModule = enabledModules.includes(MODULE_KEYS.APPOINTMENTS);
-  const hasDocumentsModule =
-    enabledModules.includes(MODULE_KEYS.DOCUMENTS) ||
-    enabledModules.includes(MODULE_KEYS.PAYROLL);
+  const hasCompanyDocumentsModule = enabledModules.includes(MODULE_KEYS.DOCUMENTS);
+  const hasPayrollModule = enabledModules.includes(MODULE_KEYS.PAYROLL);
+  const hasDocumentsModule = hasCompanyDocumentsModule || hasPayrollModule;
   const hasPraemienModule = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [wsTrigger, setWsTrigger] = useState(0);
@@ -220,6 +220,8 @@ export function WorkerTabsShell({
             hasSickLeavesModule={hasSickLeavesModule}
             hasAppointmentsModule={hasAppointmentsModule}
             hasDocumentsModule={hasDocumentsModule}
+            hasCompanyDocumentsModule={hasCompanyDocumentsModule}
+            hasPayrollModule={hasPayrollModule}
             hasMessagesModule={hasMessagesModule}
             hasPraemienModule={hasPraemienModule}
             showBottomPreview={false}
@@ -288,7 +290,10 @@ export function WorkerTabsShell({
         );
       case "documents":
         return hasDocumentsModule ? (
-          <WorkerDocumentsScreen />
+          <WorkerDocumentsScreen
+            hasCompanyDocumentsModule={hasCompanyDocumentsModule}
+            hasPayrollModule={hasPayrollModule}
+          />
         ) : (
           <PlaceholderScreen
             title="Documentos"
@@ -309,6 +314,8 @@ export function WorkerTabsShell({
     hasSickLeavesModule,
     hasAppointmentsModule,
     hasDocumentsModule,
+    hasCompanyDocumentsModule,
+    hasPayrollModule,
     hasMessagesModule,
     hasPraemienModule,
     onLogout,

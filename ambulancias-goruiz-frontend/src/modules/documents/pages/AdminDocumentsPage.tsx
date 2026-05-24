@@ -9,6 +9,11 @@ import {
   deleteDocument,
   deleteDocumentBatch,
 } from "../domain/api";
+import { buildDocumentsUploadFormData } from "../utils/buildUploadFormData";
+import {
+  filterPdfFiles,
+  isAcknowledgmentUploadEnabled,
+} from "../utils/uploadValidation";
 import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
@@ -163,13 +168,19 @@ const AdminDocumentsPage = () => {
       return;
     }
 
-    const formData = new FormData();
-    batchFiles.forEach((f) => {
-      formData.append("files", f);
-    });
-    if (batchFiles.length === 1 && requiresAcknowledgmentUpload) {
-      formData.append("requiresAcknowledgment", "true");
+    const { valid, rejected } = filterPdfFiles(batchFiles);
+    if (rejected.length > 0) {
+      toastT.warn("Solo se permiten archivos PDF para documentos de empresa");
+      if (valid.length === 0) return;
+      setBatchFiles(valid);
     }
+
+    const filesToUpload = valid.length > 0 ? valid : batchFiles;
+    const ackEnabled = isAcknowledgmentUploadEnabled(filesToUpload.length);
+    const formData = buildDocumentsUploadFormData(
+      filesToUpload,
+      ackEnabled && requiresAcknowledgmentUpload,
+    );
 
     setUploading(true);
     try {
@@ -342,7 +353,7 @@ const AdminDocumentsPage = () => {
                   multiple
                   // @ts-expect-error: webkitdirectory is not in the standard typings
                   webkitdirectory={folderMode ? "" : undefined}
-                  accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
+                  accept=".pdf,application/pdf"
                   onChange={(e) => {
                     const files = Array.from(e.target.files ?? []);
                     if (files.length === 0) return;
@@ -368,7 +379,7 @@ const AdminDocumentsPage = () => {
                 <label
                   htmlFor="requires-ack-upload"
                   className={`inline-flex shrink-0 select-none items-center gap-2 ${
-                    batchFiles.length === 1
+                    isAcknowledgmentUploadEnabled(batchFiles.length)
                       ? "cursor-pointer"
                       : "cursor-not-allowed opacity-40"
                   }`}
@@ -388,7 +399,7 @@ const AdminDocumentsPage = () => {
                     onChange={(e) =>
                       setRequiresAcknowledgmentUpload(e.target.checked)
                     }
-                    disabled={batchFiles.length !== 1}
+                    disabled={!isAcknowledgmentUploadEnabled(batchFiles.length)}
                     className="h-4 w-4 shrink-0 rounded border-slate-300 text-green-600 accent-green-600 focus:ring-green-500"
                     aria-label="Requiere confirmación por el trabajador"
                   />

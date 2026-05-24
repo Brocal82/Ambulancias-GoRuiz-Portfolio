@@ -115,3 +115,27 @@ export const uploadExcelOnly = multer({
     fileSize: 15 * 1024 * 1024,
   },
 });
+
+const pdfOnlyTypes = ["application/pdf"];
+
+const pdfOnlyFilter = (
+  _req: unknown,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (pdfOnlyTypes.includes(file.mimetype) || ext === ".pdf") {
+    cb(null, true);
+    return;
+  }
+  cb(new Error("❌ Tipo de archivo no permitido. Solo PDF."));
+};
+
+/** Multer solo PDF — documentos de empresa (evita imágenes en /uploads). */
+export const uploadPdfOnly = multer({
+  storage,
+  fileFilter: pdfOnlyFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});

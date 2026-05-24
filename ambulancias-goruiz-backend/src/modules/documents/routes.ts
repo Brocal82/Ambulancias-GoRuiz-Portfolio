@@ -4,7 +4,7 @@ import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { requireModule } from "../../middlewares/requireModule";
 import { validateObjectId } from "../../middlewares/validateObjectId";
-import { upload } from "../../middlewares/uploadMiddleware";
+import { uploadPdfOnly } from "../../middlewares/uploadMiddleware";
 import {
   acknowledgeMyDocumentDelivery,
   deleteCompanyDocumentsBatch,
@@ -51,7 +51,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
-  upload.single("file"),
+  uploadPdfOnly.single("file"),
   uploadCompanyDocument,
 );
 
@@ -60,7 +60,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
-  upload.array("files", 50),
+  uploadPdfOnly.array("files", 50),
   uploadCompanyDocumentsBatch,
 );
 

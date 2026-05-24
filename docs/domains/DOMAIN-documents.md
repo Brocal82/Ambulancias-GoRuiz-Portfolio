@@ -1,6 +1,6 @@
 # Domain — Documents (Documentos de empresa)
 
-Documentación del dominio de documentos de empresa: publicación, entrega controlada y descarga segura.
+Documentación del dominio de documentos de empresa: publicación, entrega automática en upload, confirmación de recepción y descarga segura.
 
 ---
 
@@ -8,7 +8,9 @@ Documentación del dominio de documentos de empresa: publicación, entrega contr
 
 | Recurso | Ruta API | MODULE_KEY |
 |---------|----------|------------|
-| Documentos | `/api/documents` | siempre activo (sin MODULE_KEY) |
+| Documentos | `/api/documents` | `documents` |
+
+Todas las rutas requieren `authenticateToken` + `requireModule("documents")` + rol (`admin` o `worker`).
 
 ---
 
@@ -19,67 +21,73 @@ Documentación del dominio de documentos de empresa: publicación, entrega contr
 Documento publicado por el admin para los workers de la empresa.
 
 ```
-companyId    ObjectId (required)
-title        string
-description  string?
-fileUrl      string  — ruta relativa: /uploads/<filename>
-fileType     "pdf" | "image" | "other"
-uploadedBy   ObjectId (ref User admin)
-createdAt    Date
-deletedAt    Date | null
+companyId              ObjectId (required)
+uploadedBy             ObjectId (admin)
+targetWorkerId         ObjectId | null  — destino único opcional en upload single
+uploadBatchId          ObjectId | null  — agrupa subidas batch
+originalName           string
+filename               string
+mimeType               string  — application/pdf
+fileUrl                string  — /uploads/<filename>
+requiresAcknowledgment boolean — false = informativo; ausente en legacy = requiere ack
+deletedAt              Date | null  — soft delete
 ```
-
-Índice: `{ companyId, createdAt: -1 }` — listado por empresa ordenado cronológicamente.
 
 ### `DocumentDelivery`
 
-Registro de entrega: qué workers han recibido (y potencialmente confirmado) un documento.
+Registro de entrega creado **automáticamente en el upload** (no hay endpoint `/deliver` separado).
 
 ```
-documentId   ObjectId (ref CompanyDocument)
-workerId     ObjectId (ref User)
-companyId    ObjectId
-deliveredAt  Date
-acknowledgedAt Date?
+documentId       ObjectId
+workerId         ObjectId
+companyId        ObjectId
+sentAt           Date
+readAt           Date | null
+acknowledgedAt   Date | null
 ```
 
-Índice único: `{ documentId, workerId }` — un registro de entrega por documento y worker.
+Índice único: `{ documentId, workerId }`.
 
 ---
 
 ## Lifecycle
 
 ```
-[Admin crea documento]
+[Admin sube PDF]
          │
          ▼
-  UPLOAD Y PUBLICACIÓN
-  Admin: POST /api/documents/upload/batch
-  multer (PDF/img, 10 MB) + metadata
+  POST /api/documents/upload  (single + targetWorkerId opcional)
+  POST /api/documents/upload/batch  (hasta 50 PDF)
+  multer uploadPdfOnly (10 MB) + validación MIME/extensión
   → CompanyDocument { deletedAt: null }
-         │
-         ▼
-  ENTREGA A WORKERS
-  Admin: POST /api/documents/:id/deliver
-  { workerIds: [...] }
-  → DocumentDelivery por cada worker seleccionado
+  → DocumentDelivery para todos los workers activos (o un targetWorkerId válido)
+  → Si falla validación/DB/distribución: fichero eliminado del disco
          │
          ▼
   WORKER ACCEDE
-  Worker: GET /api/documents/worker/me → documentos entregados
-  Worker: GET /api/files/<filename>    → descarga autenticada
+  GET /api/documents/mine
+  GET /api/files/<filename>  — JWT + DocumentDelivery + doc no borrado
+  PATCH /api/documents/deliveries/:id/read
          │
          ▼
-  [Opcional] ACK / CONFIRMACIÓN
-  Worker: PATCH /api/documents/delivery/:id/acknowledge
-  → acknowledgedAt = Date.now()
+  [Opcional] CONFIRMACIÓN
+  POST /api/documents/deliveries/:id/acknowledge  (+ password)
+  → requiresAcknowledgment !== false, readAt obligatorio
          │
          ▼
-  [Opcional] ELIMINACIÓN
-  Admin: DELETE /api/documents/:id
-  → deletedAt = Date.now()
-  → inaccesible en canAccessFile({ deletedAt: null })
+  [Admin] SOFT DELETE
+  DELETE /api/documents/:id  o  DELETE /api/documents/batch/:uploadBatchId
+  → deletedAt = now; fichero permanece en disco; acceso denegado en canAccessFile
 ```
+
+---
+
+## Política PDF-only
+
+- **Upload:** solo `application/pdf` con extensión `.pdf` alineada (MIME mismatch → 400).
+- **Multer:** `uploadPdfOnly` en rutas de documentos (no imágenes).
+- **Público `/uploads`:** PDFs devuelven 403; acceso vía `GET /api/files/:filename` autenticado.
+- **Frontend / mobile admin:** `accept=".pdf,application/pdf"`.
 
 ---
 
@@ -89,67 +97,51 @@ acknowledgedAt Date?
 
 | Método | Ruta | Acción |
 |--------|------|--------|
-| `GET` | `/api/documents` | Listar documentos empresa |
-| `POST` | `/api/documents/upload/batch` | Subir documento(s) |
-| `POST` | `/api/documents/:id/deliver` | Entregar a workers seleccionados |
-| `DELETE` | `/api/documents/:id` | Eliminar/invalidar documento |
-| `DELETE` | `/api/documents/batch` | Eliminación masiva |
-| `GET` | `/api/documents/:id/deliveries` | Ver estado de entregas |
+| `GET` | `/api/documents` | Listar documentos + métricas ack/read |
+| `POST` | `/api/documents/upload` | Subir un PDF (+ targetWorkerId, requiresAcknowledgment) |
+| `POST` | `/api/documents/upload/batch` | Subir lote PDF |
+| `DELETE` | `/api/documents/:id` | Soft delete |
+| `DELETE` | `/api/documents/batch/:uploadBatchId` | Soft delete lote |
 
 ### Worker
 
 | Método | Ruta | Acción |
 |--------|------|--------|
-| `GET` | `/api/documents/worker/me` | Mis documentos entregados |
-| `PATCH` | `/api/documents/delivery/:id/acknowledge` | Confirmar recepción |
-| `GET` | `/api/files/:filename` | Descargar documento (autenticado) |
+| `GET` | `/api/documents/mine` | Mis entregas (excluye docs soft-deleted) |
+| `PATCH` | `/api/documents/deliveries/:deliveryId/read` | Marcar leído |
+| `POST` | `/api/documents/deliveries/:deliveryId/acknowledge` | Confirmar con contraseña |
+| `GET` | `/api/files/:filename` | Descargar PDF autenticado |
 
 ---
 
 ## Autorización de archivos
 
-`canAccessFile()` para documentos de empresa (ramas 7 y 7b):
-
-**Admin (rama 7):**
-```ts
-CompanyDocument.findOne({ companyId, fileUrl, deletedAt: null })
-```
-
-**Worker (rama 7b):**
-```ts
-const doc = await CompanyDocument.findOne({ companyId, fileUrl, deletedAt: null });
-if (doc) {
-  const delivery = await DocumentDelivery.findOne({
-    companyId,
-    documentId: doc._id,
-    workerId: userOid,
-  });
-  if (delivery) return true;
-}
-```
-
-Un worker solo puede acceder a un documento si tiene un `DocumentDelivery` activo. El mero hecho de pertenecer a la empresa no es suficiente.
+`canAccessFile()` ramas 7 / 7b — admin por `companyId`; worker solo con `DocumentDelivery` activo y `deletedAt: null`.
 
 ---
 
 ## Multi-tenant
 
-`CompanyDocument.companyId` y `DocumentDelivery.companyId` son obligatorios. No hay datos legacy. El índice `{ documentId, workerId }` en `DocumentDelivery` es cross-tenant intencionalmente (un ObjectId de documento es ya único a nivel global en MongoDB).
+`companyId` obligatorio en `CompanyDocument` y `DocumentDelivery`. `targetWorkerId` debe ser worker activo de la misma empresa.
 
 ---
 
 ## Rate limiting
 
-`POST /api/documents/upload/*` tiene `rateLimitUpload` (10 req / 5 min / IP) además del límite global.
+`POST /api/documents/upload*` — `rateLimitUpload` (10 req / 5 min / IP).
 
 ---
 
 ## Frontend
 
-`src/modules/documents/domain/api.ts` expone:
-- `listAdminDocuments()` — listado admin
-- `uploadDocumentsBatch(formData)` — subida
-- `deleteDocument(id)` — eliminación individual
-- `deleteDocumentBatch(ids)` — eliminación masiva
+`src/modules/documents/domain/api.ts` — HTTP en módulo; PDFs con `openSecureFile()`.
 
-Los documentos PDF se abren con `openSecureFile()`.
+Rutas envueltas en `<RequireModule name="documents" />`.
+
+---
+
+## Mobile (app-worker)
+
+Pestaña Documentos visible si `documents` **o** `payroll`. Las APIs de documentos de empresa (`/documents/*`) solo se llaman cuando el módulo `documents` está habilitado.
+
+OpenAPI: `/api/docs` — paths bajo tag **Documents**.

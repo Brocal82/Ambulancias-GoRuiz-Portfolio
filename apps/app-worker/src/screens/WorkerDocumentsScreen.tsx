@@ -55,7 +55,13 @@ function getAcknowledgeErrorMessage(error: unknown): string {
   return error.message || "No se pudo confirmar la recepción.";
 }
 
-export function WorkerDocumentsScreen() {
+export function WorkerDocumentsScreen({
+  hasCompanyDocumentsModule = true,
+  hasPayrollModule = true,
+}: {
+  hasCompanyDocumentsModule?: boolean;
+  hasPayrollModule?: boolean;
+}) {
   const [activeTab, setActiveTab] = useState<DocumentsTabKey>("payroll");
   const [payrollDocs, setPayrollDocs] = useState<WorkerPayrollDocument[]>([]);
   const [pendingDeliveries, setPendingDeliveries] = useState<WorkerDocumentDelivery[]>([]);
@@ -71,8 +77,8 @@ export function WorkerDocumentsScreen() {
     setErrorMessage(undefined);
     try {
       const [payroll, deliveries] = await Promise.all([
-        getMyPayrollDocuments(),
-        getMyDocumentDeliveries(),
+        hasPayrollModule ? getMyPayrollDocuments() : Promise.resolve([]),
+        hasCompanyDocumentsModule ? getMyDocumentDeliveries() : Promise.resolve([]),
       ]);
       setPayrollDocs(payroll);
       setPendingDeliveries(deliveries);
@@ -85,7 +91,7 @@ export function WorkerDocumentsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [hasCompanyDocumentsModule, hasPayrollModule]);
 
   useEffect(() => {
     void loadAll();
@@ -183,30 +189,36 @@ export function WorkerDocumentsScreen() {
       </View>
 
       <View style={styles.tabRow}>
-        <Pressable
-          style={[styles.tabButton, activeTab === "payroll" && styles.tabButtonActive]}
-          onPress={() => setActiveTab("payroll")}
-        >
-          <Text style={[styles.tabLabel, activeTab === "payroll" && styles.tabLabelActive]}>
-            Nominas ({payrollDocs.length})
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tabButton, activeTab === "toConfirm" && styles.tabButtonActive]}
-          onPress={() => setActiveTab("toConfirm")}
-        >
-          <Text style={[styles.tabLabel, activeTab === "toConfirm" && styles.tabLabelActive]}>
-            Para confirmar ({toConfirmRows.filter((row) => !row.acknowledgedAt).length})
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tabButton, activeTab === "informative" && styles.tabButtonActive]}
-          onPress={() => setActiveTab("informative")}
-        >
-          <Text style={[styles.tabLabel, activeTab === "informative" && styles.tabLabelActive]}>
-            Informativos ({informativeRows.length})
-          </Text>
-        </Pressable>
+        {hasPayrollModule ? (
+          <Pressable
+            style={[styles.tabButton, activeTab === "payroll" && styles.tabButtonActive]}
+            onPress={() => setActiveTab("payroll")}
+          >
+            <Text style={[styles.tabLabel, activeTab === "payroll" && styles.tabLabelActive]}>
+              Nominas ({payrollDocs.length})
+            </Text>
+          </Pressable>
+        ) : null}
+        {hasCompanyDocumentsModule ? (
+          <>
+            <Pressable
+              style={[styles.tabButton, activeTab === "toConfirm" && styles.tabButtonActive]}
+              onPress={() => setActiveTab("toConfirm")}
+            >
+              <Text style={[styles.tabLabel, activeTab === "toConfirm" && styles.tabLabelActive]}>
+                Para confirmar ({toConfirmRows.filter((row) => !row.acknowledgedAt).length})
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.tabButton, activeTab === "informative" && styles.tabButtonActive]}
+              onPress={() => setActiveTab("informative")}
+            >
+              <Text style={[styles.tabLabel, activeTab === "informative" && styles.tabLabelActive]}>
+                Informativos ({informativeRows.length})
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
       </View>
 
       {errorMessage ? (

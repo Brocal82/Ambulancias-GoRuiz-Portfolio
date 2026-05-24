@@ -118,6 +118,8 @@ type Props = {
   hasWorkdayModule: boolean;
   hasAgendaModule: boolean;
   hasDocumentsModule: boolean;
+  hasCompanyDocumentsModule: boolean;
+  hasPayrollModule: boolean;
   hasMessagesModule: boolean;
   hasVacationModule: boolean;
   hasSickLeavesModule: boolean;
@@ -142,6 +144,8 @@ export function HomeScreen({
   hasWorkdayModule,
   hasAgendaModule,
   hasDocumentsModule,
+  hasCompanyDocumentsModule,
+  hasPayrollModule,
   hasMessagesModule,
   hasVacationModule,
   hasSickLeavesModule,
@@ -284,7 +288,7 @@ export function HomeScreen({
     try {
       const [unreadMessages, deliveries] = await Promise.all([
         hasMessagesModule ? getMyMessages({ unreadOnly: true }) : Promise.resolve([]),
-        hasDocumentsModule ? getMyDocumentDeliveries() : Promise.resolve([]),
+        hasCompanyDocumentsModule ? getMyDocumentDeliveries() : Promise.resolve([]),
       ]);
 
       const documentsToConfirm = deliveries.filter(
@@ -300,7 +304,7 @@ export function HomeScreen({
     } catch {
       // Keep previous alerts value on transient failures.
     }
-  }, [hasDocumentsModule, hasMessagesModule]);
+  }, [hasCompanyDocumentsModule, hasMessagesModule]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -622,7 +626,7 @@ export function HomeScreen({
                 </Pressable>
               ) : null}
 
-              {hasDocumentsModule && documentsToConfirmCount > 0 ? (
+              {hasCompanyDocumentsModule && documentsToConfirmCount > 0 ? (
                 <Pressable
                   style={styles.alertRow}
                   onPress={() => {
@@ -639,7 +643,7 @@ export function HomeScreen({
                 </Pressable>
               ) : null}
 
-              {hasDocumentsModule && informativeUnreadCount > 0 ? (
+              {hasCompanyDocumentsModule && informativeUnreadCount > 0 ? (
                 <Pressable
                   style={styles.alertRow}
                   onPress={() => {

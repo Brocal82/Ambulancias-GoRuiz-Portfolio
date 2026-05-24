@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, appointments, and mechanics. Full reference: docs/API-REFERENCE.md",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, appointments, documents, and mechanics. Full reference: docs/API-REFERENCE.md and docs/domains/DOMAIN-documents.md",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -660,6 +660,166 @@
         }
       }
     },
+    "/api/documents": {
+      "get": {
+        "summary": "List company documents (admin)",
+        "description": "Requires module `documents`. Returns non-deleted documents with delivery ack/read aggregates. Soft-deleted rows are excluded.",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Document list",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/CompanyDocumentAdmin" } }
+              }
+            }
+          },
+          "403": { "description": "Module disabled or forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/documents/upload": {
+      "post": {
+        "summary": "Upload single company document (admin)",
+        "description": "Requires module `documents`. PDF only (max 10 MB). Optional `targetWorkerId` limits distribution to one active worker; omit to distribute to all active workers. Optional `requiresAcknowledgment` (single file). Files are deleted from disk if validation or DB/distribution fails. Rate limit: 10 uploads / 5 min / IP.",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary", "description": "PDF only" },
+                  "targetWorkerId": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" },
+                  "requiresAcknowledgment": { "type": "string", "description": "Truthy: true, 1, on, yes" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CompanyDocumentUploadResult" } } } },
+          "400": { "description": "Validation error (PDF-only, invalid target, MIME mismatch)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/documents/upload/batch": {
+      "post": {
+        "summary": "Upload company documents batch (admin)",
+        "description": "Requires module `documents`. PDF only, up to 50 files. Auto-distributes to all active workers on upload. `requiresAcknowledgment` only when exactly one file. Orphan files cleaned up on failure.",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["files"],
+                "properties": {
+                  "files": { "type": "array", "items": { "type": "string", "format": "binary" } },
+                  "requiresAcknowledgment": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Batch created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CompanyDocumentBatchUploadResult" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/documents/{id}": {
+      "delete": {
+        "summary": "Soft-delete company document (admin)",
+        "description": "Sets `deletedAt`; file remains on disk but `GET /api/files/:filename` denies access. Deliveries are retained for audit.",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/documents/batch/{uploadBatchId}": {
+      "delete": {
+        "summary": "Soft-delete document batch (admin)",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "uploadBatchId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Batch deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CompanyDocumentBatchDeleteResult" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/documents/mine": {
+      "get": {
+        "summary": "List my document deliveries (worker)",
+        "description": "Requires module `documents`. Returns deliveries for non-deleted documents only.",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Deliveries",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkerDocumentDeliveriesResponse" }
+              }
+            }
+          },
+          "403": { "description": "Module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/documents/deliveries/{deliveryId}/read": {
+      "patch": {
+        "summary": "Mark delivery as read (worker)",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "deliveryId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Read timestamp set", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DocumentDeliveryReadResult" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/documents/deliveries/{deliveryId}/acknowledge": {
+      "post": {
+        "summary": "Acknowledge document receipt (worker)",
+        "description": "Requires prior read (`readAt`). Password re-auth. Informational docs (`requiresAcknowledgment: false`) return 400. Idempotent if already acknowledged.",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "deliveryId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["password"],
+                "properties": { "password": { "type": "string", "minLength": 1 } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Acknowledged", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DocumentDeliveryAckResult" } } } },
+          "400": { "description": "Missing password or doc does not require ack", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "401": { "description": "Wrong password", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Must read document first", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found or soft-deleted document", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
     "/api/mechanics/report-issue": {
       "post": {
         "summary": "Report mechanic issue (worker/admin on assignment)",
@@ -1224,6 +1384,84 @@
           "assignedTo": { "type": "string" },
           "completionNotes": { "type": "string" },
           "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CompanyDocumentAdmin": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "originalName": { "type": "string" },
+          "filename": { "type": "string" },
+          "mimeType": { "type": "string", "example": "application/pdf" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "targetWorkerId": { "type": "string", "nullable": true },
+          "uploadBatchId": { "type": "string", "nullable": true },
+          "requiresAcknowledgment": { "type": "boolean" },
+          "totalRecipients": { "type": "integer" },
+          "readCount": { "type": "integer" },
+          "acknowledgedCount": { "type": "integer" },
+          "pendingAcknowledgmentCount": { "type": "integer" }
+        }
+      },
+      "CompanyDocumentUploadResult": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "originalName": { "type": "string" },
+          "filename": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "targetWorkerId": { "type": "string", "nullable": true },
+          "requiresAcknowledgment": { "type": "boolean" }
+        }
+      },
+      "CompanyDocumentBatchUploadResult": {
+        "type": "object",
+        "properties": {
+          "count": { "type": "integer" },
+          "documents": { "type": "array", "items": { "$ref": "#/components/schemas/CompanyDocumentUploadResult" } }
+        }
+      },
+      "CompanyDocumentBatchDeleteResult": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "deletedCount": { "type": "integer" }
+        }
+      },
+      "WorkerDocumentDelivery": {
+        "type": "object",
+        "properties": {
+          "deliveryId": { "type": "string" },
+          "documentId": { "type": "string" },
+          "originalName": { "type": "string" },
+          "filename": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "requiresAcknowledgment": { "type": "boolean" },
+          "sentAt": { "type": "string", "format": "date-time" },
+          "readAt": { "type": "string", "format": "date-time", "nullable": true },
+          "acknowledgedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "WorkerDocumentDeliveriesResponse": {
+        "type": "object",
+        "properties": {
+          "deliveries": { "type": "array", "items": { "$ref": "#/components/schemas/WorkerDocumentDelivery" } }
+        }
+      },
+      "DocumentDeliveryReadResult": {
+        "type": "object",
+        "properties": {
+          "deliveryId": { "type": "string" },
+          "readAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DocumentDeliveryAckResult": {
+        "type": "object",
+        "properties": {
+          "deliveryId": { "type": "string" },
+          "readAt": { "type": "string", "format": "date-time", "nullable": true },
+          "acknowledgedAt": { "type": "string", "format": "date-time" }
         }
       }
     }

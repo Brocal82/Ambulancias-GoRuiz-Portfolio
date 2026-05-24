@@ -5,6 +5,7 @@ import {
   requireCompanyForAdmin,
   requireCompanyForWorker,
 } from "../../utils/requireCompany";
+import { unlinkMulterFiles } from "../../utils/unlinkUploadedFiles";
 import { CompanyDocument } from "./models/document.model";
 import { DocumentDelivery } from "./models/document-delivery.model";
 import User from "../users/models/user.model";
@@ -13,7 +14,93 @@ type UploadedFile = {
   originalname?: string;
   filename?: string;
   mimetype?: string;
+  path?: string;
 } | undefined;
+
+const COMPANY_DOCUMENT_PDF_ONLY_MESSAGE =
+  "Solo se permiten archivos PDF para los documentos de empresa.";
+
+function hasPdfExtension(name?: string): boolean {
+  if (!name || typeof name !== "string") return false;
+  return name.toLowerCase().endsWith(".pdf");
+}
+
+function isCompanyDocumentPdfFile(file: {
+  mimetype?: string;
+  originalname?: string;
+  filename?: string;
+}): boolean {
+  return (
+    file.mimetype === "application/pdf" ||
+    hasPdfExtension(file.originalname) ||
+    hasPdfExtension(file.filename)
+  );
+}
+
+type FileValidationResult =
+  | { ok: true }
+  | { ok: false; code: "FILE_INVALID" | "PDF_ONLY" | "MIME_MISMATCH"; message: string };
+
+function validateCompanyDocumentFile(file: UploadedFile): FileValidationResult {
+  if (!file || !file.filename || !file.originalname || !file.mimetype) {
+    return {
+      ok: false,
+      code: "FILE_INVALID",
+      message: "No se recibió ningún archivo válido",
+    };
+  }
+
+  const imageMimes = ["image/jpeg", "image/png", "image/webp"];
+  if (imageMimes.includes(file.mimetype)) {
+    return {
+      ok: false,
+      code: "PDF_ONLY",
+      message: COMPANY_DOCUMENT_PDF_ONLY_MESSAGE,
+    };
+  }
+
+  if (!isCompanyDocumentPdfFile(file)) {
+    return {
+      ok: false,
+      code: "PDF_ONLY",
+      message: COMPANY_DOCUMENT_PDF_ONLY_MESSAGE,
+    };
+  }
+
+  const hasPdfMime = file.mimetype === "application/pdf";
+  const hasPdfExt =
+    hasPdfExtension(file.originalname) || hasPdfExtension(file.filename);
+  if (hasPdfMime !== hasPdfExt) {
+    return {
+      ok: false,
+      code: "MIME_MISMATCH",
+      message:
+        "El tipo MIME y la extensión del archivo no coinciden. Solo se permiten PDF.",
+    };
+  }
+
+  return { ok: true };
+}
+
+function getUploadedFilesFromRequest(req: Request): Express.Multer.File[] {
+  const single = (req as Request & { file?: Express.Multer.File }).file;
+  const multiple = (req as Request & { files?: Express.Multer.File[] }).files;
+  if (multiple?.length) return multiple;
+  if (single) return [single];
+  return [];
+}
+
+async function cleanupRequestUploads(req: Request): Promise<void> {
+  await unlinkMulterFiles(getUploadedFilesFromRequest(req));
+}
+
+async function rollbackCreatedDocuments(
+  docIds: mongoose.Types.ObjectId[],
+): Promise<void> {
+  if (!docIds.length) return;
+  await DocumentDelivery.deleteMany({ documentId: { $in: docIds } });
+  await CompanyDocument.deleteMany({ _id: { $in: docIds } });
+}
 
 /** Multipart / JSON: only explicit truthy strings count; omitted → false. */
 function parseRequiresAcknowledgmentFromBody(raw: unknown): boolean {
@@ -54,6 +141,11 @@ async function createCompanyDocumentWithDeliveries(params: {
 
   if (!file || !file.filename || !file.originalname || !file.mimetype) {
     throw new Error("FILE_INVALID");
+  }
+
+  const fileValidation = validateCompanyDocumentFile(file);
+  if (!fileValidation.ok) {
+    throw new Error(fileValidation.code);
   }
 
   /** Recipients for DocumentDelivery: all active workers, or exactly one validated target. */
@@ -106,9 +198,13 @@ async function createCompanyDocumentWithDeliveries(params: {
       sentAt: now,
       readAt: null,
     }));
-    await DocumentDelivery.insertMany(deliveries, { ordered: false }).catch(() => {
-      // Ignore duplicate key races; distribution is best-effort per worker.
-    });
+    try {
+      await DocumentDelivery.insertMany(deliveries, { ordered: true });
+    } catch (insertErr) {
+      await CompanyDocument.deleteOne({ _id: doc._id });
+      console.error("Error al crear entregas de documento:", insertErr);
+      throw new Error("DISTRIBUTION_FAILED");
+    }
   }
 
   return doc;
@@ -121,7 +217,7 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
     return;
   }
 
-  const file = (req as any)?.file as UploadedFile;
+  const file = (req as Request & { file?: Express.Multer.File }).file as UploadedFile;
 
   const { targetWorkerId } = (req.body || {}) as { targetWorkerId?: string };
   const requiresAcknowledgment = parseRequiresAcknowledgmentFromBody(
@@ -131,10 +227,18 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
 
   if (targetWorkerId) {
     if (!mongoose.Types.ObjectId.isValid(targetWorkerId)) {
+      await cleanupRequestUploads(req);
       res.status(400).json({ message: "targetWorkerId no es un ObjectId válido" });
       return;
     }
     targetWorkerObjectId = new mongoose.Types.ObjectId(targetWorkerId);
+  }
+
+  const fileValidation = validateCompanyDocumentFile(file);
+  if (!fileValidation.ok) {
+    await cleanupRequestUploads(req);
+    res.status(400).json({ message: fileValidation.message });
+    return;
   }
 
   try {
@@ -158,9 +262,17 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
       targetWorkerId: doc.targetWorkerId,
       requiresAcknowledgment: requiresAcknowledgmentForApi(doc),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    await cleanupRequestUploads(req);
     if (err instanceof Error && err.message === "FILE_INVALID") {
       res.status(400).json({ message: "No se recibió ningún archivo válido" });
+      return;
+    }
+    if (
+      err instanceof Error &&
+      (err.message === "PDF_ONLY" || err.message === "MIME_MISMATCH")
+    ) {
+      res.status(400).json({ message: COMPANY_DOCUMENT_PDF_ONLY_MESSAGE });
       return;
     }
     if (err instanceof Error && err.message === "TARGET_WORKER_INVALID") {
@@ -168,6 +280,10 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
         message:
           "El destinatario no es válido: debe ser un trabajador activo de tu empresa.",
       });
+      return;
+    }
+    if (err instanceof Error && err.message === "DISTRIBUTION_FAILED") {
+      res.status(500).json({ message: "Error al distribuir el documento" });
       return;
     }
     console.error("Error al guardar documento de empresa:", err);
@@ -182,7 +298,10 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
     return;
   }
 
-  const files = ((req as any)?.files as UploadedFile[] | undefined) ?? [];
+  const files =
+    ((req as Request & { files?: Express.Multer.File[] }).files as
+      | UploadedFile[]
+      | undefined) ?? [];
   if (!files || files.length === 0) {
     res.status(400).json({ message: "No se recibieron archivos para el lote" });
     return;
@@ -194,6 +313,31 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
           (req.body as { requiresAcknowledgment?: unknown })?.requiresAcknowledgment,
         )
       : false;
+
+  if (
+    files.length > 1 &&
+    parseRequiresAcknowledgmentFromBody(
+      (req.body as { requiresAcknowledgment?: unknown })?.requiresAcknowledgment,
+    )
+  ) {
+    await cleanupRequestUploads(req);
+    res.status(400).json({
+      message:
+        "requiresAcknowledgment solo aplica cuando se sube un único archivo.",
+    });
+    return;
+  }
+
+  for (const file of files) {
+    const validation = validateCompanyDocumentFile(file);
+    if (!validation.ok) {
+      await cleanupRequestUploads(req);
+      res.status(400).json({ message: validation.message });
+      return;
+    }
+  }
+
+  const createdDocIds: mongoose.Types.ObjectId[] = [];
 
   try {
     const companyObjectId = new mongoose.Types.ObjectId(companyResult.companyId);
@@ -218,6 +362,7 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
         uploadBatchId,
         requiresAcknowledgment: requiresAcknowledgmentForBatch,
       });
+      createdDocIds.push(doc._id as mongoose.Types.ObjectId);
       createdDocs.push({
         id: doc._id,
         originalName: doc.originalName,
@@ -232,7 +377,27 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
       count: createdDocs.length,
       documents: createdDocs,
     });
-  } catch (err) {
+  } catch (err: unknown) {
+    await rollbackCreatedDocuments(createdDocIds);
+    await cleanupRequestUploads(req);
+    if (
+      err instanceof Error &&
+      (err.message === "PDF_ONLY" ||
+        err.message === "MIME_MISMATCH" ||
+        err.message === "FILE_INVALID")
+    ) {
+      res.status(400).json({
+        message:
+          err.message === "FILE_INVALID"
+            ? "No se recibió ningún archivo válido"
+            : COMPANY_DOCUMENT_PDF_ONLY_MESSAGE,
+      });
+      return;
+    }
+    if (err instanceof Error && err.message === "DISTRIBUTION_FAILED") {
+      res.status(500).json({ message: "Error al distribuir el lote de documentos" });
+      return;
+    }
     console.error("Error en subida por lote de documentos de empresa:", err);
     res.status(500).json({ message: "Error al subir el lote de documentos" });
   }
