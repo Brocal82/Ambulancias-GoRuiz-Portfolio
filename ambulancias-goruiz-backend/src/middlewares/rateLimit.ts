@@ -109,3 +109,64 @@ export const rateLimitGlobal = rateLimit({
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === "test",
 });
+
+function skipSupportAccessRateLimitInTest(): boolean {
+  return (
+    process.env.NODE_ENV === "test" &&
+    process.env.SUPPORT_ACCESS_RATE_LIMIT_TEST !== "1"
+  );
+}
+
+export const supportAccessRateLimitConfig = {
+  create: {
+    max: env.RATE_LIMIT_SUPPORT_ACCESS_CREATE_MAX,
+    windowMs: env.RATE_LIMIT_SUPPORT_ACCESS_CREATE_WINDOW_MS,
+  },
+  review: {
+    max: env.RATE_LIMIT_SUPPORT_ACCESS_REVIEW_MAX,
+    windowMs: env.RATE_LIMIT_SUPPORT_ACCESS_REVIEW_WINDOW_MS,
+  },
+  revoke: {
+    max: env.RATE_LIMIT_SUPPORT_ACCESS_REVOKE_MAX,
+    windowMs: env.RATE_LIMIT_SUPPORT_ACCESS_REVOKE_WINDOW_MS,
+  },
+} as const;
+
+/**
+ * Rate limit for POST /api/support-access/requests.
+ * Default: 12 requests / 15 min per IP.
+ */
+export const rateLimitSupportAccessCreate = rateLimit({
+  windowMs: env.RATE_LIMIT_SUPPORT_ACCESS_CREATE_WINDOW_MS,
+  limit: env.RATE_LIMIT_SUPPORT_ACCESS_CREATE_MAX,
+  message: jsonMessage("Demasiadas solicitudes de acceso soporte. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipSupportAccessRateLimitInTest,
+});
+
+/**
+ * Rate limit for POST /api/support-access/requests/:id/review.
+ * Default: 20 reviews / 15 min per IP.
+ */
+export const rateLimitSupportAccessReview = rateLimit({
+  windowMs: env.RATE_LIMIT_SUPPORT_ACCESS_REVIEW_WINDOW_MS,
+  limit: env.RATE_LIMIT_SUPPORT_ACCESS_REVIEW_MAX,
+  message: jsonMessage("Demasiadas revisiones de acceso soporte. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipSupportAccessRateLimitInTest,
+});
+
+/**
+ * Rate limit for POST /api/support-access/requests/:id/revoke.
+ * Default: 10 revocations / 15 min per IP.
+ */
+export const rateLimitSupportAccessRevoke = rateLimit({
+  windowMs: env.RATE_LIMIT_SUPPORT_ACCESS_REVOKE_WINDOW_MS,
+  limit: env.RATE_LIMIT_SUPPORT_ACCESS_REVOKE_MAX,
+  message: jsonMessage("Demasiadas revocaciones de acceso soporte. Intente más tarde."),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipSupportAccessRateLimitInTest,
+});

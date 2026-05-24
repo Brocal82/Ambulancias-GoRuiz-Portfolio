@@ -34,6 +34,14 @@ Environment variables:
 - `SECURITY_MONITORING_ENABLED` (default `true`)
 - `SECURITY_MONITORING_CRON` (default `0 7 * * *`)
 - `SECURITY_MONITORING_DENIED_THRESHOLD` (default `3`)
+- `SUPPORT_ACCESS_EXPIRATION_CRON` (default `*/15 * * * *`)
+
+## 2b) Support access expiration
+
+- Service: `src/modules/support-access/services/support-access.service.ts` (`runSupportAccessExpirationSweep`)
+- Scheduled execution: cron in `src/index.ts` (every 15 min by default)
+- Read-path trigger: list requests and active-check endpoints also sweep stale approved records
+- Bootstrap: server startup runs one sweep to avoid stale records after restarts
 
 ## 3) Metrics meaning
 

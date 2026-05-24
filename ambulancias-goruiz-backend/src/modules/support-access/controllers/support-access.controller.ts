@@ -172,6 +172,7 @@ export async function checkMyActiveSupportAccess(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const auditContext = buildAuditContextFromRequest(req);
   try {
     const actorUserId = req.userId;
     const companyId = typeof req.query.companyId === "string" ? req.query.companyId : "";
@@ -184,9 +185,22 @@ export async function checkMyActiveSupportAccess(
       return;
     }
     const active = await hasActiveSupportAccess({ actorUserId, companyId });
+    emitAuditLog(AUDIT_EVENT.SUPPORT_ACCESS_ACTIVE_CHECKED, "success", {
+      ...auditContext,
+      statusCode: 200,
+      tenantCompanyId: companyId,
+      resourceType: "support_access_request",
+      meta: { active, companyId },
+    });
     res.status(200).json({ active });
   } catch (error: any) {
-    res.status(400).json({ message: String(error?.message ?? "Error de validación") });
+    const msg = String(error?.message ?? "Error de validación");
+    emitAuditLog(AUDIT_EVENT.SUPPORT_ACCESS_ACTIVE_CHECKED, "error", {
+      ...auditContext,
+      statusCode: 400,
+      reason: msg,
+    });
+    res.status(400).json({ message: msg });
   }
 }
 
@@ -194,10 +208,17 @@ export async function getSecurityMonitoringSummary(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const auditContext = buildAuditContextFromRequest(req);
   const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : 24;
   const hours = Number.isFinite(hoursRaw) ? Math.max(1, Math.min(168, Math.floor(hoursRaw))) : 24;
   try {
     const snapshot = await buildSecurityMonitoringSnapshot(hours);
+    emitAuditLog(AUDIT_EVENT.SECURITY_MONITORING_QUERIED, "success", {
+      ...auditContext,
+      statusCode: 200,
+      resourceType: "security_monitoring",
+      meta: { endpoint: "daily-summary", hours },
+    });
     res.status(200).json(snapshot);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });
@@ -205,6 +226,7 @@ export async function getSecurityMonitoringSummary(
 }
 
 export async function getSecurityAuditLogs(req: Request, res: Response): Promise<void> {
+  const auditContext = buildAuditContextFromRequest(req);
   try {
     const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : undefined;
     const limitRaw = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
@@ -222,6 +244,12 @@ export async function getSecurityAuditLogs(req: Request, res: Response): Promise
       actorUserId,
       tenantCompanyId,
     });
+    emitAuditLog(AUDIT_EVENT.SECURITY_MONITORING_QUERIED, "success", {
+      ...auditContext,
+      statusCode: 200,
+      resourceType: "security_monitoring",
+      meta: { endpoint: "audit-logs", hours: hoursRaw ?? null, limit: limitRaw ?? null },
+    });
     res.status(200).json(data);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });
@@ -229,11 +257,18 @@ export async function getSecurityAuditLogs(req: Request, res: Response): Promise
 }
 
 export async function getSecurityMonitoringOperationalHealth(
-  _req: Request,
+  req: Request,
   res: Response,
 ): Promise<void> {
+  const auditContext = buildAuditContextFromRequest(req);
   try {
     const health = await buildSecurityMonitoringOperationalHealth();
+    emitAuditLog(AUDIT_EVENT.SECURITY_MONITORING_QUERIED, "success", {
+      ...auditContext,
+      statusCode: 200,
+      resourceType: "security_monitoring",
+      meta: { endpoint: "health" },
+    });
     res.status(200).json(health);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });
@@ -241,10 +276,17 @@ export async function getSecurityMonitoringOperationalHealth(
 }
 
 export async function getSecurityTenantRisk(req: Request, res: Response): Promise<void> {
+  const auditContext = buildAuditContextFromRequest(req);
   try {
     const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : undefined;
     const limitRaw = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
     const ranking = await buildTenantRiskRanking({ hours: hoursRaw, limit: limitRaw });
+    emitAuditLog(AUDIT_EVENT.SECURITY_MONITORING_QUERIED, "success", {
+      ...auditContext,
+      statusCode: 200,
+      resourceType: "security_monitoring",
+      meta: { endpoint: "tenant-risk", hours: hoursRaw ?? null, limit: limitRaw ?? null },
+    });
     res.status(200).json(ranking);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });
@@ -252,9 +294,16 @@ export async function getSecurityTenantRisk(req: Request, res: Response): Promis
 }
 
 export async function getSecurityMonthlyReview(req: Request, res: Response): Promise<void> {
+  const auditContext = buildAuditContextFromRequest(req);
   try {
     const hoursRaw = typeof req.query.hours === "string" ? Number(req.query.hours) : undefined;
     const snapshot = await buildSecurityMonthlyReviewSnapshot(hoursRaw);
+    emitAuditLog(AUDIT_EVENT.SECURITY_MONITORING_QUERIED, "success", {
+      ...auditContext,
+      statusCode: 200,
+      resourceType: "security_monitoring",
+      meta: { endpoint: "monthly-review", hours: hoursRaw ?? null },
+    });
     res.status(200).json(snapshot);
   } catch (error: any) {
     res.status(500).json({ message: String(error?.message ?? "Error interno") });

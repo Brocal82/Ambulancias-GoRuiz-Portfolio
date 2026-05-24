@@ -304,15 +304,21 @@ Requiere módulo `messages` habilitado (`requireModule`). `companyId` del mensaj
 
 Todas las rutas requieren auth + rol `superadmin` (`authorizeSuperadmin`).
 
+**Arquitectura:** JIT gobierna ventanas operacionales de aprobación únicamente. No existe middleware de override tenant, ni token de impersonación de soporte. El panel superadmin incluye UI en `/superadmin/support-access` para crear/aprobar/revocar solicitudes.
+
 ### Solicitudes JIT (break-glass)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/support-access/requests` | Crear solicitud (`companyId`, `reason`, `ticketId`, `durationMinutes` 5–240) |
+| `POST` | `/support-access/requests` | Crear solicitud (`companyId`, `reason`, `ticketId`, `durationMinutes` 5–240). Rate limit: 12/15min por IP |
 | `GET` | `/support-access/requests` | Listar solicitudes (`?status=pending\|approved\|denied\|revoked\|expired`) |
-| `POST` | `/support-access/requests/:id/review` | Aprobar (step-up + 2 aprobadores) o denegar (`approve`, `reviewComment`) |
-| `POST` | `/support-access/requests/:id/revoke` | Revocar acceso aprobado (`reason`) |
-| `GET` | `/support-access/active` | Comprobar acceso activo (`?companyId=`) |
+| `POST` | `/support-access/requests/:id/review` | Aprobar (step-up + aprobador distinto al solicitante) o denegar (`approve`, `reviewComment`). Rate limit: 20/15min |
+| `POST` | `/support-access/requests/:id/revoke` | Revocar acceso aprobado (`reason`, **step-up MFA requerido**). Rate limit: 10/15min |
+| `GET` | `/support-access/active` | Comprobar acceso activo (`?companyId=`) — auditado |
+
+**Política de aprobación:** el solicitante **nunca** puede auto-aprobar, independientemente de `SUPPORT_ACCESS_APPROVALS_REQUIRED`.
+
+**Expiración:** solicitudes `approved` pasan a `expired` cuando `expiresAt <= now`, vía cron (`SUPPORT_ACCESS_EXPIRATION_CRON`, default `*/15 * * * *`), arranque del servidor, y lecturas de listado/active-check.
 
 ### Monitorización (superadmin)
 

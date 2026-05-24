@@ -278,6 +278,7 @@
             "colActions": "Actions",
             "approve": "Approve",
             "approveStepUp": "Approving break-glass access is critical. Confirm with your MFA code.",
+            "revokeStepUp": "Revoking break-glass access is critical. Confirm with your MFA code.",
             "deny": "Deny",
             "revoke": "Revoke",
             "reviewCommentPrompt": "Approval comment (optional)",

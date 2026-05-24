@@ -137,7 +137,12 @@ export default function SuperadminSupportAccessPage() {
     const revokeReason = window.prompt(t("pages.superadminSupportAccess.revokePrompt"));
     if (revokeReason === null) return;
     try {
-      await revokeSupportAccessRequest(id, revokeReason.trim() || undefined);
+      const stepUpToken =
+        (await requestStepUpToken(
+          t("pages.superadminSupportAccess.revokeStepUp"),
+        )) ?? undefined;
+      if (!stepUpToken) return;
+      await revokeSupportAccessRequest(id, revokeReason.trim() || undefined, stepUpToken);
       toastT.success(t("pages.superadminSupportAccess.revokeSuccess"));
       await loadRows();
     } catch (err: unknown) {

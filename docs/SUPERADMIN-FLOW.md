@@ -63,6 +63,7 @@ Headers: `x-step-up-token` o `x-step-up-code` (o body `stepUpCode` / `stepUpToke
 | `company.sensitive_update` | `PATCH` si body incluye `isActive`, `emailDomain`, `enabledModules`, `praemienMode`, `praemienModeEffectiveFrom` |
 | `company.admin.create` | `POST /api/companies/:id/admin` |
 | `support_access.approve` | `POST /api/support-access/requests/:id/review` con `approve: true` |
+| `support_access.revoke` | `POST /api/support-access/requests/:id/revoke` |
 
 **No requiere step-up:** denegar JIT (`approve: false`), patch solo de `name`.
 
@@ -128,10 +129,12 @@ Break-glass JIT: registro y gobernanza de acceso temporal a soporte sobre un ten
 
 ### Reglas (tests + `support-access.service.ts`)
 
-- Solicitante **no** puede aprobar su propia solicitud.
+- Solicitante **nunca** puede aprobar su propia solicitud (incluso con `SUPPORT_ACCESS_APPROVALS_REQUIRED=1`).
 - Mismo revisor **no** puede aprobar dos veces.
 - `approvalsRequired: 2` — primera aprobación sigue `pending`; segunda pasa a `approved` y fija `expiresAt`.
-- Expiración automática vía job/consulta.
+- Revocar acceso aprobado requiere **step-up MFA** (`support_access.revoke`).
+- Expiración automática vía cron (`SUPPORT_ACCESS_EXPIRATION_CRON`), bootstrap al arrancar, y lecturas de listado/active-check.
+- **No** existe impersonación tenant ni middleware de override: JIT es trazabilidad y ventana operacional únicamente.
 
 ### Monitoring (solo superadmin)
 
@@ -147,8 +150,8 @@ Break-glass JIT: registro y gobernanza de acceso temporal a soporte sobre un ten
 
 ### UI actual
 
-- `SuperadminSecurityMonitoringPage` — métricas y audit logs.
-- **No hay** pantalla para crear/aprobar requests (Fase 3).
+- `SuperadminSupportAccessPage` — crear, listar, aprobar/denegar y revocar solicitudes JIT (`/superadmin/support-access`).
+- `SuperadminSecurityMonitoringPage` — métricas y audit logs (`/superadmin/security-monitoring`).
 
 ---
 

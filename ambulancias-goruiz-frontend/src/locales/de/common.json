@@ -278,6 +278,7 @@
             "colActions": "Aktionen",
             "approve": "Freigeben",
             "approveStepUp": "Break-Glass-Freigabe ist kritisch. Mit MFA-Code bestaetigen.",
+            "revokeStepUp": "Break-Glass-Widerruf ist kritisch. Mit MFA-Code bestaetigen.",
             "deny": "Ablehnen",
             "revoke": "Widerrufen",
             "reviewCommentPrompt": "Freigabe-Kommentar (optional)",

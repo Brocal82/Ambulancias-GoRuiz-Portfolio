@@ -177,6 +177,7 @@ Definidas en `src/security/step-up-policy.ts`:
 | `company.sensitive_update` | Actualizar datos sensibles de empresa |
 | `company.admin.create` | Crear administrador de empresa |
 | `support_access.approve` | Aprobar solicitud JIT (solo `approve: true`) |
+| `support_access.revoke` | Revocar acceso JIT aprobado |
 
 ---
 

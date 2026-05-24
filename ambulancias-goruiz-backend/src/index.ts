@@ -6,6 +6,7 @@ import { app } from "./app";
 import cleanupOldDiensts from "./utils/cleanupOldDiensts";
 import { emitDailySecurityMonitoringReport } from "./security/security-monitoring";
 import { buildSecurityMonitoringOperationalHealth } from "./security/security-monitoring-health.service";
+import { runSupportAccessExpirationSweep } from "./modules/support-access/services/support-access.service";
 import { setupWebSocketServer } from "./modules/notifications";
 
 // Evitar crashes silenciosos: loggear y salir en producción
@@ -115,6 +116,35 @@ mongoose
       }
     }
 
+    cron.schedule(
+      env.SUPPORT_ACCESS_EXPIRATION_CRON,
+      async () => {
+        const fired = new Date();
+        console.log(
+          `[CRON] supportAccessExpiration START @ ${fired.toISOString()} (server time)`,
+        );
+        try {
+          const expired = await runSupportAccessExpirationSweep("cron");
+          console.log(`[CRON] supportAccessExpiration DONE (expired=${expired})`);
+        } catch (err) {
+          console.error("[CRON] supportAccessExpiration ERROR:", err);
+        }
+      },
+      { timezone: TZ },
+    );
+
+    // Dev/restart safety: expire stale approved requests immediately on boot.
+    try {
+      const expiredOnBoot = await runSupportAccessExpirationSweep("cron");
+      if (expiredOnBoot > 0) {
+        console.log(
+          `[CRON] supportAccessExpiration bootstrap DONE (expired=${expiredOnBoot})`,
+        );
+      }
+    } catch (err) {
+      console.error("[CRON] supportAccessExpiration bootstrap ERROR:", err);
+    }
+
     const httpServer = http.createServer(app);
     server = httpServer;
     setupWebSocketServer(httpServer);
@@ -127,6 +157,9 @@ mongoose
           `🕒 Security monitoring cron activo: ${env.SECURITY_MONITORING_CRON} (${TZ})`,
         );
       }
+      console.log(
+        `🕒 Support access expiration cron activo: ${env.SUPPORT_ACCESS_EXPIRATION_CRON} (${TZ})`,
+      );
     });
   })
   .catch((err) => {

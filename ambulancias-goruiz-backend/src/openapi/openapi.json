@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, appointments, documents, payroll, and mechanics. Full reference: docs/API-REFERENCE.md and docs/domains/",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, appointments, documents, payroll, mechanics, and support-access (JIT break-glass). Full reference: docs/API-REFERENCE.md and docs/domains/",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -1131,6 +1131,132 @@
           "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
         }
       }
+    },
+    "/api/support-access/requests": {
+      "post": {
+        "summary": "Create JIT support-access request (superadmin)",
+        "description": "Break-glass operational window only. Does NOT grant tenant impersonation or admin-route override. Rate limit: 12 requests / 15 min per IP. Requester cannot self-approve.",
+        "tags": ["SupportAccess"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SupportAccessCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SupportAccessRequest" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Not superadmin", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "429": { "description": "Rate limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "get": {
+        "summary": "List support-access requests (superadmin)",
+        "description": "Triggers expiration sweep for stale approved records before listing.",
+        "tags": ["SupportAccess"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["pending", "approved", "denied", "revoked", "expired"] }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Request list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/SupportAccessRequest" } } } } },
+          "403": { "description": "Not superadmin", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/support-access/requests/{id}/review": {
+      "post": {
+        "summary": "Approve or deny support-access request (superadmin)",
+        "description": "Approve requires step-up MFA (`x-step-up-token` or `x-step-up-code`) and a reviewer distinct from requester. Deny does not require step-up. Rate limit: 20 reviews / 15 min per IP.",
+        "tags": ["SupportAccess"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SupportAccessReviewRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Review recorded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SupportAccessRequest" } } } },
+          "400": { "description": "Business rule violation (e.g. self-approval)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "401": { "description": "Step-up required or invalid", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthErrorResponse" } } } },
+          "429": { "description": "Rate limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/support-access/requests/{id}/revoke": {
+      "post": {
+        "summary": "Revoke approved support-access (superadmin)",
+        "description": "Requires step-up MFA. Rate limit: 10 revocations / 15 min per IP.",
+        "tags": ["SupportAccess"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "reason": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Revoked", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SupportAccessRequest" } } } },
+          "400": { "description": "Not revocable", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "401": { "description": "Step-up required or invalid", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthErrorResponse" } } } },
+          "429": { "description": "Rate limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/support-access/active": {
+      "get": {
+        "summary": "Check active support access for actor and tenant (superadmin)",
+        "description": "Audited active-check. Triggers expiration sweep. Does not grant API impersonation.",
+        "tags": ["SupportAccess"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "companyId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active flag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "active": { "type": "boolean" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing companyId", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/support-access/monitoring/daily-summary": {
+      "get": {
+        "summary": "Security monitoring daily summary (superadmin)",
+        "description": "Audited read. UI: SuperadminSecurityMonitoringPage.",
+        "tags": ["SupportAccess"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "hours", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 168, "default": 24 } }
+        ],
+        "responses": {
+          "200": { "description": "Monitoring snapshot", "content": { "application/json": { "schema": { "type": "object" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -1694,6 +1820,39 @@
               }
             }
           }
+        }
+      },
+      "SupportAccessCreateRequest": {
+        "type": "object",
+        "required": ["companyId", "reason", "ticketId", "durationMinutes"],
+        "properties": {
+          "companyId": { "type": "string" },
+          "reason": { "type": "string", "minLength": 1 },
+          "ticketId": { "type": "string", "minLength": 1 },
+          "durationMinutes": { "type": "integer", "minimum": 5, "maximum": 240 }
+        }
+      },
+      "SupportAccessReviewRequest": {
+        "type": "object",
+        "required": ["approve"],
+        "properties": {
+          "approve": { "type": "boolean" },
+          "reviewComment": { "type": "string" }
+        }
+      },
+      "SupportAccessRequest": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "companyId": { "type": "string" },
+          "requestedBy": { "type": "string" },
+          "reason": { "type": "string" },
+          "ticketId": { "type": "string" },
+          "durationMinutes": { "type": "integer" },
+          "status": { "type": "string", "enum": ["pending", "approved", "denied", "revoked", "expired"] },
+          "approvalsRequired": { "type": "integer" },
+          "approvalsCount": { "type": "integer" },
+          "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
         }
       }
     }

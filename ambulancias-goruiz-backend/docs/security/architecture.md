@@ -18,11 +18,14 @@ Current enforcement:
 - Mandatory reason and ticket ID.
 - Time-limited access window (`expiresAt`).
 - Separation of duties:
-  - requester cannot approve own request
+  - requester can never approve own request (even when `SUPPORT_ACCESS_APPROVALS_REQUIRED=1`)
   - same approver cannot approve twice
-- Four-eyes final activation:
+- Four-eyes final activation (when `SUPPORT_ACCESS_APPROVALS_REQUIRED=2`):
   - first approval keeps `pending`
   - second independent approval moves to `approved`
+- Revocation requires step-up MFA (`support_access.revoke`).
+- Expiration sweep: cron (`SUPPORT_ACCESS_EXPIRATION_CRON`), server bootstrap, and read-path triggers on list/active-check.
+- No tenant impersonation token and no tenant-override middleware — JIT governs operational approval windows only.
 
 ## 3) Permissions baseline
 

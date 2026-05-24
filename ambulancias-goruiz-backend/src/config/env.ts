@@ -86,6 +86,8 @@ const envSchema = z.object({
       z.number().int().min(1).max(2).optional(),
     )
     .default(1),
+  /** Cron for expiring stale approved support-access requests (default: every 15 min). */
+  SUPPORT_ACCESS_EXPIRATION_CRON: z.string().trim().default("*/15 * * * *"),
 
   // Rate limiting (opcionales)
   RATE_LIMIT_LOGIN_MAX: z
@@ -127,6 +129,43 @@ const envSchema = z.object({
       z.number().int().positive().optional(),
     )
     .default(60 * 1000), // 1 min
+
+  RATE_LIMIT_SUPPORT_ACCESS_CREATE_MAX: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(1).optional(),
+    )
+    .default(12),
+  RATE_LIMIT_SUPPORT_ACCESS_CREATE_WINDOW_MS: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().positive().optional(),
+    )
+    .default(15 * 60 * 1000),
+  RATE_LIMIT_SUPPORT_ACCESS_REVIEW_MAX: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(1).optional(),
+    )
+    .default(20),
+  RATE_LIMIT_SUPPORT_ACCESS_REVIEW_WINDOW_MS: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().positive().optional(),
+    )
+    .default(15 * 60 * 1000),
+  RATE_LIMIT_SUPPORT_ACCESS_REVOKE_MAX: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().min(1).optional(),
+    )
+    .default(10),
+  RATE_LIMIT_SUPPORT_ACCESS_REVOKE_WINDOW_MS: z
+    .preprocess(
+      (v) => (v === undefined || v === "" ? undefined : Number(v)),
+      z.number().int().positive().optional(),
+    )
+    .default(15 * 60 * 1000),
 });
 
 // Parseo y validación al importar (si falta algo crítico, el proceso debe fallar)

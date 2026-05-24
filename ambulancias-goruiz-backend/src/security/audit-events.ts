@@ -18,6 +18,9 @@ export const AUDIT_EVENT = {
   SUPPORT_ACCESS_DENIED: "support_access.denied",
   SUPPORT_ACCESS_REVOKED: "support_access.revoked",
   SUPPORT_ACCESS_EXPIRED: "support_access.expired",
+  SUPPORT_ACCESS_ACTIVE_CHECKED: "support_access.active_checked",
+  SUPPORT_ACCESS_EXPIRATION_EXECUTED: "support_access.expiration_executed",
+  SECURITY_MONITORING_QUERIED: "security.monitoring_queried",
   SECURITY_DAILY_MONITORING_REPORTED: "security.daily_monitoring_reported",
 } as const;
 

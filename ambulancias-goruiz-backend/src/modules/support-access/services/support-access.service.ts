@@ -103,8 +103,22 @@ export async function expireSupportAccessRequests(): Promise<number> {
   return modified;
 }
 
+/** Scheduled/on-demand sweep: expire stale approved requests and emit summary audit. */
+export async function runSupportAccessExpirationSweep(
+  trigger: "cron" | "read_path" = "cron",
+): Promise<number> {
+  const expiredCount = await expireSupportAccessRequests();
+  if (expiredCount > 0) {
+    emitAuditLog(AUDIT_EVENT.SUPPORT_ACCESS_EXPIRATION_EXECUTED, "success", {
+      resourceType: "support_access_request",
+      meta: { expiredCount, trigger },
+    });
+  }
+  return expiredCount;
+}
+
 export async function listSupportAccessRequests(status?: SupportAccessStatus) {
-  await expireSupportAccessRequests();
+  await runSupportAccessExpirationSweep("read_path");
   const query: Record<string, unknown> = {};
   if (status) query.status = status;
   return SupportAccessRequest.find(query)
@@ -123,9 +137,8 @@ export async function reviewSupportAccessRequest(params: {
   if (request.status !== "pending") {
     throw new Error("Solo solicitudes pendientes pueden revisarse");
   }
-  const approvalsRequired = request.approvalsRequired ?? supportAccessApprovalsRequired();
   if (
-    approvalsRequired >= 2 &&
+    params.approve &&
     String(request.requestedBy) === String(params.reviewerUserId)
   ) {
     throw new Error("La aprobación requiere un superadmin distinto al solicitante");
@@ -180,7 +193,7 @@ export async function hasActiveSupportAccess(params: {
   actorUserId: string;
   companyId: string;
 }): Promise<boolean> {
-  await expireSupportAccessRequests();
+  await runSupportAccessExpirationSweep("read_path");
   const found = await SupportAccessRequest.findOne({
     status: "approved",
     requestedBy: parseOid(params.actorUserId),

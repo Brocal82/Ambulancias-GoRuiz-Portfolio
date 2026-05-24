@@ -52,7 +52,11 @@ El backend valida todas las variables al arrancar usando **Zod**. Si falta algun
 | `SECURITY_MONITORING_DENIED_THRESHOLD` | `3` | Nº de accesos denegados que activa alerta en el reporte |
 | `SECURITY_AUDIT_LOG_RETENTION_DAYS` | `180` | Días de retención de logs de auditoría |
 | `SECURITY_ALERT_WEBHOOK_URL` | — | URL opcional (HTTPS) que recibe POST JSON en alertas (`support_access_approved`, umbrales de monitoring, etc.) |
-| `SUPPORT_ACCESS_APPROVALS_REQUIRED` | `1` | Aprobaciones JIT para activar acceso: `1` = operador único; `2` = dos superadmins distintos |
+| `SUPPORT_ACCESS_APPROVALS_REQUIRED` | `1` | Aprobaciones JIT para activar acceso: `1` = operador único (pero distinto al solicitante); `2` = dos superadmins distintos |
+| `SUPPORT_ACCESS_EXPIRATION_CRON` | `*/15 * * * *` | Cron para expirar solicitudes `approved` vencidas |
+| `RATE_LIMIT_SUPPORT_ACCESS_CREATE_MAX` | `12` | Máx. solicitudes JIT por IP / ventana |
+| `RATE_LIMIT_SUPPORT_ACCESS_REVIEW_MAX` | `20` | Máx. revisiones JIT por IP / ventana |
+| `RATE_LIMIT_SUPPORT_ACCESS_REVOKE_MAX` | `10` | Máx. revocaciones JIT por IP / ventana |
 
 ### Variables de rate limiting
 
