@@ -1273,6 +1273,55 @@
         }
       }
     },
+    "/api/praemien/monthly-summary": {
+      "get": {
+        "summary": "Current month Praemien summary",
+        "description": "Requires module `praemien`. Returns live monthly stats for the authenticated user. Admin may pass `?userId=` for same-company workers. Automatic mode: sums **final** workday closures only (`isFinalClosure: true`); `isReviewed` is not a gate. Manual effective mode: approved manual daily entries only.",
+        "tags": ["Praemien"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "query", "required": false, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" }, "description": "Admin only — target worker (same company)" }
+        ],
+        "responses": {
+          "200": { "description": "Summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PraemienMonthlySummary" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/praemien/monthly-history": {
+      "get": {
+        "summary": "Monthly Praemien history",
+        "description": "Requires module `praemien`. Past closed months (excludes current calendar month). Merges automatic workday-derived history with manual snapshots (`snapshotSource: manual`). Automatic workday rows use final closures only.",
+        "tags": ["Praemien"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "userId", "in": "query", "required": false, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }
+        ],
+        "responses": {
+          "200": { "description": "History items", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PraemienMonthlyHistoryItem" } } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/praemien/save-monthly": {
+      "post": {
+        "summary": "Save automatic monthly Praemien snapshot (admin)",
+        "description": "Requires module `praemien` and admin role. Query `year` and `month` are **required** (400 if missing/invalid; no silent fallback to current date). Skips when manual mode is effective for the user, or when a protected manual snapshot exists for that month.",
+        "tags": ["Praemien"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "year", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1970, "maximum": 2100 } },
+          { "name": "month", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 12 } }
+        ],
+        "responses": {
+          "200": { "description": "Saved or skipped", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "400": { "description": "Invalid year/month", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
     "/api/mechanics/report-issue": {
       "post": {
         "summary": "Report mechanic issue (worker/admin on assignment)",
@@ -2433,6 +2482,31 @@
           "isReviewed": { "type": "boolean" },
           "reviewedAt": { "type": "string", "format": "date-time", "nullable": true },
           "trips": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "PraemienMonthlySummaryDay": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "description": "YYYY-MM-DD" },
+          "totalCountedPatients": { "type": "number", "description": "Sum of effective patients for that day" }
+        }
+      },
+      "PraemienMonthlySummary": {
+        "type": "object",
+        "properties": {
+          "monthlyData": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PraemienMonthlySummaryDay" }
+          },
+          "averagePatients": { "type": "number", "description": "Rounded to nearest 0.5" }
+        }
+      },
+      "PraemienMonthlyHistoryItem": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer" },
+          "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "averagePatients": { "type": "number" }
         }
       }
     }

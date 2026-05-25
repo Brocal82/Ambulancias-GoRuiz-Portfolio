@@ -1042,7 +1042,7 @@
                 "dailyHistoryTitle": "Daily history",
                 "table": {
                     "date": "Date",
-                    "patients": "Trips",
+                    "patients": "Effective patients",
                     "empty": "No data available"
                 }
             },
@@ -1060,7 +1060,7 @@
                 "detailHeading": "Day details",
                 "detailApprovedBy": "Approved by",
                 "detailApprovedAt": "Approval date & time",
-                "valueLabel": "Patients / effective trips",
+                "valueLabel": "Effective patients (weighted count)",
                 "save": "Save",
                 "lastSaved": "Last saved: {{at}}",
                 "weekdayShort": {
@@ -1718,7 +1718,7 @@
             },
             "partial": {
                 "title": "🟠 Partial day review",
-                "totalPatients": "Total trips for bonus: {{count}}",
+                "totalPatients": "Total effective patients for bonus: {{count}}",
                 "placeholders": {
                     "report": "Reason for partial closure...",
                     "finalKm": "Ambulance final kilometers"
@@ -1741,7 +1741,7 @@
             },
             "final": {
                 "title": "✅ Final day review",
-                "totalPatients": "Total trips for bonus: {{count}}",
+                "totalPatients": "Total effective patients for bonus: {{count}}",
                 "placeholders": {
                     "note": "Reason for final closure (optional)…",
                     "finalKm": "Ambulance final kilometers"

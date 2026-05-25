@@ -1,16 +1,15 @@
 # Domain — Praemien (Primas)
 
-Documentación del dominio de primas económicas: cálculo automático basado en jornadas y entradas manuales diarias.
+Documentación del dominio de primas económicas: cálculo automático desde jornadas (`WorkdaySummary`) y entradas manuales diarias.
 
 ---
 
 ## Módulo backend
 
-| Recurso | Ruta API | MODULE_KEY |
-|---------|----------|------------|
-| Primas automáticas (admin read) | `/api/praemien` | `praemien` |
-| Primas manuales (daily entries) | `/api/praemien/manual-daily` | `praemien` |
-| Primas worker (solo propias) | `/api/praemien/worker` | `praemien` |
+| Recurso | Ruta API base | MODULE_KEY |
+|---------|---------------|------------|
+| Resumen / historial / cierre mensual | `/api/praemien` | `praemien` |
+| Entradas manuales diarias | `/api/praemien/manual-daily` | `praemien` |
 
 ---
 
@@ -18,148 +17,93 @@ Documentación del dominio de primas económicas: cálculo automático basado en
 
 ### `MonthlyPraemie`
 
-Prima mensual calculada automáticamente por el sistema.
+Snapshot mensual por trabajador (automático o manual).
 
-```
-userId         ObjectId (ref User)  — fue String hasta PR #65, backfill necesario
-companyId      ObjectId | null      — legacy nullable
-year           number
-month          number (1-12)
-totalHours     number
-praemieAmount  number
-status         "draft" | "confirmed" | "paid"
-confirmedAt    Date?
-confirmedBy    ObjectId? (ref User admin)
-```
+Campos relevantes: `userId`, `companyId`, `year`, `month`, `averagePatients`, `premieLevel`, `snapshotSource` (`"automatic"` | `"manual"`), `createdAt`.
 
-Índice único: `{ userId, year, month }` — una prima por trabajador por mes.
+Índice único: `{ userId, year, month }`.
 
-**Nota crítica:** El campo `userId` era de tipo `String` hasta PR #65. Se cambió a `ObjectId` para corregir fallos silenciosos en `populate()`. El script `backfill-monthly-praemie-userid-to-objectid.ts` debe ejecutarse en producción antes de que las queries con populate funcionen correctamente.
+Los snapshots con `snapshotSource: "manual"` **no** pueden sobrescribirse con `POST /save-monthly` automático.
 
 ### `PraemienManualDailyEntry`
 
-Entrada manual diaria de primas (modo `manual` de la empresa).
+Entrada manual diaria cuando la empresa está en modo manual efectivo.
 
-```
-companyId   ObjectId (required)
-userId      ObjectId (ref User)
-date        Date
-amount      number
-notes       string?
-createdBy   ObjectId (ref User admin)
-```
+Campos relevantes: `companyId` (required), `userId`, `date`, `workerSubmittedValue`, `adminFinalValue`, `status` (`draft` | `submitted` | `approved` | `rejected` | `reopened`).
 
-Índice único: `{ companyId, userId, date }` — una entrada por trabajador por día por empresa.
+Índice único: `{ companyId, userId, date }`.
 
 ---
 
 ## Dos modos de operación
 
-El campo `Company.praemienMode` determina el comportamiento:
+`Company.praemienMode` + `praemienModeEffectiveFrom` (`{ year, month }`) determinan el modo efectivo por trabajador (`getEffectiveManualPraemienContextForUser`).
 
-### Modo `automatic`
+### Modo `automatic` (efectivo)
 
-- El sistema calcula `MonthlyPraemie` a partir de `WorkdaySummary` (jornadas revisadas).
-- El admin revisa y confirma la prima calculada.
-- El worker ve su prima mensual en la app.
+- **Live view:** `GET /monthly-summary` agrega `WorkdaySummary` del mes calendario actual.
+- **Historial:** `GET /monthly-history` deriva meses pasados desde summaries + snapshots manuales legacy.
+- **Cierre:** `POST /save-monthly?year=&month=` (admin) persiste `MonthlyPraemie` con `snapshotSource: "automatic"`.
 
-### Modo `manual`
+**Reglas de agregación automática (backend = fuente de verdad):**
 
-- El admin introduce entradas diarias (`PraemienManualDailyEntry`) para cada trabajador.
-- El sistema agrega las entradas del mes para calcular la prima total.
-- Útil para empresas con estructuras de pago no estándar.
+| Filtro | ¿Aplica? |
+|--------|----------|
+| `isFinalClosure: true` | **Sí** — solo cierres finales; los parciales se excluyen para evitar doble conteo parcial+final. |
+| `isReviewed: true` | **No** — la revisión admin de jornada es un paso de workflow workday; los totales Praemien incluyen finales aunque aún no estén marcados como revisados. |
+| `companyId` del usuario | **Sí** — filtro estricto (sin fallback `null`) en agregación automática. |
+| Suma por día | Se suman todos los finales del usuario (conductor o médico) ese día; puede haber varios Diensts el mismo día. |
 
-El modo puede cambiar con una fecha de vigencia (`praemienModeEffectiveFrom: { year, month }`). Los meses anteriores al cambio mantienen el modo anterior.
+### Modo `manual` (efectivo)
 
----
-
-## Lifecycle — modo automático
-
-```
-[Jornadas del mes cerradas y revisadas]
-         │
-         ▼
-  CÁLCULO AUTOMÁTICO
-  Sistema: agrega WorkdaySummary del mes
-  → MonthlyPraemie { status: "draft", totalHours, praemieAmount }
-         │
-         ▼
-  REVISIÓN ADMIN
-  Admin: GET /api/praemien → lista borradores del mes
-  Admin: PATCH /api/praemien/:id/confirm
-  → status: "confirmed", confirmedAt, confirmedBy
-         │
-         ▼
-  PAGO
-  Admin: PATCH /api/praemien/:id/pay
-  → status: "paid"
-         │
-         ▼
-  WORKER VE SU PRIMA
-  Worker: GET /api/praemien/worker → sus primas confirmadas/pagadas
-```
+- Trabajador: `PUT/GET /manual-daily/*` — valores diarios; requiere cierre final workday cuando el módulo workday está activo (`isFinalClosure: true`, con fallback legacy `companyId: null` **solo** en helpers manuales y **siempre** acotado por `driver`/`medic` userId).
+- Admin: `GET/POST /manual-daily/admin/*` — cola de revisión, approve/reject/reopen/correct-approve.
+- **Live view:** `GET /monthly-summary` usa solo filas **aprobadas** del mes actual.
+- **Historial:** meses ≥ effective manual usan snapshots `MonthlyPraemie` con `snapshotSource: "manual"` (`ensureManualMonthCloseSnapshot`).
 
 ---
 
-## Lifecycle — modo manual
+## Endpoints principales (implementados)
 
-```
-[Día laboral]
-      │
-      ▼
-  ENTRADA DIARIA
-  Admin: POST /api/praemien/manual-daily
-  { userId, date, amount, notes }
-  → PraemienManualDailyEntry creado
-      │ (una por trabajador por día)
-      ▼
-  AGREGADO MENSUAL
-  Sistema: suma entries del mes → MonthlyPraemie
-      │
-      ▼
-  (mismo flujo de revisión/pago que modo automático)
-```
+| Método | Ruta | Rol | Descripción |
+|--------|------|-----|-------------|
+| `GET` | `/api/praemien/monthly-summary` | worker/admin | Mes calendario actual; `?userId=` solo admin (misma empresa). |
+| `GET` | `/api/praemien/monthly-history` | worker/admin | Historial mensual (excluye mes en curso). |
+| `POST` | `/api/praemien/save-monthly` | admin | `year` y `month` query **obligatorios** (400 si faltan o inválidos; sin fallback a fecha actual). |
+| `PUT` | `/api/praemien/manual-daily` | worker | Upsert entrada manual diaria. |
+| `GET` | `/api/praemien/manual-daily/month` | worker | Entradas del mes (`year`, `month` requeridos). |
+| `GET` | `/api/praemien/manual-daily/final-closure-dates` | worker | Días con cierre final workday en el mes. |
+| `GET` | `/api/praemien/manual-daily/admin/pending-*` | admin | Cola pendiente. |
+| `POST` | `/api/praemien/manual-daily/admin/approve` | admin | Aprobar (opcional cascade compañero Dienst). |
+| `POST` | `/api/praemien/manual-daily/admin/reject` | admin | Rechazar. |
+| `POST` | `/api/praemien/manual-daily/admin/reopen` | admin | Reabrir. |
 
 ---
 
-## Endpoints principales
+## Relación con payroll
 
-### Admin
-
-| Método | Ruta | Acción |
-|--------|------|--------|
-| `GET` | `/api/praemien` | Lista primas del mes (por empresa) |
-| `GET` | `/api/praemien/:year/:month` | Primas de un mes específico |
-| `PATCH` | `/api/praemien/:id/confirm` | Confirmar prima |
-| `PATCH` | `/api/praemien/:id/pay` | Marcar como pagada |
-| `GET` | `/api/praemien/manual-daily` | Entradas manuales del día/mes |
-| `POST` | `/api/praemien/manual-daily` | Crear entrada manual |
-| `PATCH` | `/api/praemien/manual-daily/:id` | Editar entrada manual |
-| `DELETE` | `/api/praemien/manual-daily/:id` | Eliminar entrada manual |
-
-### Worker
-
-| Método | Ruta | Acción |
-|--------|------|--------|
-| `GET` | `/api/praemien/worker` | Mis primas (propias, confirmadas/pagadas) |
-| `GET` | `/api/praemien/worker/:year/:month` | Mi prima de un mes |
+Praemien calcula **promedio de pacientes efectivos** y nivel de prima (`premieLevel`). Payroll es un módulo separado; no hay integración contable automática. Los snapshots mensuales son la referencia histórica downstream.
 
 ---
 
 ## Multi-tenant
 
-- `MonthlyPraemie.companyId` es nullable (legacy). Las queries admin filtran por `requireCompanyForAdmin`.
-- `PraemienManualDailyEntry.companyId` es obligatorio (required).
-- El índice único de `PraemienManualDailyEntry` incluye `companyId` para garantizar aislamiento.
+- Agregación automática: `companyId` estricto vía `getCompanyObjectIdForPraemienUser`.
+- Helpers manuales workday: `legacyAwareWorkdayCompanyFilter` — `{ companyId: co } OR { companyId: null }` **siempre** combinado con filtro `driver`/`medic` = userId objetivo (ver `POLICY-multi-tenant-legacy-companyId.md`).
+- `PraemienManualDailyEntry.companyId` es obligatorio.
 
 ---
 
 ## Frontend
 
-El módulo frontend de praemien está fragmentado en tres archivos de API siguiendo la complejidad del dominio:
+- `src/modules/praemien/domain/api.ts` — summary/history
+- `src/modules/praemien/domain/manualDailyApi.ts` — manual daily + admin review
+- `src/modules/praemien/domain/historyApi.ts` — legacy save helper
+- Etiquetas UI: **pacientes efectivos** (conteo ponderado), no “viajes” crudos.
+- `calculateEffectivePatients` redondea a múltiplos de 0.5 (paridad con backend workday-summary).
 
-- `src/modules/praemien/domain/api.ts` — primas automáticas admin
-- `src/modules/praemien/domain/manualDailyApi.ts` — entradas manuales
-- `src/modules/praemien/domain/historyApi.ts` — historial
+---
 
-La configuración del modo praemien se carga en `AuthProvider` al hacer login y se refresca en foco de ventana.
+## OpenAPI
+
+Rutas documentadas en `src/openapi/openapi.json` bajo tag `Praemien`.

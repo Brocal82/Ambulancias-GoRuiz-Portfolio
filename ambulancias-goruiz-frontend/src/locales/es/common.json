@@ -1042,7 +1042,7 @@
                 "dailyHistoryTitle": "Historial diario",
                 "table": {
                     "date": "Fecha",
-                    "patients": "Viajes",
+                    "patients": "Pacientes efectivos",
                     "empty": "No hay datos disponibles"
                 }
             },
@@ -1060,7 +1060,7 @@
                 "detailHeading": "Detalle del día",
                 "detailApprovedBy": "Aprobado por",
                 "detailApprovedAt": "Fecha de aprobación",
-                "valueLabel": "Pacientes / viajes efectivos",
+                "valueLabel": "Pacientes efectivos (conteo ponderado)",
                 "save": "Guardar",
                 "lastSaved": "Último guardado: {{at}}",
                 "weekdayShort": {
@@ -1718,7 +1718,7 @@
             },
             "partial": {
                 "title": "🟠 Revisión parcial del día",
-                "totalPatients": "Total viajes para Prämie: {{count}}",
+                "totalPatients": "Total pacientes efectivos para Prämie: {{count}}",
                 "placeholders": {
                     "report": "Motivo del cierre parcial...",
                     "finalKm": "Kilómetros finales de la ambulancia"
@@ -1741,7 +1741,7 @@
             },
             "final": {
                 "title": "✅ Revisión final del día",
-                "totalPatients": "Total viajes para Prämie: {{count}}",
+                "totalPatients": "Total pacientes efectivos para Prämie: {{count}}",
                 "placeholders": {
                     "note": "Motivo del cierre final (opcional)…",
                     "finalKm": "Kilómetros finales de la ambulancia"

@@ -67,6 +67,7 @@ describe("Praemien - monthly-summary / monthly-history (IDOR fix)", () => {
       totalEffectivePatients: 10,
       totalRealTrips: 1,
       companyId: companyOid,
+      isFinalClosure: true,
     });
   });
 
@@ -178,5 +179,174 @@ describe("Praemien - monthly-summary / monthly-history (IDOR fix)", () => {
       .expect(200);
 
     expect(resWorkerWithAdminId.body).toEqual(resWorker.body);
+  });
+});
+
+describe("Praemien hardening — automatic aggregation", () => {
+  let adminToken: string;
+  let adminId: string;
+  let companyOid: mongoose.Types.ObjectId;
+  let otherAdminId: string;
+  let otherAdminToken: string;
+  let otherCompanyOid: mongoose.Types.ObjectId;
+  const HARDEN_YEAR = 2031;
+  const HARDEN_MONTH = 6;
+  const hardenDate = `${HARDEN_YEAR}-${String(HARDEN_MONTH).padStart(2, "0")}-15`;
+  const assignmentPartial = `assign-praem-partial-${Date.now()}`;
+  const assignmentFinal = `assign-praem-final-${Date.now()}`;
+  const assignmentOtherCo = `assign-praem-otherco-${Date.now()}`;
+  const assignmentLegacyNull = `assign-praem-legacy-${Date.now()}`;
+  const ambulanceId = new mongoose.Types.ObjectId();
+
+  const minimalTrip = {
+    auftragNumber: "H1",
+    patientName: "P1",
+    fromAddress: "A",
+    toAddress: "B",
+    timeWarning: "08:00",
+    wasCancelled: false,
+    countsTrip: 1 as const,
+  };
+
+  beforeAll(async () => {
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(env.MONGODB_URI);
+    }
+    const { adminId: aid, adminToken: aTok, company } =
+      await createTestAdminWithCompany();
+    adminId = aid;
+    adminToken = aTok;
+    companyOid = company._id as mongoose.Types.ObjectId;
+
+    const other = await createTestAdminWithCompany();
+    otherAdminId = other.adminId;
+    otherCompanyOid = other.company._id as mongoose.Types.ObjectId;
+    otherAdminToken = other.adminToken;
+
+    const WorkdaySummary = mongoose.model("WorkdaySummary");
+
+    await WorkdaySummary.create({
+      date: hardenDate,
+      assignmentId: assignmentPartial,
+      driver: adminId,
+      medic: adminId,
+      ambulanceId,
+      ambulanceNumber: "1",
+      initialKm: 0,
+      totalDienstKm: 5,
+      trips: [minimalTrip],
+      totalEffectivePatients: 99,
+      totalRealTrips: 1,
+      companyId: companyOid,
+      isFinalClosure: false,
+    });
+
+    await WorkdaySummary.create({
+      date: hardenDate,
+      assignmentId: assignmentFinal,
+      driver: adminId,
+      medic: adminId,
+      ambulanceId,
+      ambulanceNumber: "1",
+      initialKm: 0,
+      totalDienstKm: 5,
+      trips: [minimalTrip],
+      totalEffectivePatients: 7,
+      totalRealTrips: 1,
+      companyId: companyOid,
+      isFinalClosure: true,
+      isReviewed: false,
+    });
+
+    await WorkdaySummary.create({
+      date: hardenDate,
+      assignmentId: assignmentOtherCo,
+      driver: otherAdminId,
+      medic: otherAdminId,
+      ambulanceId,
+      ambulanceNumber: "1",
+      initialKm: 0,
+      totalDienstKm: 5,
+      trips: [minimalTrip],
+      totalEffectivePatients: 50,
+      totalRealTrips: 1,
+      companyId: otherCompanyOid,
+      isFinalClosure: true,
+    });
+
+    await WorkdaySummary.create({
+      date: hardenDate,
+      assignmentId: assignmentLegacyNull,
+      driver: adminId,
+      medic: adminId,
+      ambulanceId,
+      ambulanceNumber: "1",
+      initialKm: 0,
+      totalDienstKm: 5,
+      trips: [minimalTrip],
+      totalEffectivePatients: 3,
+      totalRealTrips: 1,
+      companyId: null,
+      isFinalClosure: true,
+    });
+  });
+
+  afterAll(async () => {
+    const WorkdaySummary = mongoose.model("WorkdaySummary");
+    await WorkdaySummary.deleteMany({
+      assignmentId: {
+        $in: [
+          assignmentPartial,
+          assignmentFinal,
+          assignmentOtherCo,
+          assignmentLegacyNull,
+        ],
+      },
+    });
+  });
+
+  it("monthly-summary counts only final closures (no partial+final double-count)", async () => {
+    const WorkdaySummary = mongoose.model("WorkdaySummary");
+    const finalRow = await WorkdaySummary.findOne({
+      assignmentId: assignmentFinal,
+    }).lean();
+    expect((finalRow as { isReviewed?: boolean } | null)?.isReviewed).not.toBe(true);
+
+    const res = await request(app)
+      .post(`${API}/praemien/save-monthly`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .query({ year: HARDEN_YEAR, month: HARDEN_MONTH })
+      .expect(200);
+
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.averagePatients).toBe(7);
+  });
+
+  it("automatic aggregation ignores cross-tenant WorkdaySummary rows", async () => {
+    const resOwn = await request(app)
+      .post(`${API}/praemien/save-monthly`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .query({ year: HARDEN_YEAR, month: HARDEN_MONTH })
+      .expect(200);
+
+    expect(resOwn.body.data?.averagePatients).toBe(7);
+
+    const resOther = await request(app)
+      .post(`${API}/praemien/save-monthly`)
+      .set("Authorization", `Bearer ${otherAdminToken}`)
+      .query({ year: HARDEN_YEAR, month: HARDEN_MONTH })
+      .expect(200);
+
+    expect(resOther.body.data?.averagePatients).toBe(50);
+  });
+
+  it("automatic aggregation ignores legacy companyId:null summaries", async () => {
+    const res = await request(app)
+      .post(`${API}/praemien/save-monthly`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .query({ year: HARDEN_YEAR, month: HARDEN_MONTH })
+      .expect(200);
+
+    expect(res.body.data?.averagePatients).toBe(7);
   });
 });

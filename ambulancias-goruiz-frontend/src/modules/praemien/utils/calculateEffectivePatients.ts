@@ -28,4 +28,6 @@ export function calculateEffectivePatients(
 
     return total + multiplier;
   }, 0);
+
+  return Math.round(total * 2) / 2;
 }

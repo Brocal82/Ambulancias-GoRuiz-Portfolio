@@ -1042,7 +1042,7 @@
                 "dailyHistoryTitle": "Tagesverlauf",
                 "table": {
                     "date": "Datum",
-                    "patients": "Fahrten",
+                    "patients": "Wirksame Patienten",
                     "empty": "Keine Daten verfügbar"
                 }
             },
@@ -1060,7 +1060,7 @@
                 "detailHeading": "Tagesdetails",
                 "detailApprovedBy": "Genehmigt von",
                 "detailApprovedAt": "Genehmigt am (Datum & Uhrzeit)",
-                "valueLabel": "Patienten / wirksame Fahrten",
+                "valueLabel": "Wirksame Patienten (gewichtete Zählung)",
                 "save": "Speichern",
                 "lastSaved": "Zuletzt gespeichert: {{at}}",
                 "weekdayShort": {
@@ -1718,7 +1718,7 @@
             },
             "partial": {
                 "title": "🟠 Teilprüfung des Tages",
-                "totalPatients": "Gesamtfahrten für Prämie: {{count}}",
+                "totalPatients": "Wirksame Patienten gesamt für Prämie: {{count}}",
                 "placeholders": {
                     "report": "Grund für den Teilabschluss...",
                     "finalKm": "End-Kilometer des Krankenwagens"
@@ -1741,7 +1741,7 @@
             },
             "final": {
                 "title": "✅ Endprüfung des Tages",
-                "totalPatients": "Gesamtfahrten für Prämie: {{count}}",
+                "totalPatients": "Wirksame Patienten gesamt für Prämie: {{count}}",
                 "placeholders": {
                     "note": "Grund für den Endabschluss (optional)…",
                     "finalKm": "End-Kilometer des Krankenwagens"

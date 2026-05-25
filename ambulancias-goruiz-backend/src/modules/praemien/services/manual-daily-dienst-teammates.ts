@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import PraemienManualDailyEntry from "../models/praemien-manual-daily-entry.model";
+import { legacyAwareWorkdayCompanyFilter } from "../utils/legacyWorkdayCompanyFilter";
 
 export function sameMongoUserId(a: string, b: string): boolean {
   const as = String(a).trim();
@@ -43,7 +44,7 @@ export async function findDienstPartnerUserIdsForManualDay(params: {
     date: dateStr,
     isFinalClosure: true,
     $and: [
-      { $or: [{ companyId: co }, { companyId: null }] },
+      legacyAwareWorkdayCompanyFilter(co),
       { $or: [{ driver: userOid }, { medic: userOid }] },
     ],
   })

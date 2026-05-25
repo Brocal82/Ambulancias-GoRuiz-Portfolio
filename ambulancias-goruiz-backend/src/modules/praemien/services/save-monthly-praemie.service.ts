@@ -5,14 +5,14 @@ import { computeMonthlyPraemienStatsForUser } from "./get-monthly-summary.servic
 import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
 import { getEffectiveManualPraemienContextForUser } from "./resolve-effective-manual-praemien.service";
 import { getPremieLevelFromAverage } from "../utils/premieLevelFromAverage";
+import { parsePraemienYearMonth } from "../utils/parsePraemienYearMonth";
 
 export async function saveMonthlyPraemieForUser(
   userId: string,
   yearQuery: unknown,
   monthQuery: unknown,
 ) {
-  const year = Number(yearQuery) || new Date().getFullYear();
-  const month = Number(monthQuery) || new Date().getMonth() + 1;
+  const { year, month } = parsePraemienYearMonth(yearQuery, monthQuery);
 
   const manualCtx = await getEffectiveManualPraemienContextForUser(userId);
   if (manualCtx.isEffectiveManual) {
