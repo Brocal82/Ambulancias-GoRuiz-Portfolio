@@ -1,6 +1,6 @@
 # Domain — Workday
 
-Documentación del dominio de jornada laboral: apertura, viajes, cierre y revisión admin.
+Documentación del dominio de jornada laboral: viajes, cierre parcial/final y revisión admin.
 
 ---
 
@@ -19,128 +19,112 @@ Ambos módulos están agrupados bajo el MODULE_KEY `workday`. Si el módulo est�
 
 ### `Trip`
 
-```
-assignmentId   ObjectId (ref Dienst assignment)
-date           Date
-workerId       ObjectId (ref User)
-companyId      ObjectId | null  (legacy nullable)
-startTime      string
-endTime        string?
-hospital       ObjectId? (ref Hospital)
-ambulanceId    ObjectId? (ref Ambulance)
-notes          string?
-status         "open" | "closed"
-isFinalClosure boolean
-```
+Viaje operativo ligado a un assignment de Dienst.
+
+Campos relevantes: `assignmentId`, `date`, `driver`, `medic`, `companyId`, datos de paciente/horas/km, `countsTrip`, `sentInSummary`.
 
 Índices:
 - `{ assignmentId, date }` — consultas de jornada por turno
 - `{ companyId, date }` — historial admin por empresa y fecha
 
+### `TripSetup`
+
+Configuración inicial de jornada por assignment (ambulancia, km inicial). Lectura/escritura filtrada por `{ assignmentId, companyId }` tras resolver el assignment en tenant.
+
 ### `WorkdaySummary`
 
-```
-assignmentId   ObjectId
-date           Date
-workerId       ObjectId
-companyId      ObjectId | null
-totalHours     number
-status         "pending_review" | "reviewed"
-isFinalClosure boolean
-reviewedAt     Date?
-reviewedBy     ObjectId? (ref User admin)
-```
+Resumen embebido de viajes + km de servicio al cierre parcial o final.
 
-Índice único partial: `{ assignmentId, date }` donde `isFinalClosure: true`
+Campos relevantes: `assignmentId`, `date`, `companyId`, `initialKm`, `finalKm`, `totalDienstKm`, `trips[]` (subdocumentos), `isFinalClosure`, `partialClosureReason`, `totalEffectivePatients`, `totalRealTrips`, `isReviewed`, `reviewedAt`.
 
-Este índice garantiza que solo puede existir **un cierre final** por turno por día.
+Índice único partial: `{ assignmentId, date }` donde `isFinalClosure: true` — solo un cierre final por turno y día.
 
 ---
 
 ## Lifecycle de la jornada
 
 ```
-[Turno asignado]
+[Turno asignado — Dienst assignment]
       │
       ▼
-  APERTURA
-  Worker: POST /api/trips
-  { date, startTime, assignmentId, ... }
+  TRIP SETUP (opcional)
+  PUT /api/trips/setup/:assignmentId
       │
       ▼
-  VIAJE(S)
-  Worker: PATCH /api/trips/:id
-  (actualiza hospital, ambulancia, notas)
-      │ (pueden ser múltiples trips en una jornada)
-      ▼
-  CIERRE WORKER
-  Worker: PATCH /api/trips/:id/close
-  { endTime }
-  → status: "closed"
+  VIAJES
+  POST /api/trips  (múltiples viajes por assignment+día)
+  GET  /api/trips/date/:date  (solo sentInSummary: false)
       │
       ▼
-  RESUMEN AUTOMÁTICO
-  WorkdaySummary creado/actualizado
-  { totalHours, status: "pending_review" }
-      │
-      ▼
-  REVISIÓN ADMIN
-  Admin: PATCH /api/workday-summary/:id/review
-  → status: "reviewed", reviewedAt, reviewedBy
+  CIERRE PARCIAL (opcional, repetible)
+  POST /api/workday-summary/partial
+  → isFinalClosure: false
+  → marca viajes incluidos sentInSummary: true
+  → bloqueado si ya existe cierre final
       │
       ▼
   CIERRE FINAL
-  Admin: POST /api/workday-summary/:id/final-close
+  POST /api/workday-summary
   → isFinalClosure: true
-  (índice unique partial previene duplicados)
+  → totales calculados en servidor desde trips en BD
+  → 409 si cierre final duplicado
+  → bloquea nuevos POST /api/trips para ese assignment+date
+      │
+      ▼
+  REVISIÓN ADMIN
+  PATCH /api/workday-summary/:id/review
+  → isReviewed: true, reviewedAt
+      │
+      ▼
+  DOWNSTREAM PRAEMIEN
+  Manual daily / final-closure-dates consumen summaries con isFinalClosure: true
 ```
 
-### Restricciones del lifecycle
+### Reglas de cierre (backend = fuente de verdad)
 
-- Un worker solo puede cerrar su propia jornada (`authorizeSelfOrAdmin`)
-- El cierre final lo hace el admin; solo puede existir uno por `{ assignmentId, date }` gracias al índice partial unique
-- El admin puede reabrir un cierre no-final si hay error de datos
-- Una jornada con `isFinalClosure: true` no puede modificarse (guard en servicio)
+- El body de cierre **no confía** en snapshots embebidos de viajes: solo se usan los `_id` para recargar trips abiertos (`sentInSummary: false`, mismo `assignmentId` y `companyId`).
+- Totales, pacientes efectivos y km se calculan **solo** desde documentos Trip en BD.
+- Si el cliente envía campos de viaje que no coinciden con BD → **409** (snapshot obsoleto).
+- `finalKm >= initialKm` obligatorio en cierre parcial y final.
+- Cierre parcial **rechazado** si ya existe cierre final para assignment+date.
+- Cierre final duplicado → **409** (índice unique + pre-check).
 
 ---
 
 ## Endpoints principales
 
-### Worker
+### Worker / admin en assignment
 
 | Método | Ruta | Acción |
 |--------|------|--------|
-| `POST` | `/api/trips` | Abrir jornada / nuevo viaje |
-| `GET` | `/api/trips/me` | Mis viajes (filtro por fecha) |
-| `PATCH` | `/api/trips/:id` | Actualizar viaje |
-| `PATCH` | `/api/trips/:id/close` | Cerrar viaje |
+| `PUT` | `/api/trips/setup/:assignmentId` | Upsert trip setup (tenant) |
+| `GET` | `/api/trips/setup/:assignmentId` | Leer trip setup |
+| `POST` | `/api/trips` | Crear viaje |
+| `GET` | `/api/trips/date/:date` | Viajes abiertos del día |
+| `POST` | `/api/workday-summary/partial` | Cierre parcial |
+| `POST` | `/api/workday-summary` | Cierre final |
 
 ### Admin
 
 | Método | Ruta | Acción |
 |--------|------|--------|
-| `GET` | `/api/workday-summary` | Listado jornadas empresa |
-| `GET` | `/api/workday-summary/:id` | Detalle jornada |
-| `PATCH` | `/api/workday-summary/:id/review` | Marcar como revisado |
-| `POST` | `/api/workday-summary/:id/final-close` | Cierre final |
-| `GET` | `/api/trips/admin` | Viajes de toda la empresa |
+| `GET` | `/api/workday-summary` | Listado summaries empresa |
+| `GET` | `/api/workday-summary/count?status=` | Contador pendientes |
+| `PATCH` | `/api/workday-summary/:id/review` | Marcar revisado |
 
 ---
 
 ## Multi-tenant
 
-- `Trip.companyId` es nullable (legacy). Queries admin filtran siempre por `companyId` usando `requireCompanyForAdmin`.
-- `WorkdaySummary.companyId` es nullable (legacy). Mismo patrón.
-- El cron de cleanup de Diensts (`cleanupOldDiensts`) no toca registros con `companyId: null`.
-
----
-
-## Relación con Diensts
-
-Cada `Trip` referencia a un `assignmentId` que es un Dienst asignado. La jornada no puede existir sin un turno asignado. Si el Dienst se elimina (cron cleanup), los Trips asociados quedan huérfanos — el servicio de workday debe validar la existencia del Dienst al crear viajes nuevos.
+- Assignment resolution exige `companyId` del caller en el Dienst.
+- Trips y summaries nuevos llevan `companyId` del Dienst.
+- TripSetup read/upsert filtra por `{ assignmentId, companyId }`.
+- Review de summary: match estricto de `companyId` (sin fallback legacy null).
 
 ---
 
 ## Integración con Praemien
 
-`WorkdaySummary` es input para el cálculo de primas automático (`MonthlyPraemie`). El módulo `praemien` lee las jornadas revisadas (`status: "reviewed"`) para calcular horas y primas del mes. Ver `DOMAIN-praemien.md` para el detalle.
+`WorkdaySummary` con `isFinalClosure: true` alimenta APIs de cierre final y entrada manual diaria de Prämien. Los cierres parciales no sustituyen al cierre final para downstream Praemien.
+
+Ver `DOMAIN-praemien.md` para detalle.

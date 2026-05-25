@@ -297,19 +297,24 @@ export async function upsertTripSetup(
     }
   }
   const assignmentObjectId = new mongoose.Types.ObjectId(assignmentId);
+  const dienstCompanyId = (dienst as { companyId?: mongoose.Types.ObjectId }).companyId;
+  if (!dienstCompanyId) {
+    throw new TripError("No autorizado para configurar viajes en este assignment", 403);
+  }
+  const companyOid = new mongoose.Types.ObjectId(String(dienstCompanyId));
   const update: Record<string, unknown> = {
     assignmentId: assignmentObjectId,
     date: assignment.date,
     ambulanceNumber: payload.ambulanceNumber,
     initialKm: payload.initialKm,
     updatedBy: userId && mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null,
-    companyId: (dienst as any).companyId ?? null,
+    companyId: companyOid,
   };
   if (payload.ambulanceId) {
     update.ambulanceId = payload.ambulanceId;
   }
   return TripSetup.findOneAndUpdate(
-    { assignmentId: assignmentObjectId },
+    { assignmentId: assignmentObjectId, companyId: companyOid },
     { $set: update },
     { new: true, upsert: true, setDefaultsOnInsert: true },
   ).lean();
@@ -333,7 +338,13 @@ export async function getTripSetup(
     userRole,
     userCompanyId,
   );
+  const dienstCompanyId = (dienst as { companyId?: mongoose.Types.ObjectId }).companyId;
+  if (!dienstCompanyId) {
+    throw new TripError("No autorizado para leer la configuración de este assignment", 403);
+  }
+  const companyOid = new mongoose.Types.ObjectId(String(dienstCompanyId));
   return TripSetup.findOne({
     assignmentId: new mongoose.Types.ObjectId(assignmentId),
+    companyId: companyOid,
   }).lean();
 }

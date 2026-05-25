@@ -105,5 +105,19 @@ export const tripSchema = z
           message: "Km final requerido",
         });
       }
+
+      if (
+        typeof data.kmStart === "number" &&
+        !isNaN(data.kmStart) &&
+        typeof data.kmEnd === "number" &&
+        !isNaN(data.kmEnd) &&
+        data.kmEnd < data.kmStart
+      ) {
+        ctx.addIssue({
+          path: ["kmEnd"],
+          code: "custom",
+          message: "El km final no puede ser menor que el inicial",
+        });
+      }
     }
   });

@@ -11,6 +11,16 @@ import {
   assertUserCanCloseAssignment,
 } from "../../../utils/assignmentClosure";
 import { getAmbulanceById } from "../../ambulances/services/ambulances.service";
+import { validateClosureKm } from "../utils/kmValidation";
+import {
+  extractTripIdsFromBody,
+  loadTripsForClosure,
+} from "../utils/loadTripsForClosure";
+import { assertNoFinalClosureExists } from "../utils/closureGuards";
+import type {
+  FinalClosureBody,
+  PartialClosureBody,
+} from "../schemas/workday-summary.schema";
 
 export { WorkdaySummaryError } from "../../../utils/assignmentClosure";
 
@@ -35,50 +45,12 @@ function isMongoDuplicateKeyError(err: unknown): boolean {
   return false;
 }
 
-/** Valida que todos los trips pertenecen al assignment. Lanza si no. */
-async function validateTripsBelongToAssignment(
-  tripIds: string[],
-  assignmentId: string,
-): Promise<void> {
-  if (!tripIds || tripIds.length === 0) return;
-
-  const assignmentObjId = new mongoose.Types.ObjectId(assignmentId);
-  const hex24 = /^[0-9a-fA-F]{24}$/;
-  const validIds = tripIds.filter(
-    (id) => typeof id === "string" && hex24.test(String(id).trim()),
-  );
-  if (validIds.length !== tripIds.length) {
-    throw new WorkdaySummaryError("Uno o más tripIds no son válidos", 400);
-  }
-
-  const objectIds = validIds.map((id) => new mongoose.Types.ObjectId(id));
-  const trips = await Trip.find({ _id: { $in: objectIds } })
-    .select("_id assignmentId")
-    .lean();
-
-  if (trips.length !== tripIds.length) {
-    throw new WorkdaySummaryError("Algún trip no existe", 404);
-  }
-
-  for (const trip of trips) {
-    const tripAssignmentId =
-      (trip.assignmentId as mongoose.Types.ObjectId)?.toString?.() ??
-      String(trip.assignmentId);
-    if (tripAssignmentId !== assignmentObjId.toString()) {
-      throw new WorkdaySummaryError(
-        `Trip ${trip._id} no pertenece a este assignment`,
-        403,
-      );
-    }
-  }
-}
-
 /* ─────────────────────────────
  * CIERRE COMPLETO DEL DÍA
  * Admin: puede continuar (mismo companyId). Worker: solo si participa.
  * ───────────────────────────── */
 export async function createWorkdaySummary(
-  body: Record<string, unknown>,
+  body: FinalClosureBody,
   userId: string,
   userRole: string,
   userCompanyId?: string | null,
@@ -90,74 +62,53 @@ export async function createWorkdaySummary(
     ambulanceNumber,
     initialKm,
     finalKm,
-    trips,
+    trips: clientTrips,
     extraNote,
     checklistItems,
     o2Level,
   } = body;
 
-  const missing: string[] = [];
-  if (!date) missing.push("date");
-  if (!assignmentId) missing.push("assignmentId");
-  if (!ambulanceId) missing.push("ambulanceId");
-  if (initialKm === undefined) missing.push("initialKm");
-  if (finalKm === undefined) missing.push("finalKm");
-  if (!Array.isArray(trips)) missing.push("trips (debe ser array)");
-
-  if (missing.length) {
-    throw new WorkdaySummaryError(
-      `Faltan campos obligatorios: ${missing.join(", ")}`,
-      400,
-    );
-  }
-
-  const nInitialKm: number =
-    typeof initialKm === "string" ? Number(initialKm) : (initialKm as number);
-  const nFinalKm: number =
-    typeof finalKm === "string" ? Number(finalKm) : (finalKm as number);
-
-  const sanitizedTrips = (trips as any[]).map((t) => ({
-    ...t,
-    wasCancelled: !!t.wasCancelled,
-    cancelledAtPickup: !!t.cancelledAtPickup,
-    countsTrip:
-      typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
-  }));
+  validateClosureKm(initialKm, finalKm);
 
   const scopeCo =
     userCompanyId != null && String(userCompanyId).trim() !== ""
       ? String(userCompanyId).trim()
       : "";
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
-    assignmentId as string,
+    assignmentId,
     scopeCo,
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
-  const ambulance = await getAmbulanceById(ambulanceId as string, scopeCo);
+  const ambulance = await getAmbulanceById(ambulanceId, scopeCo);
   if (!ambulance) {
     throw new WorkdaySummaryError("La ambulancia no pertenece a tu empresa", 403);
   }
 
-  const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
-  const tripIdStrs = tripIds.map((id: unknown) => String(id));
-  await validateTripsBelongToAssignment(tripIdStrs, assignmentId as string);
+  const dienstCompanyId = (dienst as { companyId?: mongoose.Types.ObjectId }).companyId;
+  if (!dienstCompanyId) {
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+  }
+  const companyOid = new mongoose.Types.ObjectId(String(dienstCompanyId));
+
+  await assertNoFinalClosureExists(assignmentId, date, companyOid);
+
+  const tripIds = extractTripIdsFromBody(clientTrips);
+  const { summaryTrips, tripObjectIds } = await loadTripsForClosure({
+    tripIds,
+    assignmentId,
+    companyId: companyOid,
+    clientTrips,
+  });
 
   const dienstNumber = dienst?.dienstNumber ?? null;
   const startTime = assignment?.startTime ?? null;
   const endTime = assignment?.endTime ?? null;
   const { driver, medic } = assignment;
-  const dienstCompanyId = (dienst as any).companyId;
 
-  const totalEffectivePatients = calculateEffectivePatients(
-    sanitizedTrips,
-    date as string,
-  );
-  const totalDienstKm = nFinalKm - nInitialKm;
-  /** Viajes que cuentan: `countsTrip === 1` (incl. storno/cancelados marcados como que cuentan). */
-  const totalRealTrips = sanitizedTrips.filter(
-    (t: { countsTrip?: unknown }) => t.countsTrip === 1,
-  ).length;
+  const totalEffectivePatients = calculateEffectivePatients(summaryTrips, date);
+  const totalDienstKm = finalKm - initialKm;
+  const totalRealTrips = summaryTrips.filter((t) => t.countsTrip === 1).length;
 
   const summaryDoc = {
     date,
@@ -166,10 +117,10 @@ export async function createWorkdaySummary(
     ambulanceNumber,
     driver,
     medic,
-    initialKm: nInitialKm,
-    finalKm: nFinalKm,
+    initialKm,
+    finalKm,
     totalDienstKm,
-    trips: sanitizedTrips,
+    trips: summaryTrips,
     extraNote,
     isFinalClosure: true,
     totalEffectivePatients,
@@ -179,7 +130,7 @@ export async function createWorkdaySummary(
     endTime,
     ...(checklistItems != null && { checklistItems }),
     ...(o2Level != null && typeof o2Level === "number" && !Number.isNaN(o2Level) && { o2Level }),
-    ...(dienstCompanyId && { companyId: dienstCompanyId }),
+    companyId: companyOid,
   };
 
   const session = await mongoose.startSession();
@@ -187,15 +138,12 @@ export async function createWorkdaySummary(
     return await session.withTransaction(async () => {
       const created = await WorkdaySummary.create([summaryDoc], { session });
       const newSummary = created[0] as IWorkdaySummary;
-      if (sanitizedTrips.length > 0) {
-        const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
-        if (ids.length > 0) {
-          await Trip.updateMany(
-            { _id: { $in: ids } },
-            { $set: { sentInSummary: true } },
-            { session },
-          );
-        }
+      if (tripObjectIds.length > 0) {
+        await Trip.updateMany(
+          { _id: { $in: tripObjectIds } },
+          { $set: { sentInSummary: true } },
+          { session },
+        );
       }
       return newSummary;
     });
@@ -217,7 +165,7 @@ export async function createWorkdaySummary(
  * Admin: puede continuar (mismo companyId). Worker: solo si participa.
  * ───────────────────────────── */
 export async function submitPartialClosure(
-  body: Record<string, unknown>,
+  body: PartialClosureBody,
   userId: string,
   userRole: string,
   userCompanyId?: string | null,
@@ -229,77 +177,51 @@ export async function submitPartialClosure(
     ambulanceNumber,
     initialKm,
     finalKm,
-    trips,
+    trips: clientTrips,
     partialClosureReason,
   } = body;
 
-  const missing: string[] = [];
-  if (!date) missing.push("date");
-  if (!assignmentId) missing.push("assignmentId");
-  if (!ambulanceId) missing.push("ambulanceId");
-  if (initialKm === undefined) missing.push("initialKm");
-  if (finalKm === undefined) missing.push("finalKm");
-  if (!Array.isArray(trips)) missing.push("trips (debe ser array)");
-  if (
-    !partialClosureReason ||
-    (typeof partialClosureReason === "string" &&
-      partialClosureReason.trim() === "")
-  ) {
-    missing.push("partialClosureReason");
-  }
-  if (missing.length) {
-    throw new WorkdaySummaryError(
-      `Faltan campos: ${missing.join(", ")}`,
-      400,
-    );
-  }
-
-  const nInitialKm: number =
-    typeof initialKm === "string" ? Number(initialKm) : (initialKm as number);
-  const nFinalKm: number =
-    typeof finalKm === "string" ? Number(finalKm) : (finalKm as number);
-
-  const sanitizedTrips = (trips as any[]).map((t) => ({
-    ...t,
-    wasCancelled: !!t.wasCancelled,
-    cancelledAtPickup: !!t.cancelledAtPickup,
-    countsTrip:
-      typeof t.countsTrip === "number" ? (t.countsTrip === 1 ? 1 : 0) : 1,
-  }));
+  validateClosureKm(initialKm, finalKm);
 
   const scopeCo =
     userCompanyId != null && String(userCompanyId).trim() !== ""
       ? String(userCompanyId).trim()
       : "";
   const { dienst, assignment } = await resolveAssignmentByAssignmentId(
-    assignmentId as string,
+    assignmentId,
     scopeCo,
   );
   assertUserCanCloseAssignment(dienst as any, assignment, userId, userRole, userCompanyId);
 
-  const ambulance = await getAmbulanceById(ambulanceId as string, scopeCo);
+  const ambulance = await getAmbulanceById(ambulanceId, scopeCo);
   if (!ambulance) {
     throw new WorkdaySummaryError("La ambulancia no pertenece a tu empresa", 403);
   }
 
-  const tripIds = sanitizedTrips.map((t: { _id?: unknown }) => t._id).filter(Boolean);
-  const tripIdStrs = tripIds.map((id: unknown) => String(id));
-  await validateTripsBelongToAssignment(tripIdStrs, assignmentId as string);
+  const dienstCompanyId = (dienst as { companyId?: mongoose.Types.ObjectId }).companyId;
+  if (!dienstCompanyId) {
+    throw new WorkdaySummaryError("No autorizado para cerrar este assignment", 403);
+  }
+  const companyOid = new mongoose.Types.ObjectId(String(dienstCompanyId));
+
+  await assertNoFinalClosureExists(assignmentId, date, companyOid);
+
+  const tripIds = extractTripIdsFromBody(clientTrips);
+  const { summaryTrips, tripObjectIds } = await loadTripsForClosure({
+    tripIds,
+    assignmentId,
+    companyId: companyOid,
+    clientTrips,
+  });
 
   const dienstNumber = dienst?.dienstNumber ?? null;
   const startTime = assignment?.startTime ?? null;
   const endTime = assignment?.endTime ?? null;
   const { driver, medic } = assignment;
-  const dienstCompanyId = (dienst as any).companyId;
 
-  const totalEffectivePatients = calculateEffectivePatients(
-    sanitizedTrips,
-    date as string,
-  );
-  const totalDienstKm = nFinalKm - nInitialKm;
-  const totalRealTrips = sanitizedTrips.filter(
-    (t: { countsTrip?: unknown }) => t.countsTrip === 1,
-  ).length;
+  const totalEffectivePatients = calculateEffectivePatients(summaryTrips, date);
+  const totalDienstKm = finalKm - initialKm;
+  const totalRealTrips = summaryTrips.filter((t) => t.countsTrip === 1).length;
 
   const summaryDoc = {
     date,
@@ -308,21 +230,18 @@ export async function submitPartialClosure(
     medic,
     ambulanceId,
     ambulanceNumber,
-    initialKm: nInitialKm,
-    finalKm: nFinalKm,
+    initialKm,
+    finalKm,
     totalDienstKm,
-    trips: sanitizedTrips,
-    partialClosureReason:
-      typeof partialClosureReason === "string"
-        ? partialClosureReason.trim()
-        : partialClosureReason,
+    trips: summaryTrips,
+    partialClosureReason,
     isFinalClosure: false,
     totalEffectivePatients,
     totalRealTrips,
     dienstNumber,
     startTime,
     endTime,
-    ...(dienstCompanyId && { companyId: dienstCompanyId }),
+    companyId: companyOid,
   };
 
   const session = await mongoose.startSession();
@@ -330,15 +249,12 @@ export async function submitPartialClosure(
     await session.withTransaction(async () => {
       const summary = new WorkdaySummary(summaryDoc);
       await summary.save({ session });
-      if (sanitizedTrips.length > 0) {
-        const ids = sanitizedTrips.map((t: any) => t._id).filter(Boolean);
-        if (ids.length > 0) {
-          await Trip.updateMany(
-            { _id: { $in: ids } },
-            { $set: { sentInSummary: true } },
-            { session },
-          );
-        }
+      if (tripObjectIds.length > 0) {
+        await Trip.updateMany(
+          { _id: { $in: tripObjectIds } },
+          { $set: { sentInSummary: true } },
+          { session },
+        );
       }
     });
   } finally {
@@ -374,11 +290,6 @@ export async function getAllWorkdaySummaries(
     .sort({ date: -1 })
     .populate("driver", "name lastName")
     .populate("medic", "name lastName")
-    .populate({
-      path: "trips",
-      select:
-        "auftragNumber wasCancelled cancelledAtPickup countsTrip kmStart kmEnd timeWarning timeAtHome timePickup timeArrival timeEnd fromAddress toAddress patientName reports",
-    })
     .lean();
 
   const diensts = await Dienst.find({ companyId: companyOid }).lean();
