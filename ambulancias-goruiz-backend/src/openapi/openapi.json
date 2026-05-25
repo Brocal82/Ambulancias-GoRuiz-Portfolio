@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, diensts (scheduling), appointments, vacations, sick-leaves, documents, payroll, mechanics, and support-access (JIT break-glass). Full reference: docs/API-REFERENCE.md and docs/domains/",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, diensts (scheduling), appointments, vacations, sick-leaves, documents, payroll, mechanics, notifications (push tokens/history), and support-access (JIT break-glass). WebSocket: GET /ws?token=<jwt> (see docs/frontend/WEBSOCKET.md). Full reference: docs/API-REFERENCE.md and docs/domains/",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -1766,6 +1766,71 @@
           "200": { "description": "Monitoring snapshot", "content": { "application/json": { "schema": { "type": "object" } } } }
         }
       }
+    },
+    "/api/notifications/register-token": {
+      "post": {
+        "summary": "Register Expo push token (worker)",
+        "description": "Stores or updates a device push token for the authenticated worker. Always-on infrastructure (not module-gated). Duplicate tokens are reassigned to the latest registering user.",
+        "tags": ["Notifications"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PushTokenRegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Registered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OkResponse" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Worker role required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/notifications/unregister-token": {
+      "post": {
+        "summary": "Unregister Expo push token(s) (worker)",
+        "description": "Removes one token or all tokens for the authenticated worker. Call on logout for hygiene.",
+        "tags": ["Notifications"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PushTokenUnregisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Unregistered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OkResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Worker role required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/notifications/history": {
+      "get": {
+        "summary": "Notification history (worker)",
+        "description": "Returns persisted push notification log entries for the authenticated worker only (max 50, newest first). Unread message counts come from GET /api/messages?unreadOnly=true.",
+        "tags": ["Notifications"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "History items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/NotificationLogItem" }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Worker role required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -2737,6 +2802,48 @@
           "endDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
           "note": { "type": "string" },
           "documentUrl": { "type": "string", "description": "Optional internal /uploads path only" }
+        }
+      },
+      "OkResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "example": true }
+        }
+      },
+      "PushTokenRegisterRequest": {
+        "type": "object",
+        "required": ["token", "platform"],
+        "properties": {
+          "token": { "type": "string", "minLength": 1, "example": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]" },
+          "platform": { "type": "string", "enum": ["ios", "android"] }
+        }
+      },
+      "PushTokenUnregisterRequest": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "minLength": 1, "description": "Optional. Omit to remove all tokens for the worker." }
+        }
+      },
+      "NotificationPayloadData": {
+        "type": "object",
+        "description": "Expo push data map (string values). Normalized fields: screen, type, resourceId, plus legacy keys such as messageId.",
+        "additionalProperties": { "type": "string" },
+        "properties": {
+          "screen": { "type": "string", "enum": ["messages", "agenda", "vacations", "sickLeaves", "appointments", "praemien", "documents", "workday"] },
+          "type": { "type": "string", "example": "message_received" },
+          "resourceId": { "type": "string" },
+          "messageId": { "type": "string", "description": "Legacy alias when type=message_received" },
+          "date": { "type": "string", "description": "Agenda deep-link date (ISO date string)" }
+        }
+      },
+      "NotificationLogItem": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/NotificationPayloadData" },
+          "createdAt": { "type": "string", "format": "date-time" }
         }
       }
     }

@@ -66,6 +66,11 @@ Un usuario puede tener múltiples sockets abiertos (multi-dispositivo). `notifyU
 { "event": "<nombre_evento>" }
 ```
 
+### Heartbeat y límites
+
+- Ping/pong cada **30s** (`ws.ping()`); sockets sin respuesta se terminan.
+- Máximo **5 conexiones** simultáneas por `userId` (las más antiguas se cierran con código 1008).
+
 ### Eventos emitidos actualmente
 
 | Evento | Emisor | Descripción |
@@ -174,9 +179,19 @@ Backend: POST /api/messages (nuevo mensaje, solo admin)
 registerForPushNotifications()
   → expo-notifications.getExpoPushTokenAsync()
   → POST /api/notifications/register-token { token, platform }
+
+// En logout (app worker):
+unregisterPushNotifications()
+  → POST /api/notifications/unregister-token {}  // elimina todos los tokens del worker
 ```
 
-Un usuario puede tener múltiples tokens (varios dispositivos). El backend almacena todos en `PushToken` y envía a todos.
+Un usuario puede tener múltiples tokens (varios dispositivos). El backend almacena todos en `PushToken` y envía a todos. Si el mismo token físico se registra en otra cuenta, el registro anterior se elimina.
+
+### Higiene operacional
+
+- **Push stale tokens:** respuestas Expo `DeviceNotRegistered` / `InvalidCredentials` eliminan el token en BD.
+- **WebSocket heartbeat:** el servidor envía `ping` cada 30s; conexiones sin `pong` se terminan. Máximo 5 sockets por usuario.
+- **Module gating (defense-in-depth):** los dominios pueden pasar `moduleKey` a `sendPushNotification` para omitir usuarios cuya empresa no tiene el módulo activo (p. ej. mensajes).
 
 ### Estructura del payload push
 
@@ -185,10 +200,15 @@ Un usuario puede tener múltiples tokens (varios dispositivos). El backend almac
   "title": "Nuevo mensaje",
   "body": "Tienes un mensaje nuevo",
   "data": {
-    "screen": "messages"
+    "screen": "messages",
+    "type": "message_received",
+    "resourceId": "<messageId>",
+    "messageId": "<messageId>"
   }
 }
 ```
+
+Todos los valores en `data` son strings (requisito Expo). Campos normalizados: `screen`, `type`, `resourceId`; metadatos adicionales (p. ej. `date`, `status`) se incluyen como strings.
 
 El campo `data.screen` determina a qué tab navega la app al abrir la notificación.
 
@@ -211,7 +231,7 @@ El campo `data.screen` determina a qué tab navega la app al abrir la notificaci
 |-----------|-----------|--------------|
 | WebSocket activo | Sí (`/ws?token=`) | No |
 | Push notifications | Sí (Expo) | No |
-| Polling periódico | No (WS) | Sí (30s + focus) |
+| Polling periódico | Sí (20s fallback cuando messages activo) | Sí (30s + focus) |
 | BroadcastChannel cross-tab | No aplica | Sí |
 | Evento `new_message` en tiempo real | Sí (WS) | Solo al refrescar |
 
