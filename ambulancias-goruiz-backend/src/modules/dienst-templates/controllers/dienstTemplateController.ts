@@ -5,6 +5,14 @@ import DienstTemplate, {
   IDienstTemplate,
 } from "../models/DienstTemplate";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
+import type { z } from "zod";
+import type {
+  dienstTemplateCreateSchema,
+  dienstTemplateUpdateSchema,
+} from "../schemas/dienstTemplate.schema";
+
+type CreateBody = z.infer<typeof dienstTemplateCreateSchema>;
+type UpdateBody = z.infer<typeof dienstTemplateUpdateSchema>;
 
 /**
  * GET /dienst-templates
@@ -57,30 +65,7 @@ export const createDienstTemplate = async (
       daysOff,
       isActive,
       perDaySchedule,
-    } = req.body;
-
-    if (
-      dienstNumber == null ||
-      !startTime ||
-      !endTime ||
-      !Array.isArray(daysOff)
-    ) {
-      res.status(400).json({
-        message: "dienstNumber, startTime, endTime y daysOff son obligatorios",
-      });
-      return;
-    }
-
-    let perDayScheduleToSave = undefined;
-    if (perDaySchedule !== undefined) {
-      if (!Array.isArray(perDaySchedule)) {
-        res.status(400).json({
-          message: "perDaySchedule debe ser un array si se envía",
-        });
-        return;
-      }
-      perDayScheduleToSave = perDaySchedule;
-    }
+    } = req.body as CreateBody;
 
     const newTemplate = new DienstTemplate({
       companyId: new mongoose.Types.ObjectId(companyResult.companyId),
@@ -89,7 +74,7 @@ export const createDienstTemplate = async (
       endTime,
       daysOff,
       isActive: isActive !== undefined ? isActive : true,
-      perDaySchedule: perDayScheduleToSave,
+      perDaySchedule,
     });
 
     const saved = await newTemplate.save();
@@ -131,30 +116,19 @@ export const updateDienstTemplate = async (
       daysOff,
       isActive,
       perDaySchedule,
-    } = req.body;
-
-    let perDayScheduleToSave = undefined;
-    if (perDaySchedule !== undefined) {
-      if (!Array.isArray(perDaySchedule)) {
-        res.status(400).json({
-          message: "perDaySchedule debe ser un array si se envía",
-        });
-        return;
-      }
-      perDayScheduleToSave = perDaySchedule;
-    }
+    } = req.body as UpdateBody;
 
     const co = new mongoose.Types.ObjectId(companyResult.companyId);
 
     const updated = await DienstTemplate.findOneAndUpdate(
       { _id: id, companyId: co },
       {
-        dienstNumber,
-        startTime,
-        endTime,
-        daysOff,
-        isActive,
-        perDaySchedule: perDayScheduleToSave,
+        ...(dienstNumber !== undefined && { dienstNumber }),
+        ...(startTime !== undefined && { startTime }),
+        ...(endTime !== undefined && { endTime }),
+        ...(daysOff !== undefined && { daysOff }),
+        ...(isActive !== undefined && { isActive }),
+        ...(perDaySchedule !== undefined && { perDaySchedule }),
       },
       {
         new: true,

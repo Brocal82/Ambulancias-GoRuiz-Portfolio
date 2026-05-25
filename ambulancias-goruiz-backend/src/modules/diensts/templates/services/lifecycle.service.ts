@@ -17,6 +17,14 @@ import {
 } from "../../../../utils/requireCompany";
 import { companyHasEnabledModule } from "../../../../utils/companyEnabledModules";
 import { MODULE_KEYS } from "../../../companies/constants/modules.constants";
+import {
+  getWeekMongoDateRange,
+  parseWeekStartISO,
+} from "../../../../utils/time";
+import {
+  findDienstWeekDownstreamReferences,
+  DeleteWeekConflictError,
+} from "../../utils/dienstWeekReferences";
 import type { z } from "zod";
 import type { dienstSchema } from "../../schemas/dienstSchema";
 
@@ -166,15 +174,42 @@ export async function deleteDienstsForWeek(
     );
   }
   const companyIdStr = String(companyId).trim();
-  const start = new Date(weekStartDate);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
+  const companyOid = new mongoose.Types.ObjectId(companyIdStr);
+  const { start, end, weekDates } = getWeekMongoDateRange(weekStartDate);
 
   const weekRange = { weekStartDate: { $gte: start, $lte: end } };
   const filter: Record<string, unknown> = {
     ...weekRange,
-    companyId: new mongoose.Types.ObjectId(companyIdStr),
+    companyId: companyOid,
   };
+
+  const dienstsInWeek = await Dienst.find(filter)
+    .select("dienstNumber assignments._id")
+    .lean();
+
+  const assignmentIds: mongoose.Types.ObjectId[] = [];
+  const dienstNumbers = new Set<number>();
+  for (const d of dienstsInWeek) {
+    if (typeof (d as { dienstNumber?: number }).dienstNumber === "number") {
+      dienstNumbers.add((d as { dienstNumber: number }).dienstNumber);
+    }
+    for (const a of (d as { assignments?: Array<{ _id?: unknown }> }).assignments ??
+      []) {
+      if (a._id != null) {
+        assignmentIds.push(new mongoose.Types.ObjectId(String(a._id)));
+      }
+    }
+  }
+
+  const refs = await findDienstWeekDownstreamReferences({
+    companyId: companyIdStr,
+    assignmentIds,
+    weekDateISOs: weekDates,
+    dienstNumbers: [...dienstNumbers],
+  });
+  if (refs.inUse) {
+    throw new DeleteWeekConflictError(refs.sources, refs.counts);
+  }
 
   const deleted = await Dienst.deleteMany(filter);
   return { deletedCount: deleted.deletedCount ?? 0 };
@@ -203,9 +238,11 @@ export async function generateDienstTemplatesForWeek(
   }
   const companyOid = new mongoose.Types.ObjectId(companyIdStr);
 
-  const startDate = new Date(weekStartDate);
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 6);
+  const {
+    start: startDate,
+    end: endDate,
+    weekDates: weekDateStrings,
+  } = getWeekMongoDateRange(weekStartDate);
 
   const weekFilter: Record<string, unknown> = {
     weekStartDate: { $gte: startDate, $lte: endDate },
@@ -269,16 +306,16 @@ export async function generateDienstTemplatesForWeek(
     }
   }
 
-  const prevWeekStart = new Date(startDate);
-  prevWeekStart.setDate(startDate.getDate() - 7);
-  prevWeekStart.setHours(0, 0, 0, 0);
-
-  const prevWeekNextDay = new Date(
-    prevWeekStart.getTime() + 24 * 60 * 60 * 1000,
-  );
+  const prevWeekStartDt = parseWeekStartISO(weekStartDate)
+    .minus({ days: 7 })
+    .startOf("day");
+  const prevWeekNextDay = prevWeekStartDt.plus({ days: 1 }).startOf("day");
 
   const prevWeekFilter: Record<string, unknown> = {
-    weekStartDate: { $gte: prevWeekStart, $lt: prevWeekNextDay },
+    weekStartDate: {
+      $gte: prevWeekStartDt.toJSDate(),
+      $lt: prevWeekNextDay.toJSDate(),
+    },
     companyId: companyOid,
   };
   const prevDiensts = await Dienst.find(prevWeekFilter).lean();
@@ -417,16 +454,11 @@ export async function generateDienstTemplatesForWeek(
             )
           : undefined;
 
-      const weekDates = Array.from({ length: 7 }, (_, j) => {
-        const day = new Date(startDate);
-        day.setDate(startDate.getDate() + j);
-        return day.toISOString().split("T")[0];
-      });
       const { blockMap: dayBlockMap, reasonByDate } =
         await computeTeamDayAbsenceData({
           driverId: driverIdStr,
           medicId: medicIdStr,
-          dates: weekDates,
+          dates: weekDateStrings,
         });
 
       const skippedAbsences: Array<{
@@ -447,10 +479,8 @@ export async function generateDienstTemplatesForWeek(
       const medicWorkerName = workerLabel(assignedTeam?.medic);
 
       for (let j = 0; j < 7; j++) {
-        const day = new Date(startDate);
-        day.setDate(startDate.getDate() + j);
-
-        const weekDayIndex = day.getDay();
+        const dayDt = parseWeekStartISO(weekStartDate).plus({ days: j });
+        const weekDayIndex = dayDt.weekday % 7;
 
         let startTimeForDay: string;
         let endTimeForDay: string;
@@ -474,7 +504,7 @@ export async function generateDienstTemplatesForWeek(
           endTimeForDay = templateEndTime;
         }
 
-        const dateISO = weekDates[j];
+        const dateISO = weekDateStrings[j]!;
         const rf = reasonByDate[dateISO];
         if (rf) {
           if (rf.driver.vacation) {

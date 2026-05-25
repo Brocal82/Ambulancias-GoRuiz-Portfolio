@@ -3,6 +3,10 @@ import mongoose from "mongoose";
 import * as assignmentsService from "../services/assignments.service";
 import { DienstAssignmentError } from "../services/assignment-errors";
 import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
+import type { z } from "zod";
+import type { assignTeamToWeekSchema } from "../../schemas/shared.schema";
+
+type AssignTeamBody = z.infer<typeof assignTeamToWeekSchema>;
 
 export const assignTeamToWeek = async (
   req: Request,
@@ -14,29 +18,8 @@ export const assignTeamToWeek = async (
       res.status(companyResult.statusCode).json({ message: companyResult.message });
       return;
     }
-    const { dienstNumber, weekStartDate, teamId, resolvedRoles } = req.body as {
-      dienstNumber?: number;
-      weekStartDate?: string;
-      teamId?: string;
-      resolvedRoles?: {
-        driverId?: string;
-        medicId?: string;
-      };
-    };
-
-    if (!dienstNumber || !weekStartDate || !teamId) {
-      res
-        .status(400)
-        .json({
-          message: "Faltan parámetros: dienstNumber, weekStartDate, teamId",
-        });
-      return;
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(teamId)) {
-      res.status(400).json({ message: "teamId inválido" });
-      return;
-    }
+    const { dienstNumber, weekStartDate, teamId, resolvedRoles } =
+      req.body as AssignTeamBody;
 
     const result = await assignmentsService.assignTeamToWeek(
       {

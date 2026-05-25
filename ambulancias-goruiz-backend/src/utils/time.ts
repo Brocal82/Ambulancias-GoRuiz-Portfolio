@@ -53,3 +53,39 @@ export function computeShiftBounds(
 export function diffMinutes(a: DateTime, b: DateTime): number {
   return Math.round(b.diff(a, "minutes").minutes);
 }
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Parsea YYYY-MM-DD como inicio de día en Europe/Berlin.
+ * Lanza Error si el formato o la fecha no son válidos.
+ */
+export function parseWeekStartISO(weekStartISO: string): DateTime {
+  const trimmed = String(weekStartISO ?? "").trim();
+  if (!ISO_DATE_RE.test(trimmed)) {
+    throw new Error("Fecha de inicio inválida: use formato YYYY-MM-DD");
+  }
+  const dt = DateTime.fromISO(trimmed, { zone: ZONE }).startOf("day");
+  if (!dt.isValid) {
+    throw new Error("Fecha de inicio inválida");
+  }
+  return dt;
+}
+
+/**
+ * Rango inclusivo [start, end] de weekStartDate en Mongo para una semana de 7 días
+ * (lunes + 6 días), anclado a medianoche Berlin.
+ */
+export function getWeekMongoDateRange(weekStartISO: string): {
+  start: Date;
+  end: Date;
+  weekDates: string[];
+} {
+  const startDt = parseWeekStartISO(weekStartISO);
+  const endDt = startDt.plus({ days: 6 }).startOf("day");
+  return {
+    start: startDt.toJSDate(),
+    end: endDt.toJSDate(),
+    weekDates: buildWeekDateStrings(startDt.toISODate()!),
+  };
+}

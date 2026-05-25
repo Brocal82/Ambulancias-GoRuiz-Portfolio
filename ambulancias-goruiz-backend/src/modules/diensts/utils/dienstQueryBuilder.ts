@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { dienstQuerySchema } from "../schemas/dienstQuerySchema";
+import { getWeekMongoDateRange } from "../../../utils/time";
 
 export type DienstQueryParams = z.infer<typeof dienstQuerySchema>;
 
@@ -19,7 +20,8 @@ export function buildDienstSearchQuery(
   }
 
   if (parsed.weekStartDate) {
-    query.weekStartDate = parsed.weekStartDate;
+    const { start, end } = getWeekMongoDateRange(parsed.weekStartDate);
+    query.weekStartDate = { $gte: start, $lte: end };
   }
 
   if (parsed.date) {

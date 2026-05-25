@@ -77,3 +77,28 @@ For the full companyId policy and the legacy-null decision logic, see:
 Time-conflict checks between Dienst slots use `src/utils/overlap.ts`.
 This is the single source of truth for overlap logic. Do not implement custom time-overlap
 checks elsewhere in this domain.
+
+---
+
+## delete-week protection
+
+`POST /api/diensts/delete-week` removes all Dienst documents for the target week (scoped by
+admin `companyId`). Legacy Diensts with `companyId: null` are never matched.
+
+Before deletion, the service checks downstream references for assignment subdoc IDs in that week:
+
+| Source | Model | Block reason |
+|--------|-------|--------------|
+| `trips` | Trip | Operational trips keyed by `assignmentId` |
+| `trip-setup` | TripSetup | Vehicle setup keyed by `assignmentId` |
+| `workday-summary` | WorkdaySummary | Day closure keyed by `assignmentId` (+ date) |
+| `mechanics-issues` | MechanicsIssue | Issues keyed by `dienstNumber` + date |
+
+If any reference exists, the API returns **409** with `{ message, sources, counts }` and **does not**
+delete Diensts. Praemien depend indirectly on workday final closure; blocking workday-summary
+covers that path.
+
+Week boundaries for delete/generate/search use `getWeekMongoDateRange()` in `src/utils/time.ts`
+(Europe/Berlin midnight anchoring).
+
+Implementation: `src/modules/diensts/utils/dienstWeekReferences.ts`
