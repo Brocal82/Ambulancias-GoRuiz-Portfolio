@@ -1123,6 +1123,156 @@
         }
       }
     },
+    "/api/trips": {
+      "post": {
+        "summary": "Create trip (workday)",
+        "description": "Requires module `workday`. Driver/medic in body are ignored; assignment in DB is source of truth. Returns 409 if a final closure exists for assignment+date. Validates kmEnd >= kmStart for non-cancelled trips.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TripCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Trip created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Trip" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Assignment not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Final closure already exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/trips/date/{date}": {
+      "get": {
+        "summary": "List open trips by date",
+        "description": "Requires module `workday`. Returns trips with `sentInSummary: false` scoped by companyId. Workers see only trips where they are driver or medic.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "date", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Trip list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Trip" } } } } },
+          "403": { "description": "Forbidden or module disabled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/trips/setup/{assignmentId}": {
+      "get": {
+        "summary": "Get trip setup for assignment",
+        "description": "Requires module `workday`. Tenant-scoped by assignment resolution and `companyId` on TripSetup document.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "assignmentId", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "responses": {
+          "200": { "description": "Setup or null", "content": { "application/json": { "schema": { "oneOf": [{ "$ref": "#/components/schemas/TripSetup" }, { "type": "null" }] } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Assignment not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "put": {
+        "summary": "Upsert trip setup for assignment",
+        "description": "Requires module `workday`. Filter `{ assignmentId, companyId }` after tenant assignment resolution.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "assignmentId", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TripSetupUpsertRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Setup saved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TripSetup" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/workday-summary": {
+      "post": {
+        "summary": "Final workday closure",
+        "description": "Requires module `workday`. Trip payloads in body are not trusted: only trip `_id` values are used to reload open trips from DB (`sentInSummary: false`, same assignment and companyId). Totals and effective patients are computed server-side. One final closure per assignment+date (409 on duplicate). Validates finalKm >= initialKm.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkdayFinalClosureRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Summary created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkdaySummary" } } } },
+          "400": { "description": "Validation or trips unavailable", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Duplicate final closure or stale client trip snapshot", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "get": {
+        "summary": "List workday summaries",
+        "description": "Requires module `workday`. Scoped by companyId. Workers see only summaries where they are driver or medic.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Summary list", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WorkdaySummary" } } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/workday-summary/partial": {
+      "post": {
+        "summary": "Partial workday closure",
+        "description": "Requires module `workday`. Same trip reload rules as final closure. Rejected with 409 if a final closure already exists for assignment+date. Multiple partial closures allowed before final.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WorkdayPartialClosureRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Partial closure saved", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Final closure already exists or stale snapshot", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/workday-summary/count": {
+      "get": {
+        "summary": "Count summaries by review status",
+        "description": "Admin only. Requires module `workday`. Query `status` defaults to `pending` (uses `isReviewed: false` among other legacy fields).",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "status", "in": "query", "required": false, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Count", "content": { "application/json": { "schema": { "type": "object", "properties": { "count": { "type": "integer" } } } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/workday-summary/{id}/review": {
+      "patch": {
+        "summary": "Mark summary as reviewed (admin)",
+        "description": "Requires module `workday` and admin role. Sets `isReviewed: true` and `reviewedAt`. Strict companyId match (no legacy null fallback). Downstream Praemien manual-daily requires final closures with `isFinalClosure: true`.",
+        "tags": ["Workday"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "responses": {
+          "200": { "description": "Updated summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkdaySummary" } } } },
+          "403": { "description": "Cross-tenant or legacy summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
     "/api/mechanics/report-issue": {
       "post": {
         "summary": "Report mechanic issue (worker/admin on assignment)",
@@ -2175,6 +2325,114 @@
           "approvalsRequired": { "type": "integer" },
           "approvalsCount": { "type": "integer" },
           "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "Trip": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "date": { "type": "string" },
+          "assignmentId": { "type": "string" },
+          "companyId": { "type": "string", "nullable": true },
+          "auftragNumber": { "type": "string" },
+          "patientName": { "type": "string" },
+          "kmStart": { "type": "number" },
+          "kmEnd": { "type": "number" },
+          "wasCancelled": { "type": "boolean" },
+          "countsTrip": { "type": "integer", "enum": [0, 1] },
+          "sentInSummary": { "type": "boolean" }
+        }
+      },
+      "TripCreateRequest": {
+        "type": "object",
+        "required": ["date", "assignmentId", "auftragNumber", "patientName", "fromAddress", "toAddress", "timeWarning", "wasCancelled"],
+        "properties": {
+          "date": { "type": "string" },
+          "assignmentId": { "type": "string" },
+          "auftragNumber": { "type": "string" },
+          "patientName": { "type": "string" },
+          "fromAddress": { "type": "string" },
+          "toAddress": { "type": "string" },
+          "timeWarning": { "type": "string" },
+          "kmStart": { "type": "number" },
+          "kmEnd": { "type": "number" },
+          "wasCancelled": { "type": "boolean" },
+          "countsTrip": { "type": "integer", "enum": [0, 1] }
+        }
+      },
+      "TripSetup": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "assignmentId": { "type": "string" },
+          "companyId": { "type": "string" },
+          "ambulanceId": { "type": "string" },
+          "ambulanceNumber": { "type": "string" },
+          "initialKm": { "type": "integer" },
+          "date": { "type": "string" }
+        }
+      },
+      "TripSetupUpsertRequest": {
+        "type": "object",
+        "required": ["ambulanceNumber", "initialKm"],
+        "properties": {
+          "ambulanceId": { "type": "string" },
+          "ambulanceNumber": { "type": "string" },
+          "initialKm": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "WorkdaySummaryTripRef": {
+        "type": "object",
+        "description": "Client sends trip `_id` references; embedded fields are not trusted for totals.",
+        "properties": {
+          "_id": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" }
+        }
+      },
+      "WorkdayFinalClosureRequest": {
+        "type": "object",
+        "required": ["date", "assignmentId", "ambulanceId", "ambulanceNumber", "initialKm", "finalKm"],
+        "properties": {
+          "date": { "type": "string" },
+          "assignmentId": { "type": "string" },
+          "ambulanceId": { "type": "string" },
+          "ambulanceNumber": { "type": "string" },
+          "initialKm": { "type": "number", "minimum": 0 },
+          "finalKm": { "type": "number", "minimum": 0 },
+          "trips": { "type": "array", "items": { "$ref": "#/components/schemas/WorkdaySummaryTripRef" } },
+          "extraNote": { "type": "string" },
+          "checklistItems": { "type": "object", "additionalProperties": { "type": "boolean" } },
+          "o2Level": { "type": "number" }
+        }
+      },
+      "WorkdayPartialClosureRequest": {
+        "allOf": [
+          { "$ref": "#/components/schemas/WorkdayFinalClosureRequest" },
+          {
+            "type": "object",
+            "required": ["partialClosureReason"],
+            "properties": {
+              "partialClosureReason": { "type": "string", "minLength": 1 }
+            }
+          }
+        ]
+      },
+      "WorkdaySummary": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "date": { "type": "string" },
+          "assignmentId": { "type": "string" },
+          "companyId": { "type": "string" },
+          "initialKm": { "type": "number" },
+          "finalKm": { "type": "number" },
+          "totalDienstKm": { "type": "number" },
+          "totalEffectivePatients": { "type": "number" },
+          "totalRealTrips": { "type": "integer" },
+          "isFinalClosure": { "type": "boolean" },
+          "partialClosureReason": { "type": "string" },
+          "isReviewed": { "type": "boolean" },
+          "reviewedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "trips": { "type": "array", "items": { "type": "object" } }
         }
       }
     }

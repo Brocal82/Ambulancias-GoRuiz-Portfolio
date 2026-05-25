@@ -1,7 +1,16 @@
 import { Trip } from "../types/trip.types";
 
+/** Minimal trip shape needed for effective-patient multiplier calculation. */
+export type EffectivePatientTripInput = {
+  wasCancelled: boolean;
+  countsTrip?: number;
+  kmStart?: number;
+  kmEnd?: number;
+  timePickup?: string;
+};
+
 export function calculateEffectivePatients(
-  trips: Trip[],
+  trips: EffectivePatientTripInput[],
   dienstDate: string,
 ): number {
   const total = trips.reduce((total, trip) => {
