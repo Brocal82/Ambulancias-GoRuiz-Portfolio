@@ -12,20 +12,9 @@ export const generateDienstTemplatesForWeek: RequestHandler = async (
     return;
   }
 
-  const { weekStartDate } = req.body;
-
-  if (!weekStartDate) {
-    res.status(400).json({ message: "Fecha de inicio requerida" });
-    return;
-  }
+  const { weekStartDate } = req.body as { weekStartDate: string };
 
   try {
-    const startDate = new Date(weekStartDate);
-    if (isNaN(startDate.getTime())) {
-      res.status(400).json({ message: "Fecha de inicio inválida" });
-      return;
-    }
-
     const { count, dienstSummaries } =
       await lifecycleService.generateDienstTemplatesForWeek(
         weekStartDate,

@@ -17,6 +17,14 @@ import { validateObjectId } from "../../middlewares/validateObjectId";
 import { updateDienstPartialSchema } from "./assignments/schemas/update-dienst-partial.schema";
 import { moveSlotSameWeekSchema } from "./assignments/schemas/move-slot-same-week.schema";
 import { dndCrossDienstSameWeekSchema } from "./assignments/schemas/dnd-cross-dienst-same-week.schema";
+import {
+  weekStartDateBodySchema,
+  assignTeamToWeekSchema,
+  assignUserToWeekSchema,
+  assignAmbulanceToWeekSchema,
+  clearWeekPeopleSchema,
+  removeAssignmentBodySchema,
+} from "./schemas/shared.schema";
 
 const router = express.Router();
 
@@ -62,6 +70,7 @@ router.post(
   requireModule(MODULE_KEYS.SCHEDULING),
   requireModule(MODULE_KEYS.TEAMS),
   authorizeRole("admin"),
+  validateBody(weekStartDateBodySchema),
   DienstLifecycle.generateDienstTemplatesForWeek,
 );
 router.post(
@@ -69,6 +78,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
+  validateBody(weekStartDateBodySchema),
   DienstLifecycle.deleteDienstsForWeek,
 );
 
@@ -99,6 +109,7 @@ router.patch(
   requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   validateObjectId("id"),
+  validateBody(removeAssignmentBodySchema),
   DienstAssignments.removeAssignment,
 );
 
@@ -127,6 +138,7 @@ router.post(
   requireModule(MODULE_KEYS.SCHEDULING),
   requireModule(MODULE_KEYS.TEAMS),
   authorizeRole("admin"),
+  validateBody(assignTeamToWeekSchema),
   DienstAssignments.assignTeamToWeek,
 );
 
@@ -136,6 +148,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
+  validateBody(assignUserToWeekSchema),
   DienstAssignments.assignUserToWeek,
 );
 
@@ -144,6 +157,7 @@ router.post(
   authenticateToken,
   requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
+  validateBody(clearWeekPeopleSchema),
   DienstAssignments.clearPeopleForWeek,
 );
 
@@ -172,6 +186,7 @@ router.post(
   requireModule(MODULE_KEYS.SCHEDULING),
   authorizeRole("admin"),
   requireModule(MODULE_KEYS.AMBULANCES),
+  validateBody(assignAmbulanceToWeekSchema),
   DienstAssignments.assignAmbulanceToWeek,
 );
 

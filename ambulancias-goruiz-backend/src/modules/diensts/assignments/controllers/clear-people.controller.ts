@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import * as assignmentsService from "../services/assignments.service";
 import { DienstAssignmentError } from "../services/assignment-errors";
 import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
+import type { z } from "zod";
+import type { clearWeekPeopleSchema } from "../../schemas/shared.schema";
+
+type ClearWeekBody = z.infer<typeof clearWeekPeopleSchema>;
 
 export const clearPeopleForWeek = async (
   req: Request,
@@ -14,23 +18,7 @@ export const clearPeopleForWeek = async (
       return;
     }
 
-    const { dienstNumber, weekStartDate } = req.body as {
-      dienstNumber?: number;
-      weekStartDate?: string;
-    };
-
-    if (!dienstNumber || !weekStartDate) {
-      res
-        .status(400)
-        .json({ message: "Faltan parámetros: dienstNumber, weekStartDate" });
-      return;
-    }
-
-    const start = new Date(weekStartDate);
-    if (isNaN(start.getTime())) {
-      res.status(400).json({ message: "weekStartDate inválida" });
-      return;
-    }
+    const { dienstNumber, weekStartDate } = req.body as ClearWeekBody;
 
     const result = await assignmentsService.clearPeopleForWeek(
       { dienstNumber, weekStartDate },

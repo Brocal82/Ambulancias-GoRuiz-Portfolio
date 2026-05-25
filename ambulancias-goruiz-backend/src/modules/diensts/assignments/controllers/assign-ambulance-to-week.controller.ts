@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
 import * as assignmentsService from "../services/assignments.service";
 import { DienstAssignmentError } from "../services/assignment-errors";
 import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
+import type { z } from "zod";
+import type { assignAmbulanceToWeekSchema } from "../../schemas/shared.schema";
+
+type AssignAmbulanceBody = z.infer<typeof assignAmbulanceToWeekSchema>;
 
 export const assignAmbulanceToWeek = async (
   req: Request,
@@ -15,23 +18,8 @@ export const assignAmbulanceToWeek = async (
       return;
     }
 
-    const { dienstNumber, weekStartDate, ambulanceId } = req.body as {
-      dienstNumber?: number;
-      weekStartDate?: string;
-      ambulanceId?: string;
-    };
-
-    if (!dienstNumber || !weekStartDate || !ambulanceId) {
-      res.status(400).json({
-        message: "Faltan parámetros: dienstNumber, weekStartDate, ambulanceId",
-      });
-      return;
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(ambulanceId)) {
-      res.status(400).json({ message: "ambulanceId inválido" });
-      return;
-    }
+    const { dienstNumber, weekStartDate, ambulanceId } =
+      req.body as AssignAmbulanceBody;
 
     const result = await assignmentsService.assignAmbulanceToWeek(
       { dienstNumber, weekStartDate, ambulanceId },

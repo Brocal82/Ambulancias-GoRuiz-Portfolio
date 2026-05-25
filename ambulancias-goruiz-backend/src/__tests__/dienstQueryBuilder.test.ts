@@ -16,11 +16,17 @@ describe("buildDienstSearchQuery", () => {
     expect(buildDienstSearchQuery(params)).toEqual({});
   });
 
-  it("adds weekStartDate", () => {
+  it("adds weekStartDate as Berlin-anchored range", () => {
     const params: DienstQueryParams = { weekStartDate: "2024-01-08" };
-    expect(buildDienstSearchQuery(params)).toEqual({
-      weekStartDate: "2024-01-08",
-    });
+    const query = buildDienstSearchQuery(params);
+    expect(query.weekStartDate).toEqual(
+      expect.objectContaining({
+        $gte: expect.any(Date),
+        $lte: expect.any(Date),
+      }),
+    );
+    const range = query.weekStartDate as { $gte: Date; $lte: Date };
+    expect(range.$lte.getTime() - range.$gte.getTime()).toBe(6 * 24 * 60 * 60 * 1000);
   });
 
   it("adds assignments.date for date param", () => {
@@ -46,15 +52,16 @@ describe("buildDienstSearchQuery", () => {
       dienstNumber: "3",
       weekStartDate: "2024-01-08",
       date: "2024-01-10",
-      driver: "abc123",
-      medic: "def456",
+      driver: "507f1f77bcf86cd799439011",
+      medic: "507f1f77bcf86cd799439012",
     };
-    expect(buildDienstSearchQuery(params)).toEqual({
-      dienstNumber: 3,
-      weekStartDate: "2024-01-08",
-      "assignments.date": "2024-01-10",
-      "assignments.driver": "abc123",
-      "assignments.medic": "def456",
-    });
+    const query = buildDienstSearchQuery(params);
+    expect(query.dienstNumber).toBe(3);
+    expect(query.weekStartDate).toEqual(
+      expect.objectContaining({ $gte: expect.any(Date), $lte: expect.any(Date) }),
+    );
+    expect(query["assignments.date"]).toBe("2024-01-10");
+    expect(query["assignments.driver"]).toBe("507f1f77bcf86cd799439011");
+    expect(query["assignments.medic"]).toBe("507f1f77bcf86cd799439012");
   });
 });
