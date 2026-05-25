@@ -1,7 +1,14 @@
 import SickLeave from "../models/sick-leave.model";
+import { validateSickDocumentStoredPath } from "../utils/sick-document.validation";
 
 export async function getSickLeaveDocumentTarget(id: string) {
   return SickLeave.findById(id);
+}
+
+export function validateSickLeaveDocumentUrl(
+  documentUrl: string,
+): { ok: true; normalized: string } | { ok: false; message: string } {
+  return validateSickDocumentStoredPath(documentUrl);
 }
 
 export async function attachDocumentToSickLeave(input: {

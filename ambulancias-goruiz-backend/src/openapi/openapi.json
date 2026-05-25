@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Ambulancias GoRuiz API",
-    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, diensts (scheduling), appointments, documents, payroll, mechanics, and support-access (JIT break-glass). Full reference: docs/API-REFERENCE.md and docs/domains/",
+    "description": "Minimal OpenAPI surface — health, login, hospitals, ambulances, teams, diensts (scheduling), appointments, vacations, sick-leaves, documents, payroll, mechanics, and support-access (JIT break-glass). Full reference: docs/API-REFERENCE.md and docs/domains/",
     "version": "1.0.0"
   },
   "servers": [{ "url": "/", "description": "Backend root (adjust host/port in deployment)" }],
@@ -1603,6 +1603,156 @@
         }
       }
     },
+    "/api/vacations": {
+      "post": {
+        "summary": "Create vacation request (worker)",
+        "description": "Requires module `vacation`. Worker creates a pending request. Overlap with pending/accepted/option_sent/cancel_requested is rejected.",
+        "tags": ["Vacations"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VacationCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VacationRequest" } } } },
+          "400": { "description": "Invalid range", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Overlap", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "get": {
+        "summary": "List vacation requests (admin)",
+        "description": "Requires module `vacation`. Scoped by admin companyId (legacy null companyId via user fallback).",
+        "tags": ["Vacations"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/VacationRequest" } } } } }
+        }
+      }
+    },
+    "/api/vacations/{id}": {
+      "patch": {
+        "summary": "Update vacation request (admin)",
+        "description": "Requires module `vacation`. Admin may set status (accepted, cancelled, option_sent, pending). Accepting runs tenant-scoped capacity check; `force=true` bypasses capacity. Accepting clears worker dienst assignments in range.",
+        "tags": ["Vacations"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VacationUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VacationRequest" } } } },
+          "403": { "description": "Cross-tenant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Capacity exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VacationCapacityExceeded" } } } }
+        }
+      }
+    },
+    "/api/vacations/{id}/respond": {
+      "post": {
+        "summary": "Respond to admin alternative dates (worker)",
+        "description": "Requires module `vacation`. Allowed only when status is `option_sent` with adminOption dates. Accept re-runs tenant-scoped capacity check and clears dienst assignments on accept.",
+        "tags": ["Vacations"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VacationAlternativeResponse" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VacationRequest" } } } },
+          "400": { "description": "Invalid lifecycle state", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Capacity exceeded on accept", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VacationCapacityExceeded" } } } }
+        }
+      }
+    },
+    "/api/vacations/{id}/cancel": {
+      "patch": {
+        "summary": "Cancel own vacation request (worker)",
+        "description": "Requires module `vacation`. Worker may cancel own pending or option_sent requests.",
+        "tags": ["Vacations"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "responses": {
+          "200": { "description": "Cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VacationRequest" } } } },
+          "400": { "description": "Invalid status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/sick-leaves": {
+      "post": {
+        "summary": "Create sick leave (worker)",
+        "description": "Requires module `sick_leaves`. Creates pending request. Rejects overlap with active pending/accepted ranges. Optional documentUrl must be internal `/uploads/<basename>`.",
+        "tags": ["SickLeaves"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SickLeaveCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SickLeave" } } } },
+          "400": { "description": "Invalid range or document path", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Overlapping active sick leave", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/sick-leaves/{id}/accept": {
+      "post": {
+        "summary": "Accept sick leave (admin)",
+        "description": "Requires module `sick_leaves`. Pending only. Rejects overlap with other active sick leaves. Clears worker dienst assignments in range.",
+        "tags": ["SickLeaves"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "responses": {
+          "200": { "description": "Accepted", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "403": { "description": "Cross-tenant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "409": { "description": "Already accepted, not pending, or overlap", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
+    "/api/sick-leaves/{id}/attach-document": {
+      "post": {
+        "summary": "Attach sick leave document URL",
+        "description": "Requires module `sick_leaves`. Accepts only internal `/uploads/<secure-basename>` paths. Files are served via authenticated `GET /api/files/:filename`.",
+        "tags": ["SickLeaves"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["documentUrl"],
+                "properties": {
+                  "documentUrl": { "type": "string", "example": "/uploads/sick-doc-1234567890-123456789.pdf" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Attached", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "description": "Invalid documentUrl", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
     "/api/support-access/monitoring/daily-summary": {
       "get": {
         "summary": "Security monitoring daily summary (superadmin)",
@@ -2507,6 +2657,86 @@
           "year": { "type": "integer" },
           "month": { "type": "integer", "minimum": 1, "maximum": 12 },
           "averagePatients": { "type": "number" }
+        }
+      },
+      "VacationStatus": {
+        "type": "string",
+        "enum": ["pending", "accepted", "cancelled", "option_sent", "cancel_requested"]
+      },
+      "VacationRequest": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "user": { "type": "string" },
+          "companyId": { "type": "string", "nullable": true },
+          "startDate": { "type": "string", "format": "date-time" },
+          "endDate": { "type": "string", "format": "date-time" },
+          "status": { "$ref": "#/components/schemas/VacationStatus" },
+          "adminOptionStartDate": { "type": "string", "format": "date-time", "nullable": true },
+          "adminOptionEndDate": { "type": "string", "format": "date-time", "nullable": true },
+          "adminNote": { "type": "string", "nullable": true }
+        }
+      },
+      "VacationCreateRequest": {
+        "type": "object",
+        "required": ["startDate", "endDate"],
+        "properties": {
+          "startDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "endDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+        }
+      },
+      "VacationUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/VacationStatus" },
+          "startDate": { "type": "string" },
+          "endDate": { "type": "string" },
+          "adminOptionStartDate": { "type": "string" },
+          "adminOptionEndDate": { "type": "string" },
+          "adminNote": { "type": "string" },
+          "force": { "type": "boolean", "description": "Admin-only bypass for capacity_exceeded on accept" }
+        }
+      },
+      "VacationAlternativeResponse": {
+        "type": "object",
+        "required": ["accept"],
+        "properties": {
+          "accept": { "type": "boolean", "description": "true accepts adminOption dates; false cancels request" }
+        }
+      },
+      "VacationCapacityExceeded": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "enum": ["capacity_exceeded"] },
+          "message": { "type": "string" },
+          "days": { "type": "array", "items": { "type": "string", "format": "date-time" } }
+        }
+      },
+      "SickLeaveStatus": {
+        "type": "string",
+        "enum": ["pending", "accepted", "rejected"]
+      },
+      "SickLeave": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "user": { "type": "string" },
+          "companyId": { "type": "string", "nullable": true },
+          "startDate": { "type": "string", "format": "date-time" },
+          "endDate": { "type": "string", "format": "date-time" },
+          "status": { "$ref": "#/components/schemas/SickLeaveStatus" },
+          "documentUrl": { "type": "string", "nullable": true, "description": "Internal /uploads path; use GET /api/files/:filename" },
+          "documents": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "SickLeaveCreateRequest": {
+        "type": "object",
+        "required": ["startDate", "endDate"],
+        "properties": {
+          "startDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "endDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "note": { "type": "string" },
+          "documentUrl": { "type": "string", "description": "Optional internal /uploads path only" }
         }
       }
     }

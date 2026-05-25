@@ -27,14 +27,16 @@ export async function checkVacationAcceptanceCapacity(params: {
     _id: { toString(): string };
   };
   maxPerDay: number;
+  companyId: string;
 }) {
-  const { request, maxPerDay } = params;
+  const { request, maxPerDay, companyId } = params;
 
   return findOverCapacityDays(
     VacationRequest,
     request.startDate,
     request.endDate,
     maxPerDay,
+    companyId,
     request._id.toString(),
   );
 }

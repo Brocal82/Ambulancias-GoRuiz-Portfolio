@@ -38,4 +38,26 @@ describe("validateAssignmentSave", () => {
   it("devuelve null si la asignación es válida", () => {
     expect(validateAssignmentSave(base)).toBeNull();
   });
+
+  it("devuelve warn si el driver tiene baja en el rango", () => {
+    const driverId = "507f1f77bcf86cd799439011";
+    expect(
+      validateAssignmentSave({
+        ...base,
+        selectedDriverId: driverId,
+        sickFlags: { [driverId]: { hasSickInRange: true } },
+      }),
+    ).toEqual({ type: "warn", key: "toasts.assignments.userSickDriver" });
+  });
+
+  it("devuelve warn si el medic tiene vacaciones en el rango", () => {
+    const medicId = "507f1f77bcf86cd799439012";
+    expect(
+      validateAssignmentSave({
+        ...base,
+        selectedMedicId: medicId,
+        vacationFlags: { [medicId]: { hasVacationInRange: true } },
+      }),
+    ).toEqual({ type: "warn", key: "toasts.assignments.userOnVacationMedic" });
+  });
 });

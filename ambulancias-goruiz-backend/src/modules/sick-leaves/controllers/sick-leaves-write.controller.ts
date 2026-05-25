@@ -4,12 +4,13 @@ import { z } from "zod";
 import SickLeave from "../models/sick-leave.model";
 import User from "../../users/models/user.model";
 import { toBerlinDay } from "../utils/sick-date.helpers";
-import { acceptSickLeaveWorkflow } from "../services/sick-acceptance.service";
+import { acceptSickLeaveWorkflow, resolveSickUserId } from "../services/sick-acceptance.service";
 import {
   createSickLeaveRecord,
   deleteOwnRejectedSickLeave,
   getSickLeaveById,
   rejectSickLeaveRecord,
+  assertNoOverlappingActiveSickLeave,
 } from "../services/sick-leaves-write.service";
 import { requireCompanyForAdmin, isSameCompany } from "../../../utils/requireCompany";
 
@@ -17,7 +18,7 @@ const createSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   note: z.string().max(1000).optional(),
-  documentUrl: z.string().url().optional(),
+  documentUrl: z.string().optional(),
   user: z.string().optional(), // admin creando para otro usuario
 });
 
@@ -57,7 +58,7 @@ export async function createSickLeave(req: Request, res: Response) {
       return;
     }
 
-    const doc = await createSickLeaveRecord({
+    const result = await createSickLeaveRecord({
       userId,
       startDate: start,
       endDate: end,
@@ -66,7 +67,18 @@ export async function createSickLeave(req: Request, res: Response) {
       companyId: req.companyId,
     });
 
-    res.status(201).json(doc);
+    if (result.kind === "overlap") {
+      res.status(409).json({
+        message: "Ya existe una baja activa que se solapa con este rango",
+      });
+      return;
+    }
+    if (result.kind === "invalid_document") {
+      res.status(400).json({ message: result.message });
+      return;
+    }
+
+    res.status(201).json(result.doc);
   } catch (err) {
     console.error("\u274C createSickLeave error:", err);
     res.status(500).json({ message: "Error al crear la baja" });
@@ -106,6 +118,23 @@ export async function acceptSickLeave(req: Request, res: Response) {
     }
     if (sick.status === "accepted") {
       res.status(409).json({ message: "La baja ya est\u00E1 aceptada" });
+      return;
+    }
+    if (sick.status !== "pending") {
+      res.status(409).json({ message: "Solo se pueden aceptar bajas pendientes" });
+      return;
+    }
+
+    const overlapCheck = await assertNoOverlappingActiveSickLeave({
+      userId: resolveSickUserId(sick.user) ?? "",
+      startDate: sick.startDate,
+      endDate: sick.endDate,
+      excludingId: String(sick._id),
+    });
+    if (!overlapCheck.ok) {
+      res.status(409).json({
+        message: "Ya existe una baja activa que se solapa con este rango",
+      });
       return;
     }
 
