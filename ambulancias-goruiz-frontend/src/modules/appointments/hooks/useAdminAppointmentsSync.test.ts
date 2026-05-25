@@ -59,9 +59,9 @@ describe("useAdminAppointmentsSync", () => {
       expect(result.current.loadingPending).toBe(false);
     });
 
-    expect(api.getOpenAppointments).toHaveBeenCalledWith("tok");
-    expect(api.getCalendarAppointments).toHaveBeenCalledTimes(1);
-    expect(api.getCalendarAppointments.mock.calls[0]?.[2]).toBe("tok");
+    expect(vi.mocked(api.getOpenAppointments)).toHaveBeenCalledWith("tok");
+    expect(vi.mocked(api.getCalendarAppointments)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(api.getCalendarAppointments).mock.calls[0]?.[2]).toBe("tok");
   });
 
   it("finaliza loading cuando open falla", async () => {

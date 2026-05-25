@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  emitMessagesChanged,
-  subscribeMessagesChanged,
-} from "./messageEvents";
+import { subscribeMessagesChanged } from "./messageEvents";
 
 describe("messageEvents", () => {
   beforeEach(() => {
