@@ -5,7 +5,7 @@ import { toBerlinEndOfDay, toBerlinStartOfDay } from "../utils/sick-date.helpers
 import { sendPushNotification } from "../../notifications";
 
 /** Resolves user id whether `user` is an ObjectId, string id, or populated { _id, ... }. */
-function resolveSickUserId(user: unknown): string | null {
+export function resolveSickUserId(user: unknown): string | null {
   if (user == null) return null;
   if (typeof user === "string") {
     return mongoose.Types.ObjectId.isValid(user) ? user : null;

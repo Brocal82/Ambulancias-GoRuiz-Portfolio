@@ -3,7 +3,10 @@ import { clearUserFromDienstsInRange } from "../../../utils/dienstClearUtils";
 import {
   applyAlternativeResponseWorkflow,
   canRespondToAlternativeDate,
+  checkAlternativeAcceptanceCapacity,
   getVacationRequestById,
+  resolveVacationCompanyId,
+  validateAlternativeResponseState,
 } from "../services/vacation-alternative-response.service";
 
 export const respondToAlternativeDate = async (
@@ -30,6 +33,42 @@ export const respondToAlternativeDate = async (
         .status(403)
         .json({ message: "No autorizado para responder a esta solicitud" });
       return;
+    }
+
+    const stateValidation = validateAlternativeResponseState(request);
+    if (!stateValidation.ok) {
+      if (stateValidation.code === "invalid_status") {
+        res.status(400).json({
+          message:
+            "Solo puedes responder cuando hay una propuesta alternativa pendiente",
+        });
+        return;
+      }
+      res.status(400).json({
+        message: "La propuesta alternativa no tiene fechas v\u00E1lidas",
+      });
+      return;
+    }
+
+    if (accept) {
+      const companyId = await resolveVacationCompanyId(request, req.companyId);
+      if (!companyId) {
+        res.status(400).json({ message: "No se pudo determinar la empresa" });
+        return;
+      }
+
+      const overDays = await checkAlternativeAcceptanceCapacity({
+        request,
+        companyId,
+      });
+      if (overDays.length > 0) {
+        res.status(409).json({
+          code: "capacity_exceeded",
+          message: "Capacidad diaria alcanzada para uno o m\u00E1s d\u00EDas del rango.",
+          days: overDays,
+        });
+        return;
+      }
     }
 
     const workflowResult = applyAlternativeResponseWorkflow(request, !!accept);

@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import SickLeave from "../models/sick-leave.model";
 import { sendPushNotification } from "../../notifications";
+import { findOverlappingActiveSickLeave } from "./sick-range.service";
+import { validateSickDocumentStoredPath } from "../utils/sick-document.validation";
 
 export async function createSickLeaveRecord(input: {
   userId: string;
@@ -12,17 +14,50 @@ export async function createSickLeaveRecord(input: {
 }) {
   const { userId, startDate, endDate, note, documentUrl, companyId } = input;
 
-  return SickLeave.create({
+  const overlap = await findOverlappingActiveSickLeave({
+    userId,
+    startDate,
+    endDate,
+  });
+  if (overlap) {
+    return { kind: "overlap" as const };
+  }
+
+  let normalizedDocumentUrl: string | undefined;
+  if (documentUrl) {
+    const docValidation = validateSickDocumentStoredPath(documentUrl);
+    if (!docValidation.ok) {
+      return { kind: "invalid_document" as const, message: docValidation.message };
+    }
+    normalizedDocumentUrl = docValidation.normalized;
+  }
+
+  const doc = await SickLeave.create({
     user: new mongoose.Types.ObjectId(userId),
     startDate,
     endDate,
     status: "pending",
     note,
-    documentUrl,
+    documentUrl: normalizedDocumentUrl,
     ...(companyId && mongoose.Types.ObjectId.isValid(companyId) && {
       companyId: new mongoose.Types.ObjectId(companyId),
     }),
   });
+
+  return { kind: "ok" as const, doc };
+}
+
+export async function assertNoOverlappingActiveSickLeave(params: {
+  userId: string;
+  startDate: Date;
+  endDate: Date;
+  excludingId?: string;
+}) {
+  const overlap = await findOverlappingActiveSickLeave(params);
+  if (overlap) {
+    return { ok: false as const, kind: "overlap" as const };
+  }
+  return { ok: true as const };
 }
 
 export async function getSickLeaveById(id: string) {

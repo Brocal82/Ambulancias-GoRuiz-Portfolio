@@ -84,6 +84,7 @@ export const updateVacationRequest = async (
         const overDays = await checkVacationAcceptanceCapacity({
           request,
           maxPerDay,
+          companyId: companyResult.companyId,
         });
 
         if (overDays.length > 0) {

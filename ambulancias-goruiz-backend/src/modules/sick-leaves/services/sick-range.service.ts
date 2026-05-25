@@ -28,6 +28,31 @@ export async function isOnSickDayQuery(params: {
   return count > 0;
 }
 
+export async function findOverlappingActiveSickLeave(params: {
+  userId: string;
+  startDate: Date;
+  endDate: Date;
+  excludingId?: string;
+}) {
+  const { userId, startDate, endDate, excludingId } = params;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) return null;
+
+  const query: Record<string, unknown> = {
+    user: userId,
+    status: { $in: ["pending", "accepted"] },
+    startDate: { $lte: endDate },
+    endDate: { $gte: startDate },
+  };
+  if (excludingId && mongoose.Types.ObjectId.isValid(excludingId)) {
+    query._id = { $ne: new mongoose.Types.ObjectId(excludingId) };
+  }
+
+  return SickLeave.findOne(query)
+    .select("_id status startDate endDate")
+    .lean();
+}
+
 export async function findOverlappingSickLeaveQuery(params: {
   userId: string;
   dateISO: string;
