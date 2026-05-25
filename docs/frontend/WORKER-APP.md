@@ -38,6 +38,16 @@ apps/app-worker/
 | `npm --prefix apps/app-worker run validate` | typecheck + tests lógicos (gating, archivos, cierre) |
 | `npm run typecheck:worker` | Atajo desde la raíz del monorepo |
 
+### Producción — URL de API
+
+En builds de producción (`__DEV__ === false`), la app **falla al arrancar** si:
+
+- No hay `EXPO_PUBLIC_API_BASE_URL` ni `expo.extra.apiBaseUrl` explícitos
+- La URL usa `http://`, localhost, o redes privadas/LAN
+- Se resolvería desde el fallback de desarrollo o `hostUri` de Expo
+
+Configurar `EXPO_PUBLIC_API_BASE_URL` en el entorno EAS de producción (HTTPS, API pública). Ver `docs/tooling/RELEASE-VALIDATION.md`.
+
 ---
 
 ## Navegación

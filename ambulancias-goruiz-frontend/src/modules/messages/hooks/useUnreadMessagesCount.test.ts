@@ -3,6 +3,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { useUnreadMessagesCount } from "./useUnreadMessagesCount";
 import * as api from "../domain/api";
 import * as useMessagesChangedModule from "./useMessagesChanged";
+import type { MessagesChangedDetail } from "../utils/messageEvents";
 
 vi.mock("../domain/api", () => ({
   getMyMessages: vi.fn(),
@@ -95,12 +96,12 @@ describe("useUnreadMessagesCount", () => {
     });
 
     await waitFor(() => {
-      expect(api.getMyMessages.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(vi.mocked(api.getMyMessages).mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
 
   it("useMessagesChanged dispara refresh del hook", async () => {
-    let changedHandler: (() => void) | undefined;
+    let changedHandler: ((detail: MessagesChangedDetail) => void) | undefined;
     vi.mocked(useMessagesChangedModule.useMessagesChanged).mockImplementation((handler) => {
       changedHandler = handler;
     });
@@ -120,7 +121,7 @@ describe("useUnreadMessagesCount", () => {
     ]);
 
     act(() => {
-      changedHandler?.();
+      changedHandler?.({});
     });
 
     await waitFor(() => {

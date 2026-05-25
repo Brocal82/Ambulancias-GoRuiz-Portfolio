@@ -4,11 +4,14 @@ export function calculateEffectivePatients(
   trips: Trip[],
   dienstDate: string,
 ): number {
-  return trips.reduce((total, trip) => {
-    if (trip.wasCancelled && trip.countsTrip !== 1) return total;
+  const total = trips.reduce((sum, trip) => {
+    if (trip.wasCancelled && trip.countsTrip !== 1) return sum;
 
     let multiplier = 1;
-    const km = trip.kmStart && trip.kmEnd ? trip.kmEnd - trip.kmStart : 0;
+    const km =
+      trip.kmStart !== undefined && trip.kmEnd !== undefined
+        ? trip.kmEnd - trip.kmStart
+        : 0;
 
     if (km >= 15 && km < 20) multiplier = 1.5;
     else if (km >= 20) multiplier = 2;
@@ -26,7 +29,7 @@ export function calculateEffectivePatients(
       multiplier = Math.max(multiplier, 1.5); // si ya era 2x, no se baja
     }
 
-    return total + multiplier;
+    return sum + multiplier;
   }, 0);
 
   return Math.round(total * 2) / 2;

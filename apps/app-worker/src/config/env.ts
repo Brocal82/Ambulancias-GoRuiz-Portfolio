@@ -1,21 +1,19 @@
 import Constants from "expo-constants";
 
+import {
+  assertProductionSafeApiBaseUrl,
+  normalizeApiBaseUrl,
+  type ApiBaseUrlSource,
+} from "./apiBaseUrlPolicy";
+
 type ExtraConfig = {
   apiBaseUrl?: string;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
 
-// Stable fallback when no env/extra is provided.
+// Stable fallback when no env/extra is provided (development only).
 const FALLBACK_API_BASE_URL = "http://192.168.178.33:5000/api";
-
-function normalizeApiBaseUrl(value: string): string {
-  const trimmed = value.trim().replace(/\/+$/, "");
-  if (trimmed.endsWith("/api")) {
-    return trimmed;
-  }
-  return `${trimmed}/api`;
-}
 
 function deriveDevApiBaseUrlFromExpoHostUri(): string | null {
   const hostUri = Constants.expoConfig?.hostUri;
@@ -25,26 +23,43 @@ function deriveDevApiBaseUrlFromExpoHostUri(): string | null {
   return `http://${host}:5000/api`;
 }
 
-function resolveApiBaseUrl(): string {
+function resolveApiBaseUrl(): { apiBaseUrl: string; source: ApiBaseUrlSource } {
   const fromPublicEnv = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (fromPublicEnv && fromPublicEnv.trim().length > 0) {
-    return normalizeApiBaseUrl(fromPublicEnv);
+    return {
+      apiBaseUrl: normalizeApiBaseUrl(fromPublicEnv),
+      source: "env",
+    };
   }
 
   const fromExpoExtra = extra.apiBaseUrl;
   if (fromExpoExtra && fromExpoExtra.trim().length > 0) {
-    return normalizeApiBaseUrl(fromExpoExtra);
+    return {
+      apiBaseUrl: normalizeApiBaseUrl(fromExpoExtra),
+      source: "extra",
+    };
   }
 
   const fromHostUri = deriveDevApiBaseUrlFromExpoHostUri();
   if (fromHostUri) {
-    return normalizeApiBaseUrl(fromHostUri);
+    return {
+      apiBaseUrl: normalizeApiBaseUrl(fromHostUri),
+      source: "hostUri",
+    };
   }
 
-  return normalizeApiBaseUrl(FALLBACK_API_BASE_URL);
+  return {
+    apiBaseUrl: normalizeApiBaseUrl(FALLBACK_API_BASE_URL),
+    source: "fallback",
+  };
 }
 
-const apiBaseUrl = resolveApiBaseUrl();
+const resolved = resolveApiBaseUrl();
+const apiBaseUrl = resolved.apiBaseUrl;
+
+if (!__DEV__) {
+  assertProductionSafeApiBaseUrl(apiBaseUrl, resolved.source);
+}
 
 // Derive WebSocket URL from apiBaseUrl:
 // http://host:port/api  →  ws://host:port/ws
@@ -56,7 +71,7 @@ const wsBaseUrl = apiBaseUrl
 
 if (__DEV__) {
   // Keep a visible hint in Metro logs to detect wrong backend target quickly.
-  console.info(`[app-worker] API base URL: ${apiBaseUrl}`);
+  console.info(`[app-worker] API base URL (${resolved.source}): ${apiBaseUrl}`);
 }
 
 export const ENV = {

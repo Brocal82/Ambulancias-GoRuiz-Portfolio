@@ -13,6 +13,8 @@
     "typecheck:worker": "npm --prefix apps/app-worker run typecheck",
     "test:frontend": "npm --prefix ambulancias-goruiz-frontend run test:run",
     "secrets:scan": "node scripts/gitleaks-detect.mjs",
+    "validate:openapi": "node scripts/validate-openapi-artifact.mjs",
+    "validate:smoke:artifacts": "node scripts/ci-smoke-artifacts.mjs",
     "precommit:check": "npm run typecheck && npm run secrets:scan",
     "dev:backend": "npm --prefix ambulancias-goruiz-backend run dev",
     "dev:web-admin": "npm --prefix ambulancias-goruiz-frontend run dev",

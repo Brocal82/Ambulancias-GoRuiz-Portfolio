@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  assertProductionSafeApiBaseUrl,
+  isLocalOrPrivateApiHost,
+  normalizeApiBaseUrl,
+} from "../src/config/apiBaseUrlPolicy.js";
 import { MODULE_KEYS } from "../src/types/auth.js";
 import { buildClosureTripRefs } from "../src/utils/closurePayload.js";
 import { resolveInitialDocumentsTab } from "../src/utils/documentsTab.js";
@@ -10,6 +15,33 @@ import {
   isVerifiedPublicImageFilename,
   shouldUseAuthenticatedFileRoute,
 } from "../src/utils/secureFileRouting.js";
+
+test("normalizeApiBaseUrl appends /api when missing", () => {
+  assert.equal(normalizeApiBaseUrl("https://api.example.com"), "https://api.example.com/api");
+  assert.equal(normalizeApiBaseUrl("https://api.example.com/api/"), "https://api.example.com/api");
+});
+
+test("production API guard rejects localhost and private hosts", () => {
+  assert.equal(isLocalOrPrivateApiHost("localhost"), true);
+  assert.equal(isLocalOrPrivateApiHost("192.168.1.10"), true);
+  assert.equal(isLocalOrPrivateApiHost("api.example.com"), false);
+
+  assert.throws(
+    () => assertProductionSafeApiBaseUrl("http://192.168.1.10:5000/api", "extra"),
+    /https/,
+  );
+  assert.throws(
+    () => assertProductionSafeApiBaseUrl("https://192.168.1.10/api", "env"),
+    /private networks/,
+  );
+  assert.throws(
+    () => assertProductionSafeApiBaseUrl("https://api.example.com/api", "fallback"),
+    /requires EXPO_PUBLIC_API_BASE_URL/,
+  );
+  assert.doesNotThrow(() =>
+    assertProductionSafeApiBaseUrl("https://api.example.com/api", "env"),
+  );
+});
 
 test("module gating blocks disabled push targets", () => {
   const modules = [MODULE_KEYS.WORKDAY];

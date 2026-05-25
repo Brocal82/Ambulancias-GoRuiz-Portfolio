@@ -1,7 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import AdminDashboard from "./AdminDashboard";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -9,8 +8,8 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("../hooks/useModules", () => ({
-  useModules: vi.fn(),
+vi.mock("../hooks/useAuth", () => ({
+  useAuth: vi.fn(),
 }));
 
 vi.mock("../modules/admin-dashboard/hooks", () => ({
@@ -27,14 +26,23 @@ vi.mock("../modules/admin-dashboard/hooks", () => ({
   }),
 }));
 
-import { useModules } from "../hooks/useModules";
+import AdminDashboard from "./AdminDashboard";
+import { useAuth } from "../hooks/useAuth";
 
 describe("AdminDashboard mechanics module gating", () => {
+  beforeEach(() => {
+    vi.mocked(useAuth).mockReset();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
   it("muestra tarjeta mechanics cuando el módulo está activo", () => {
-    vi.mocked(useModules).mockReturnValue({
-      hasModule: (key: string) => key === "mechanics",
+    vi.mocked(useAuth).mockReturnValue({
       enabledModules: ["mechanics"],
-    });
+      role: "admin",
+    } as unknown as ReturnType<typeof useAuth>);
 
     render(
       <MemoryRouter>
@@ -49,10 +57,10 @@ describe("AdminDashboard mechanics module gating", () => {
   });
 
   it("oculta tarjeta mechanics cuando el módulo está desactivado", () => {
-    vi.mocked(useModules).mockReturnValue({
-      hasModule: () => false,
+    vi.mocked(useAuth).mockReturnValue({
       enabledModules: [],
-    });
+      role: "admin",
+    } as unknown as ReturnType<typeof useAuth>);
 
     render(
       <MemoryRouter>
