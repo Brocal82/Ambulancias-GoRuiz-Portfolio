@@ -1,6 +1,6 @@
 import { ENV } from "../config/env";
 import { AuthUser } from "../types/auth";
-import { ApiError, apiRequest, getAuthBearerToken } from "./http";
+import { ApiError, apiRequest, getAuthBearerToken, notifyUnauthorizedIfStatus } from "./http";
 
 export async function getUserById(userId: string, authToken?: string): Promise<AuthUser> {
   return apiRequest<AuthUser>(`/users/${userId}`, {
@@ -50,6 +50,7 @@ export async function uploadMyFiles(files: UploadMyFilesPayload): Promise<AuthUs
 
   const data = await response.json().catch(() => ({})) as AuthUser & { message?: string };
   if (!response.ok) {
+    await notifyUnauthorizedIfStatus(response.status);
     throw new ApiError((data as { message?: string }).message ?? "Error al subir archivo.", response.status);
   }
   return data;

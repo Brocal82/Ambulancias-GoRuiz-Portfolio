@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -26,10 +25,9 @@ import {
   NotificationHistoryItem,
 } from "../services/pushNotifications";
 import {
-  buildPublicFileCandidates,
-  downloadAndOpenAuthenticatedFile,
-  filenameFromUrlOrPath,
+  openSecureAttachment,
 } from "../services/secureFiles";
+import { countUnreadMessages } from "../utils/messageBadge";
 
 type Props = {
   userId: string;
@@ -44,30 +42,20 @@ function sortBySentDateDesc(messages: WorkerMessage[]): WorkerMessage[] {
   });
 }
 
-async function isReachableAttachmentUrl(url: string): Promise<boolean> {
+async function openAttachment(
+  url: string,
+  attachmentMeta: { mimetype: string; originalName: string },
+  onImagePreview: (imageUrl: string) => void,
+  onError: (message: string) => void,
+): Promise<void> {
   try {
-    const response = await fetch(url, { method: "GET" });
-    if (!response.ok) return false;
-    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
-    // Avoid opening JSON error payloads as blank browser tabs.
-    if (contentType.includes("application/json")) return false;
-    return true;
-  } catch {
-    return false;
+    const result = await openSecureAttachment(url, attachmentMeta);
+    if (result.kind === "public_image") {
+      onImagePreview(result.url);
+    }
+  } catch (error) {
+    onError(error instanceof Error ? error.message : "No se pudo abrir el adjunto.");
   }
-}
-
-function isImageAttachment(attachment: { mimetype: string; originalName: string }): boolean {
-  const mime = (attachment.mimetype ?? "").toLowerCase();
-  if (mime.startsWith("image/")) return true;
-  const lowerName = (attachment.originalName ?? "").toLowerCase();
-  return [".jpg", ".jpeg", ".png", ".webp"].some((ext) => lowerName.endsWith(ext));
-}
-
-function isPdfAttachment(attachment: { mimetype: string; originalName: string }): boolean {
-  const mime = (attachment.mimetype ?? "").toLowerCase();
-  if (mime === "application/pdf") return true;
-  return (attachment.originalName ?? "").toLowerCase().endsWith(".pdf");
 }
 
 export function WorkerMessagesScreen({ userId, wsTrigger }: Props) {
@@ -136,12 +124,7 @@ export function WorkerMessagesScreen({ userId, wsTrigger }: Props) {
     }
   }, [wsTrigger, activeSection, loadMessages]);
 
-  const unreadCount = useMemo(() => {
-    return messages.reduce((acc, message) => {
-      const isUnread = !(message.readBy ?? []).some((id) => String(id) === userId);
-      return isUnread ? acc + 1 : acc;
-    }, 0);
-  }, [messages, userId]);
+  const unreadCount = useMemo(() => countUnreadMessages(messages, userId), [messages, userId]);
 
   const toggleMessage = async (message: WorkerMessage) => {
     const isOpening = !expandedIds[message._id];
@@ -196,51 +179,12 @@ export function WorkerMessagesScreen({ userId, wsTrigger }: Props) {
     );
   };
 
-  const openAttachment = async (
+  const handleOpenAttachment = async (
     url: string,
-    attachmentMeta?: { mimetype: string; originalName: string },
+    attachmentMeta: { mimetype: string; originalName: string },
   ) => {
     setErrorMessage(undefined);
-
-    if (attachmentMeta && isPdfAttachment(attachmentMeta)) {
-      const filename = filenameFromUrlOrPath(url);
-      if (!filename) {
-        setErrorMessage("No se pudo leer el nombre del adjunto.");
-        return;
-      }
-      try {
-        await downloadAndOpenAuthenticatedFile(filename);
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "No se pudo abrir el PDF.");
-      }
-      return;
-    }
-
-    if (attachmentMeta && isImageAttachment(attachmentMeta)) {
-      const candidates = buildPublicFileCandidates(url);
-      for (const candidate of candidates) {
-        const reachable = await isReachableAttachmentUrl(candidate);
-        if (!reachable) continue;
-        setPreviewImageUrl(candidate);
-        return;
-      }
-      setErrorMessage("No se pudo cargar la imagen.");
-      return;
-    }
-
-    const candidates = buildPublicFileCandidates(url);
-    for (const candidate of candidates) {
-      const reachable = await isReachableAttachmentUrl(candidate);
-      if (!reachable) continue;
-
-      const canOpen = await Linking.canOpenURL(candidate);
-      if (!canOpen) continue;
-
-      await Linking.openURL(candidate);
-      return;
-    }
-
-    setErrorMessage("No se pudo abrir el adjunto. Verifica URL/uploads en backend.");
+    await openAttachment(url, attachmentMeta, setPreviewImageUrl, setErrorMessage);
   };
 
   return (
@@ -367,7 +311,7 @@ export function WorkerMessagesScreen({ userId, wsTrigger }: Props) {
                             key={attachment.filename}
                             style={styles.attachmentChip}
                             onPress={() => {
-                              void openAttachment(attachment.url, {
+                              void handleOpenAttachment(attachment.url, {
                                 mimetype: attachment.mimetype,
                                 originalName: attachment.originalName,
                               });

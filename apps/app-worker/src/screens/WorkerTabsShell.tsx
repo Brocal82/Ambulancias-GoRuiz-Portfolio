@@ -18,6 +18,7 @@ import { WorkerPraemienScreen } from "./WorkerPraemienScreen";
 import { WorkerVacationsScreen } from "./WorkerVacationsScreen";
 import { WorkerSickLeavesScreen } from "./WorkerSickLeavesScreen";
 import { WorkerAppointmentsScreen } from "./WorkerAppointmentsScreen";
+import { resolvePushNavigationTarget } from "../utils/notificationNavigation";
 
 type WorkerTabKey =
   | "home"
@@ -71,33 +72,21 @@ export function WorkerTabsShell({
   useEffect(() => {
     notifListenerRef.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const data = response.notification.request.content.data as Record<string, unknown> | undefined;
-        if (!data) return;
-        if (data.screen === "agenda") {
-          const date = typeof data.date === "string" ? data.date : undefined;
-          setInitialAgendaDate(date);
-          setActiveTab("agenda");
-        } else if (data.screen === "messages") {
-          setActiveTab("messages");
-        } else if (data.screen === "vacations") {
-          setActiveTab("vacations");
-        } else if (data.screen === "appointments") {
-          setActiveTab("appointments");
-        } else if (data.screen === "sickLeaves") {
-          setActiveTab("sickLeaves");
-        } else if (data.screen === "praemien") {
-          setActiveTab("praemien");
-        } else if (data.screen === "documents") {
-          setActiveTab("documents");
-        } else if (data.screen === "workday") {
-          setActiveTab("workday");
+        const data = response.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined;
+        const target = resolvePushNavigationTarget(data, enabledModules);
+        if (!target) return;
+        if (target.agendaDate) {
+          setInitialAgendaDate(target.agendaDate);
         }
+        setActiveTab(target.tab);
       },
     );
     return () => {
       notifListenerRef.current?.remove();
     };
-  }, []);
+  }, [enabledModules]);
   const hasWorkdayModule = enabledModules.includes(MODULE_KEYS.WORKDAY);
   const hasAgendaModule =
     enabledModules.includes(MODULE_KEYS.SCHEDULING) ||
@@ -115,16 +104,20 @@ export function WorkerTabsShell({
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsReconnectDelayRef = useRef(1000);
+  const wsPausedRef = useRef(false);
+  const appStateRef = useRef(AppState.currentState);
 
   const refreshUnreadMessagesCount = useCallback(async () => {
     if (!hasMessagesModule) {
       setUnreadMessagesCount(0);
+      await Notifications.setBadgeCountAsync(0);
       return;
     }
 
     try {
       const unread = await getMyMessages({ unreadOnly: true });
       setUnreadMessagesCount(unread.length);
+      await Notifications.setBadgeCountAsync(unread.length);
     } catch {
       // keep previous value to avoid badge flickering on transient failures
     }
@@ -138,7 +131,6 @@ export function WorkerTabsShell({
     const appStateSubscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         void refreshUnreadMessagesCount();
-        void Notifications.setBadgeCountAsync(0);
       }
     });
     return () => {
@@ -148,12 +140,45 @@ export function WorkerTabsShell({
   }, [refreshUnreadMessagesCount]);
 
   useEffect(() => {
+    if (!hasMessagesModule) {
+      wsRef.current?.close();
+      if (wsReconnectTimerRef.current) {
+        clearTimeout(wsReconnectTimerRef.current);
+        wsReconnectTimerRef.current = null;
+      }
+      return;
+    }
+
     let active = true;
 
-    const connect = async () => {
-      const token = await getAuthBearerToken();
-      if (!active || !token) return;
+    const clearReconnectTimer = () => {
+      if (wsReconnectTimerRef.current) {
+        clearTimeout(wsReconnectTimerRef.current);
+        wsReconnectTimerRef.current = null;
+      }
+    };
 
+    const closeSocket = () => {
+      wsRef.current?.close();
+      wsRef.current = null;
+    };
+
+    const scheduleReconnect = () => {
+      if (!active || wsPausedRef.current) return;
+      clearReconnectTimer();
+      const delay = wsReconnectDelayRef.current;
+      wsReconnectDelayRef.current = Math.min(delay * 2, 30000);
+      wsReconnectTimerRef.current = setTimeout(() => {
+        if (active && !wsPausedRef.current) void connect();
+      }, delay);
+    };
+
+    const connect = async () => {
+      if (!active || wsPausedRef.current) return;
+      const token = await getAuthBearerToken();
+      if (!active || !token || wsPausedRef.current) return;
+
+      closeSocket();
       const ws = new WebSocket(`${ENV.wsBaseUrl}?token=${encodeURIComponent(token)}`);
       wsRef.current = ws;
 
@@ -175,12 +200,8 @@ export function WorkerTabsShell({
 
       ws.onclose = () => {
         wsRef.current = null;
-        if (!active) return;
-        const delay = wsReconnectDelayRef.current;
-        wsReconnectDelayRef.current = Math.min(delay * 2, 30000);
-        wsReconnectTimerRef.current = setTimeout(() => {
-          if (active) void connect();
-        }, delay);
+        if (!active || wsPausedRef.current) return;
+        scheduleReconnect();
       };
 
       ws.onerror = () => {
@@ -190,12 +211,31 @@ export function WorkerTabsShell({
 
     void connect();
 
+    const appStateSubscription = AppState.addEventListener("change", (nextState) => {
+      appStateRef.current = nextState;
+      const isBackground = nextState === "background" || nextState === "inactive";
+      if (isBackground) {
+        wsPausedRef.current = true;
+        clearReconnectTimer();
+        closeSocket();
+        return;
+      }
+      if (nextState === "active" && wsPausedRef.current) {
+        wsPausedRef.current = false;
+        wsReconnectDelayRef.current = 1000;
+        void connect();
+        void refreshUnreadMessagesCount();
+      }
+    });
+
     return () => {
       active = false;
-      if (wsReconnectTimerRef.current) clearTimeout(wsReconnectTimerRef.current);
-      wsRef.current?.close();
+      wsPausedRef.current = false;
+      clearReconnectTimer();
+      closeSocket();
+      appStateSubscription.remove();
     };
-  }, [refreshUnreadMessagesCount]);
+  }, [hasMessagesModule, refreshUnreadMessagesCount]);
 
   const content = useMemo(() => {
     switch (activeTab) {

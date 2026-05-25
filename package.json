@@ -7,9 +7,10 @@
   ],
   "scripts": {
     "format": "prettier --write .",
-    "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:frontend && npm run typecheck:worker",
     "typecheck:backend": "npm --prefix ambulancias-goruiz-backend run typecheck",
     "typecheck:frontend": "npm --prefix ambulancias-goruiz-frontend run typecheck",
+    "typecheck:worker": "npm --prefix apps/app-worker run typecheck",
     "test:frontend": "npm --prefix ambulancias-goruiz-frontend run test:run",
     "secrets:scan": "node scripts/gitleaks-detect.mjs",
     "precommit:check": "npm run typecheck && npm run secrets:scan",

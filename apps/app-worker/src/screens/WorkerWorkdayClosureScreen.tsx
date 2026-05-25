@@ -34,6 +34,7 @@ import {
 import { AmbulanceListItem, getAmbulancesList } from "../services/ambulances";
 import { AuthUser, CompanyModuleKey, MODULE_KEYS } from "../types/auth";
 import { parseHHMM } from "../utils/tripValidators";
+import { buildClosureTripRefs } from "../utils/closurePayload";
 import { resolveTodayAssignment } from "../utils/workdayAssignment";
 
 type Props = {
@@ -390,7 +391,7 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
         ambulanceNumber,
         initialKm,
         finalKm: km,
-        trips: assignmentTrips,
+        trips: buildClosureTripRefs(assignmentTrips),
         checklistItems,
         ...(o2LevelNum != null && !Number.isNaN(o2LevelNum) ? { o2Level: o2LevelNum } : {}),
       });
