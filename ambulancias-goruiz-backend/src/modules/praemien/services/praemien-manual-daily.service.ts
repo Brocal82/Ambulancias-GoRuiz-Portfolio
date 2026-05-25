@@ -18,6 +18,8 @@ import {
   type ManualDailyEntryDto,
 } from "./praemien-manual-daily-mapper";
 import { syncDienstPartnersManualDailySubmitted } from "./manual-daily-dienst-teammates";
+import { legacyAwareWorkdayCompanyFilter } from "../utils/legacyWorkdayCompanyFilter";
+import { isValidPraemienYearMonth } from "../utils/parsePraemienYearMonth";
 
 export type { ManualDailyEntryDto };
 
@@ -61,7 +63,7 @@ async function sumPartialTripsForUserOnDate(params: {
       { date: params.dateStr },
       { isFinalClosure: false },
       { $or: [{ driver: userOid }, { medic: userOid }] },
-      { $or: [{ companyId: params.companyObjectId }, { companyId: null }] },
+      legacyAwareWorkdayCompanyFilter(params.companyObjectId),
     ],
   })
     .select("totalEffectivePatients")
@@ -268,14 +270,7 @@ export async function listMyManualDailyEntriesForMonth(params: {
     return { ok: false, statusCode: gate.statusCode, message: gate.message };
   }
 
-  if (
-    !Number.isInteger(params.year) ||
-    params.year < 1970 ||
-    params.year > 2100 ||
-    !Number.isInteger(params.month) ||
-    params.month < 1 ||
-    params.month > 12
-  ) {
+  if (!isValidPraemienYearMonth(params.year, params.month)) {
     return { ok: false, statusCode: 400, message: "Año o mes inválido." };
   }
 
@@ -355,14 +350,7 @@ export async function getMyFinalClosureDateKeysForMonth(params: {
     return { ok: false, statusCode: gate.statusCode, message: gate.message };
   }
 
-  if (
-    !Number.isInteger(params.year) ||
-    params.year < 1970 ||
-    params.year > 2100 ||
-    !Number.isInteger(params.month) ||
-    params.month < 1 ||
-    params.month > 12
-  ) {
+  if (!isValidPraemienYearMonth(params.year, params.month)) {
     return { ok: false, statusCode: 400, message: "Año o mes inválido." };
   }
 

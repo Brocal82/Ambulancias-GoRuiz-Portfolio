@@ -11,6 +11,7 @@ import {
   ensureManualMonthCloseSnapshot,
   ymKeyFromDateString,
 } from "./ensure-manual-month-close-snapshot.service";
+import { AUTOMATIC_PRAEMIEN_FINAL_CLOSURE_FILTER } from "../utils/legacyWorkdayCompanyFilter";
 
 function aggregateWorkdaySummariesToHistoryItems(
   summaries: { date: unknown; totalEffectivePatients?: number }[],
@@ -96,6 +97,7 @@ export async function getMonthlyHistoryForUser(
   const summaries = await WorkdaySummary.find({
     $or: [{ driver: objectUserId }, { medic: objectUserId }],
     companyId: companyOid,
+    ...AUTOMATIC_PRAEMIEN_FINAL_CLOSURE_FILTER,
   }).select("date totalEffectivePatients");
 
   const now = new Date();

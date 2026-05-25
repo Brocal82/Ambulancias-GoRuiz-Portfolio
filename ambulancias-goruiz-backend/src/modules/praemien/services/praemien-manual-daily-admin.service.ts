@@ -15,6 +15,7 @@ import {
 } from "./praemien-manual-daily-mapper";
 import { findDienstPartnerUserIdsForManualDay } from "./manual-daily-dienst-teammates";
 import { listMyManualDailyEntriesForMonth } from "./praemien-manual-daily.service";
+import { legacyAwareWorkdayCompanyFilter } from "../utils/legacyWorkdayCompanyFilter";
 
 
 export type { ManualDailyEntryDto };
@@ -702,7 +703,7 @@ export async function listPendingManualPraemieEntriesEnriched(
     $and: [
       { date: { $in: uniqueDates } },
       { isFinalClosure: true },
-      { $or: [{ companyId: co }, { companyId: null }] },
+      legacyAwareWorkdayCompanyFilter(co),
       { $or: [{ driver: { $in: userOidList } }, { medic: { $in: userOidList } }] },
     ],
   })
@@ -881,7 +882,7 @@ export async function adminGetManualPraemieDayQueueRow(params: {
     $and: [
       { date: dateStr },
       { isFinalClosure: true },
-      { $or: [{ companyId: co }, { companyId: null }] },
+      legacyAwareWorkdayCompanyFilter(co),
       { $or: [{ driver: userOid }, { medic: userOid }] },
     ],
   })

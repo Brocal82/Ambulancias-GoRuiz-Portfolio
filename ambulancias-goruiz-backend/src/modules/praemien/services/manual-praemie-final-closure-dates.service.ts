@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
+import { legacyAwareWorkdayCompanyFilter } from "../utils/legacyWorkdayCompanyFilter";
 
 function monthRangeStrings(year: number, month1to12: number): {
   start: string;
@@ -32,9 +33,7 @@ export async function listUserFinalWorkdayClosureDatesInMonth(params: {
       { date: { $gte: start, $lte: end } },
       { isFinalClosure: true },
       { $or: [{ driver: userOid }, { medic: userOid }] },
-      {
-        $or: [{ companyId: co }, { companyId: null }],
-      },
+      legacyAwareWorkdayCompanyFilter(co),
     ],
   })
     .select("date")
@@ -62,9 +61,7 @@ export async function userHasFinalWorkdayClosureOnDate(params: {
       { date: params.dateStr },
       { isFinalClosure: true },
       { $or: [{ driver: userOid }, { medic: userOid }] },
-      {
-        $or: [{ companyId: co }, { companyId: null }],
-      },
+      legacyAwareWorkdayCompanyFilter(co),
     ],
   })
     .select("_id")

@@ -76,8 +76,10 @@ Campos relevantes: `assignmentId`, `date`, `companyId`, `initialKm`, `finalKm`, 
   → isReviewed: true, reviewedAt
       │
       ▼
-  DOWNSTREAM PRAEMIEN
-  Manual daily / final-closure-dates consumen summaries con isFinalClosure: true
+  DOWNSTREAM PRAEMIEN (automatic)
+  Aggregates WorkdaySummary with isFinalClosure: true only (not partials).
+  isReviewed is NOT required for Praemien totals.
+  Manual daily / final-closure-dates also require isFinalClosure: true.
 ```
 
 ### Reglas de cierre (backend = fuente de verdad)

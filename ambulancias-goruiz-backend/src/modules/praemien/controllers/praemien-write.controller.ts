@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { saveMonthlyPraemieForUser } from "../services/save-monthly-praemie.service";
+import { PraemienValidationError } from "../utils/parsePraemienYearMonth";
 
 export const saveMonthlyPraemie = async (
   req: Request,
@@ -46,6 +47,10 @@ export const saveMonthlyPraemie = async (
       .status(200)
       .json({ message: "Monthly pr\u00e4mie guardada", data: result.updated });
   } catch (error) {
+    if (error instanceof PraemienValidationError) {
+      res.status(400).json({ message: error.message });
+      return;
+    }
     const msg = String((error as Error)?.message ?? "");
     if (msg.includes("no está asociado a una empresa")) {
       res.status(403).json({ message: msg });

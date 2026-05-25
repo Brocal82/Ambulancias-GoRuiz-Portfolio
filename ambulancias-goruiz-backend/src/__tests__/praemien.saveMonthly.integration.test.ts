@@ -184,4 +184,24 @@ describe("Praemien save-monthly (integration)", () => {
       await User.deleteOne({ _id: legacyAdmin._id });
     }
   });
+
+  it("year/month ausentes o inválidos => 400 (sin fallback silencioso)", async () => {
+    const cases = [
+      {},
+      { year: SAVE_YEAR },
+      { month: SAVE_MONTH },
+      { year: "abc", month: SAVE_MONTH },
+      { year: SAVE_YEAR, month: 0 },
+      { year: SAVE_YEAR, month: 13 },
+    ];
+
+    for (const query of cases) {
+      const res = await request(app)
+        .post(`${API}/praemien/save-monthly`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .query(query);
+      expect(res.status).toBe(400);
+      expect(String(res.body.message)).toMatch(/year|month|año|mes|obligatorio|inválido|rango/i);
+    }
+  });
 });
