@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": ".validate-build",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "declaration": false
+  },
+  "include": [
+    "src/types/auth.ts",
+    "src/utils/**/*.ts",
+    "scripts/validate-worker.test.ts"
+  ]
+}

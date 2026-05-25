@@ -126,7 +126,8 @@ export type WorkdayClosurePayload = {
   ambulanceNumber: string;
   initialKm: number;
   finalKm: number;
-  trips: unknown[];
+  /** Server reloads trip data; only `_id` is used. */
+  trips: Array<{ _id: string }>;
   checklistItems: Record<string, boolean>;
   o2Level?: number;
 };

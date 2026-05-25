@@ -21,8 +21,7 @@ import {
 } from "../services/documents";
 import { getMyPayrollDocuments, WorkerPayrollDocument } from "../services/payroll";
 import { downloadAndOpenAuthenticatedFile } from "../services/secureFiles";
-
-type DocumentsTabKey = "payroll" | "toConfirm" | "informative";
+import { resolveInitialDocumentsTab, type DocumentsTabKey } from "../utils/documentsTab";
 
 function formatDateTime(value: string): string {
   const date = new Date(value);
@@ -62,7 +61,9 @@ export function WorkerDocumentsScreen({
   hasCompanyDocumentsModule?: boolean;
   hasPayrollModule?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<DocumentsTabKey>("payroll");
+  const [activeTab, setActiveTab] = useState<DocumentsTabKey>(() =>
+    resolveInitialDocumentsTab(hasPayrollModule, hasCompanyDocumentsModule),
+  );
   const [payrollDocs, setPayrollDocs] = useState<WorkerPayrollDocument[]>([]);
   const [pendingDeliveries, setPendingDeliveries] = useState<WorkerDocumentDelivery[]>([]);
   const [isLoading, setIsLoading] = useState(true);

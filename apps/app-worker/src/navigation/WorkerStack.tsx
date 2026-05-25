@@ -28,12 +28,16 @@ export function WorkerStack({ user, onLogout, onRefreshProfile }: Props) {
             onOpenAgenda={() => undefined}
             onOpenVacations={() => undefined}
             onOpenSickLeaves={() => undefined}
+            onOpenAppointments={() => undefined}
             onOpenPraemien={() => undefined}
             hasWorkdayModule={false}
             hasAgendaModule={false}
             hasVacationModule={false}
             hasSickLeavesModule={false}
+            hasAppointmentsModule={false}
             hasDocumentsModule={false}
+            hasCompanyDocumentsModule={false}
+            hasPayrollModule={false}
             hasMessagesModule={false}
             hasPraemienModule={false}
             onOpenDocuments={() => undefined}

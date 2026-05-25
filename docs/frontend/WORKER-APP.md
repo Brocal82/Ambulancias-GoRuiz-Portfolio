@@ -17,15 +17,26 @@ apps/app-worker/
   src/
     auth/           AuthContext (login, logout, sesión, push tokens)
     config/         env.ts — URLs de API y WebSocket
-    navigation/     AuthStack, WorkerStack (presentes pero no usados en producción)
+    navigation/     AuthStack, WorkerStack (legacy; no usados en producción)
     screens/        Todas las pantallas y WorkerTabsShell
-    services/       Capa HTTP por dominio (17 archivos)
+    services/       Capa HTTP por dominio
     types/          auth.ts
-    utils/          Helpers de jornada, viajes y validadores
+    utils/          Helpers de jornada, archivos seguros, push, badge
+  scripts/          validate-worker.mjs + tests lógicos
   App.tsx           Entry point — navegación por estado
   app.json          Config Expo
   eas.json          Config EAS Build
 ```
+
+---
+
+## Scripts
+
+| Script | Descripción |
+|--------|-------------|
+| `npm --prefix apps/app-worker run typecheck` | `tsc --noEmit` |
+| `npm --prefix apps/app-worker run validate` | typecheck + tests lógicos (gating, archivos, cierre) |
+| `npm run typecheck:worker` | Atajo desde la raíz del monorepo |
 
 ---
 
@@ -56,14 +67,14 @@ Barra inferior + estado `activeTab`. Los tabs condicionales solo aparecen si el 
 | Tab key | Pantalla | Barra inferior | Condición |
 |---------|----------|---------------|-----------|
 | `home` | `HomeScreen` | Sí (Inicio) | Siempre |
-| `agenda` | `WorkerAgendaScreen` | Sí (Agenda) | Siempre |
-| `workday` | `WorkerWorkdayScreen` | Sí (Jornada) | `enabledModules.includes("workday")` |
-| `vacations` | `WorkerVacationsScreen` | Sí (Vacaciones) | `enabledModules.includes("vacation")` |
-| `sickLeaves` | `WorkerSickLeavesScreen` | Condicional | `enabledModules.includes("sick_leaves")` |
-| `appointments` | `WorkerAppointmentsScreen` | Condicional | `enabledModules.includes("appointments")` |
-| `praemien` | `WorkerPraemienScreen` | No (desde Home) | `enabledModules.includes("praemien")` |
-| `documents` | `WorkerDocumentsScreen` | No (desde Home) | Siempre |
-| `messages` | `WorkerMessagesScreen` | Sí (Mensajes + badge) | Siempre |
+| `agenda` | `WorkerAgendaScreen` | Sí (Agenda) | `scheduling` o `excel_planning` |
+| `workday` | `WorkerWorkdayScreen` | Sí (Jornada) | `workday` |
+| `vacations` | `WorkerVacationsScreen` | Sí (Vacaciones) | `vacation` |
+| `sickLeaves` | `WorkerSickLeavesScreen` | Condicional | `sick_leaves` |
+| `appointments` | `WorkerAppointmentsScreen` | Condicional | `appointments` |
+| `praemien` | `WorkerPraemienScreen` | No (desde Home) | `praemien` |
+| `documents` | `WorkerDocumentsScreen` | No (desde Home) | `payroll` y/o `documents` |
+| `messages` | `WorkerMessagesScreen` | Sí (Mensajes + badge) | `messages` |
 | `profile` | `WorkerProfileScreen` | Sí (Perfil) | Siempre |
 
 ### Pantallas overlay (no son tabs)
@@ -74,9 +85,9 @@ Barra inferior + estado `activeTab`. Los tabs condicionales solo aparecen si el 
 | `AdminBlockedScreen` | Rol distinto de worker tras login |
 | `LoginScreen` | Sin sesión activa |
 
-### Código no usado (`navigation/`)
+### Código legacy (`navigation/`)
 
-`AuthStack.tsx` y `WorkerStack.tsx` definen stacks de React Navigation pero **no se importan en `App.tsx`**. Son código legacy del proceso de migración a la navegación por estado actual.
+`AuthStack.tsx` y `WorkerStack.tsx` definen stacks de React Navigation pero **no se importan en `App.tsx`**. Se mantienen compilables por compatibilidad; el flujo productivo es `WorkerTabsShell`.
 
 ---
 
@@ -98,88 +109,92 @@ Barra inferior + estado `activeTab`. Los tabs condicionales solo aparecen si el 
 4. Tras login: `registerForPushNotifications()` → registra token Expo en el backend
 5. Logout: limpia `expo-secure-store` + estado
 
+**401:** `apiRequest` y rutas `fetch` manuales relevantes llaman a `notifyUnauthorizedIfStatus(401)` para limpiar sesión y volver a login.
+
+---
+
+## Feature gating (módulos)
+
+`enabledModules` se carga desde `/companies/me` tras login.
+
+- Tabs y módulos en `HomeScreen` se muestran condicionalmente.
+- Push notifications: `resolvePushNavigationTarget()` ignora pantallas cuyo módulo esté desactivado.
+- WebSocket de mensajes: solo conecta si `messages` está habilitado.
+- Badge de no leídos: se pone a 0 si `messages` está desactivado.
+
+### Documentos — tab inicial
+
+`WorkerDocumentsScreen` elige tab inicial según módulos:
+
+| Módulos activos | Tab por defecto |
+|-----------------|-----------------|
+| Solo `payroll` | Nóminas |
+| Solo `documents` | Para confirmar |
+| Ambos | Nóminas |
+
 ---
 
 ## Capa de servicios — `src/services/`
 
-Todos los servicios usan el cliente HTTP de `http.ts` (no axios). Cada servicio encapsula las llamadas a un dominio del backend.
+Todos los servicios usan el cliente HTTP de `http.ts` (no axios), salvo uploads multipart que usan `fetch` directo con `notifyUnauthorizedIfStatus` en error.
 
 | Servicio | Dominio |
 |----------|---------|
-| `auth.ts` | Login (`POST /users/login`) |
-| `users.ts` | Perfil de usuario |
-| `company.ts` | Módulos habilitados y praemien config |
-| `diensts.ts` | Turnos y agenda |
-| `excelPlanning.ts` | Planificación Excel |
-| `workday.ts` | Jornada activa, asignaciones, viajes |
-| `vacations.ts` | Solicitudes de vacaciones |
-| `sickLeaves.ts` | Bajas médicas |
-| `appointments.ts` | Citas |
-| `messages.ts` | Mensajes del trabajador |
-| `praemien.ts` | Primas |
-| `documents.ts` | Documentos de empresa |
-| `payroll.ts` | Nóminas |
-| `ambulances.ts` | Ambulancias (selección en jornada) |
-| `mechanics.ts` | Reporte de averías |
-| `secureFiles.ts` | Descarga y compartir archivos protegidos (`/api/files/:filename`) |
-| `pushNotifications.ts` | Registro/eliminación de token Expo + historial |
-
-### Cliente HTTP — `http.ts`
-
-- `fetch` nativo (no axios)
-- Añade `Authorization: Bearer <token>` en cada request
-- Timeout configurable
-- En 401: limpia sesión y vuelve a `LoginScreen`
+| `auth.ts` | Login |
+| `users.ts` | Perfil y uploads |
+| `company.ts` | Módulos habilitados |
+| `workday.ts` | Jornada, viajes, cierre |
+| `messages.ts` | Mensajes |
+| `secureFiles.ts` | Apertura centralizada de adjuntos |
+| `pushNotifications.ts` | Token Expo + historial |
 
 ---
 
-## Sesión segura — `sessionStorage.ts`
+## Archivos protegidos — `secureFiles.ts`
 
-Usa `expo-secure-store` para guardar el JWT y datos de sesión. El token se cifra en el almacenamiento seguro del dispositivo (Keychain en iOS, Keystore en Android).
+Política alineada con el backend:
 
-**No usar** `AsyncStorage` para el token JWT — `expo-secure-store` ya está en uso.
+| Tipo | Ruta |
+|------|------|
+| PDFs y tipos desconocidos | `GET /api/files/:filename` con Bearer token |
+| Imágenes verificadas (jpg/png/webp) | Sondeo público de `/uploads` con comprobación MIME |
 
----
+API central: `openSecureAttachment(url, meta?)`.
 
-## Configuración — `config/env.ts`
-
-```ts
-ENV.apiBaseUrl   // URL base API REST (ej: https://api.goruiz.com/api)
-ENV.wsBaseUrl    // URL WebSocket (ej: wss://api.goruiz.com/ws)
-```
-
-La URL WebSocket se deriva del `apiBaseUrl`: reemplaza `http(s)` por `ws(s)` y elimina el path `/api`.
-
-Variables de entorno Expo: `EXPO_PUBLIC_API_URL`.
+Usado en: nóminas, documentos de empresa, adjuntos de mensajes, P-Schein en perfil.
 
 ---
 
 ## WebSocket — solo app worker
 
-La app worker mantiene una conexión WebSocket persistente durante la sesión. Ver `docs/frontend/WEBSOCKET.md` para arquitectura completa.
+Conexión persistente mientras la app está activa y el módulo `messages` está habilitado.
 
-Evento soportado actualmente: `new_message` → actualiza badge de mensajes sin leídos + trigger de refresco en `WorkerMessagesScreen`.
+- Evento: `new_message` → actualiza badge + refresco en `WorkerMessagesScreen`
+- **App state:** al pasar a background/inactive se cierra el socket y se pausa la reconexión; al volver a `active` se reconecta y refresca el badge
+
+Ver `docs/frontend/WEBSOCKET.md` para arquitectura del servidor.
 
 ---
 
 ## Push notifications — Expo
 
-1. `registerForPushNotifications()` en `AuthContext` tras login exitoso
-2. `POST /api/notifications/register-token` con token Expo del dispositivo
-3. Backend usa `sendPushNotification()` (Expo SDK) al crear mensajes nuevos
-4. La app escucha notificaciones en `WorkerTabsShell`:
-   - Con la app en primer plano: navega al tab según `data.screen`
-   - En background: la notificación del sistema abre la app en la pantalla correcta
+1. `registerForPushNotifications()` tras login
+2. `POST /api/notifications/register-token`
+3. Backend envía push al crear mensajes
+4. `WorkerTabsShell` escucha taps y navega con `resolvePushNavigationTarget`
 
-Pantallas navegables desde push: `agenda`, `messages`, `vacations`, `sickLeaves`, `appointments`, `workday`.
+Pantallas navegables: `agenda`, `messages`, `vacations`, `sickLeaves`, `appointments`, `workday`, `documents`, `praemien` (solo si el módulo está activo).
 
 ---
 
-## Descarga de archivos protegidos
+## Cierre de jornada (Workday)
 
-`src/services/secureFiles.ts` llama a `GET /api/files/:filename` con el token en cabecera, recibe el blob y usa `expo-file-system` + `expo-sharing` para compartir o visualizar el archivo.
+`WorkerWorkdayClosureScreen` envía `POST /api/workday-summary` con:
 
-Aplica a: PDFs de nóminas, documentos de empresa, adjuntos de bajas médicas.
+- Datos de ambulancia, km inicial/final, checklist, O2
+- **`trips`: solo `{ _id }`** — el backend recarga los viajes desde BD y rechaza snapshots obsoletos (409)
+
+El cliente no debe enviar snapshots completos de viaje en el cierre final.
 
 ---
 
@@ -188,13 +203,17 @@ Aplica a: PDFs de nóminas, documentos de empresa, adjuntos de bajas médicas.
 | Permiso | Cuándo se solicita |
 |---------|-------------------|
 | Notificaciones push | Primer login |
-| Cámara / galería | Subida de foto de perfil o P-Schein (`expo-image-picker`) |
+| Cámara / galería | Foto de perfil, P-Schein, averías |
 | Almacenamiento (Android) | Descarga/compartir archivos |
 
 ---
 
-## Feature gating en la app
+## Smoke manual recomendado
 
-`enabledModules` se carga desde `/companies/me` tras login. Los tabs y secciones de `HomeScreen` se muestran condicionalmente según los módulos habilitados de la empresa del trabajador.
-
-Si la empresa desactiva un módulo mientras el worker tiene la app abierta, el tab desaparece en el próximo refresco de sesión.
+- Login / logout / restauración de sesión
+- Mensajes: WS + push + badge
+- Nómina PDF y documento de empresa
+- Cierre final de jornada
+- Empresa solo documentos / solo nóminas
+- Módulo `messages` desactivado
+- Push desde background hacia tab correcto

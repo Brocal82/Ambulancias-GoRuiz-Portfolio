@@ -811,6 +811,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#0f766e",
   },
+  modalSubmitText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
   cancelSubmitButton: {
     alignSelf: "flex-end",
     borderRadius: 8,
