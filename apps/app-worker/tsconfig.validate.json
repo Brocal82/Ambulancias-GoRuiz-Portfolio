@@ -8,6 +8,7 @@
     "declaration": false
   },
   "include": [
+    "src/config/apiBaseUrlPolicy.ts",
     "src/types/auth.ts",
     "src/utils/**/*.ts",
     "scripts/validate-worker.test.ts"

@@ -18,12 +18,12 @@ Minimal, reversible tooling for Ambulancias GoRuiz. Does not modify productive r
 ## Quick commands
 
 ```bash
-npm run typecheck          # backend + frontend
+npm run typecheck          # backend + frontend + worker
 npm run secrets:scan       # gitleaks (skips if not installed)
 npm run precommit:check    # typecheck + secrets
 ```
 
-See also: [GITLEAKS.md](./GITLEAKS.md), [GIT-HOOKS.md](./GIT-HOOKS.md), [NEXT-STEPS.md](./NEXT-STEPS.md).
+See also: [GITLEAKS.md](./GITLEAKS.md), [GIT-HOOKS.md](./GIT-HOOKS.md), [RELEASE-VALIDATION.md](./RELEASE-VALIDATION.md), [NEXT-STEPS.md](./NEXT-STEPS.md).
 
 ## OpenAPI public endpoints
 

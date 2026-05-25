@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci --prefix ambulancias-goruiz-backend
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix ambulancias-goruiz-frontend
+
+      - name: Install worker dependencies
+        run: npm ci --prefix apps/app-worker
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Install Gitleaks
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz" | tar -xz
+          sudo install -m 755 gitleaks /usr/local/bin/gitleaks
+
+      - name: Secret scan
+        run: npm run secrets:scan
+
+      - name: Backend build
+        run: npm --prefix ambulancias-goruiz-backend run build
+
+      - name: Validate OpenAPI build artifact
+        run: node scripts/validate-openapi-artifact.mjs
+
+      - name: Frontend build
+        run: npm --prefix ambulancias-goruiz-frontend run build
+
+      - name: Frontend tests
+        run: npm --prefix ambulancias-goruiz-frontend run test:run
+
+      - name: Worker typecheck
+        run: npm --prefix apps/app-worker run typecheck
+
+      - name: Worker validate
+        run: npm --prefix apps/app-worker run validate
+
+      - name: Smoke artifact checks
+        run: node scripts/ci-smoke-artifacts.mjs
+
+  security-isolation:
+    name: security-isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mongodb:
+        image: mongo:6
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        run: npm ci --prefix ambulancias-goruiz-backend
+
+      - name: Create test environment file
+        working-directory: ambulancias-goruiz-backend
+        run: |
+          cat > .env.test <<'EOF'
+          MONGODB_URI_TEST=mongodb://127.0.0.1:27017/ambulancias_ci_test
+          JWT_SECRET=ci-test-jwt-secret-minimum-32-characters-long
+          EOF
+
+      - name: Run tenant isolation security gate
+        run: npm --prefix ambulancias-goruiz-backend run test:security:isolation:ci
+
+  backend-smoke:
+    name: backend-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: validate
+
+    services:
+      mongodb:
+        image: mongo:6
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        run: npm ci --prefix ambulancias-goruiz-backend
+
+      - name: Backend build
+        run: npm --prefix ambulancias-goruiz-backend run build
+
+      - name: Smoke check backend health and docs
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/ambulancias_ci_smoke
+          JWT_SECRET: ci-smoke-jwt-secret-minimum-32-characters-long
+          NODE_ENV: production
+          PORT: "5055"
+        run: node scripts/ci-smoke-backend.mjs
