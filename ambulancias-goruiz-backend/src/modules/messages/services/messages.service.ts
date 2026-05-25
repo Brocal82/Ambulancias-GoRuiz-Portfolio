@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
 import { Message } from "../models/message.model";
 import User from "../../users/models/user.model";
-import { sendPushNotification, notifyUsers } from "../../notifications";
+import {
+  sendPushNotification,
+  notifyUsers,
+  buildNotificationData,
+} from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 import { unlinkUnreferencedMessageAttachments } from "../utils/messageAttachments";
 
 export const MESSAGE_VALIDATION_ERROR = "Faltan datos obligatorios o receptores inválidos";
@@ -82,7 +87,12 @@ export async function createMessage(input: CreateMessageInput) {
     finalRecipients,
     "Nuevo mensaje",
     input.subject,
-    { type: "message_received", messageId: String(newMessage._id), screen: "messages" },
+    buildNotificationData({
+      screen: "messages",
+      type: "message_received",
+      resourceId: String(newMessage._id),
+    }),
+    { moduleKey: MODULE_KEYS.MESSAGES, actingCompanyId: input.senderCompanyId },
   );
 
   notifyUsers(finalRecipients, "new_message");

@@ -1,58 +1,83 @@
 import { WebSocket, WebSocketServer } from "ws";
 import http from "http";
-import jwt from "jsonwebtoken";
-import { env } from "../../config/env";
-import User from "../users/models/user.model";
-import UserSessionState from "../users/models/user-session-state.model";
+import { authenticateWsToken } from "./utils/ws-auth";
 
 const clients = new Map<string, Set<WebSocket>>();
 
+const WS_PING_INTERVAL_MS = 30_000;
+const MAX_CONNECTIONS_PER_USER = 5;
+
+type TrackedSocket = WebSocket & { isAlive?: boolean };
+
+function extractWsToken(rawUrl: string): string | null {
+  const qIdx = rawUrl.indexOf("?");
+  if (qIdx === -1) return null;
+  return new URLSearchParams(rawUrl.slice(qIdx)).get("token");
+}
+
+function enforceConnectionCap(userId: string, set: Set<WebSocket>, ws: WebSocket): void {
+  while (set.size >= MAX_CONNECTIONS_PER_USER) {
+    const oldest = set.values().next().value as WebSocket | undefined;
+    if (!oldest) break;
+    set.delete(oldest);
+    try {
+      oldest.close(1008, "Connection limit reached");
+    } catch {
+      /* noop */
+    }
+  }
+  set.add(ws);
+}
+
+function startHeartbeat(wss: WebSocketServer): NodeJS.Timeout {
+  return setInterval(() => {
+    for (const ws of wss.clients) {
+      const tracked = ws as TrackedSocket;
+      if (tracked.isAlive === false) {
+        tracked.terminate();
+        continue;
+      }
+      tracked.isAlive = false;
+      try {
+        tracked.ping();
+      } catch {
+        tracked.terminate();
+      }
+    }
+  }, WS_PING_INTERVAL_MS);
+}
+
 export function setupWebSocketServer(server: http.Server): void {
   const wss = new WebSocketServer({ server, path: "/ws" });
+  const heartbeatTimer = startHeartbeat(wss);
+
+  wss.on("close", () => {
+    clearInterval(heartbeatTimer);
+  });
 
   wss.on("connection", async (ws, req) => {
-    const rawUrl = req.url ?? "";
-    const qIdx = rawUrl.indexOf("?");
-    const token = qIdx !== -1
-      ? new URLSearchParams(rawUrl.slice(qIdx)).get("token")
-      : null;
-
+    const token = extractWsToken(req.url ?? "");
     if (!token) {
       ws.close(1008, "Unauthorized");
       return;
     }
 
-    let userId: string;
-    try {
-      const decoded = jwt.verify(token, env.JWT_SECRET) as {
-        userId?: string;
-        tokenVersion?: number;
-        typ?: string;
-      };
-
-      // Step-up tokens must not open WS connections
-      if (decoded.typ === "step_up") throw new Error("step_up token not allowed");
-
-      userId = String(decoded.userId ?? "");
-      if (!userId) throw new Error("No userId");
-
-      // Mirror the same revocation checks as HTTP authenticateToken
-      const userDoc = await User.findById(userId).select("isActive").lean();
-      if (!userDoc || userDoc.isActive !== true) throw new Error("User inactive");
-
-      const sessionState = await UserSessionState.findOne({ userId })
-        .select("tokenVersion")
-        .lean();
-      const persistedVersion = Number((sessionState as any)?.tokenVersion ?? 0);
-      if (persistedVersion !== (decoded.tokenVersion ?? 0)) throw new Error("Token revoked");
-    } catch {
+    const auth = await authenticateWsToken(token);
+    if (!auth.ok) {
       ws.close(1008, "Unauthorized");
       return;
     }
 
+    const userId = auth.userId;
+    const tracked = ws as TrackedSocket;
+    tracked.isAlive = true;
+    tracked.on("pong", () => {
+      tracked.isAlive = true;
+    });
+
     const set = clients.get(userId) ?? new Set<WebSocket>();
     clients.set(userId, set);
-    set.add(ws);
+    enforceConnectionCap(userId, set, ws);
 
     const cleanup = () => {
       set.delete(ws);
@@ -82,3 +107,13 @@ export function notifyUsers(userIds: string[], event: string): void {
     }
   }
 }
+
+/** Test-only introspection for connection hygiene assertions. */
+export const __wsTestHooks = {
+  getClientCount(userId: string): number {
+    return clients.get(userId)?.size ?? 0;
+  },
+  clearClients(): void {
+    clients.clear();
+  },
+};

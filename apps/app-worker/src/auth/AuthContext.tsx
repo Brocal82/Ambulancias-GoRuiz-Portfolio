@@ -18,7 +18,7 @@ import {
   saveSession,
 } from "../services/sessionStorage";
 import { getUserById } from "../services/users";
-import { registerForPushNotifications } from "../services/pushNotifications";
+import { registerForPushNotifications, unregisterPushNotifications } from "../services/pushNotifications";
 import { AuthUser, CompanyModuleKey, MODULE_KEYS, ScheduleSource } from "../types/auth";
 
 type LoginCredentials = {
@@ -72,6 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = useCallback(async () => {
+    try {
+      await unregisterPushNotifications();
+    } catch {
+      // best-effort cleanup; session clear proceeds regardless
+    }
     tokenRef.current = null;
     await clearStoredSession();
     setToken(null);

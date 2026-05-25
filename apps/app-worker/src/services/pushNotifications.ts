@@ -50,3 +50,12 @@ export async function getNotificationHistory(): Promise<NotificationHistoryItem[
     requiresAuth: true,
   });
 }
+
+/** Removes one token or all tokens for the authenticated worker (logout cleanup). */
+export async function unregisterPushNotifications(token?: string): Promise<void> {
+  await apiRequest<void>("/notifications/unregister-token", {
+    method: "POST",
+    requiresAuth: true,
+    body: JSON.stringify(token ? { token } : {}),
+  });
+}
