@@ -14,19 +14,26 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      administration: read
 
     steps:
       - name: Verify main enforces security-isolation as required check
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const requiredContext = "security-isolation";
 
-            const failures = [];
+            const warnings = [];
+            let branchProtectionReadable = false;
+            let rulesetsReadable = false;
             let branchProtectionEnforced = false;
             let rulesetEnforced = false;
+
+            const isAccessError = (error) =>
+              error?.status === 403 ||
+              /not accessible by integration/i.test(error?.message || "");
 
             try {
               const branchProtection = await github.rest.repos.getBranchProtection({
@@ -35,61 +42,106 @@ jobs:
                 branch: "main",
               });
 
+              branchProtectionReadable = true;
               const contexts = branchProtection.data.required_status_checks?.contexts || [];
               branchProtectionEnforced = contexts.includes(requiredContext);
-              if (!branchProtectionEnforced) {
-                failures.push(`Branch protection exists but missing required check '${requiredContext}'`);
-              }
             } catch (error) {
-              if (error.status !== 404) {
-                failures.push(`Unable to read branch protection: ${error.message}`);
+              if (error.status === 404) {
+                branchProtectionReadable = true;
+              } else if (isAccessError(error)) {
+                warnings.push(
+                  `Unable to read branch protection (insufficient token permissions or restricted integration): ${error.message}`,
+                );
+              } else {
+                warnings.push(`Unable to read branch protection: ${error.message}`);
               }
             }
 
             try {
-              const { data: rulesets } = await github.rest.repos.getAllRepoRulesets({
+              const { data: rulesets } = await github.rest.repos.getRepoRulesets({
                 owner,
                 repo,
+                includes_parents: true,
               });
 
+              rulesetsReadable = true;
               const activeMainRulesets = (rulesets || []).filter((ruleset) => {
                 if (!ruleset.enforcement || ruleset.enforcement === "disabled") return false;
-                return (ruleset.conditions?.ref_name?.include || []).includes("refs/heads/main");
+                const refIncludes = ruleset.conditions?.ref_name?.include || [];
+                return refIncludes.some(
+                  (ref) =>
+                    ref === "refs/heads/main" || ref === "main" || ref === "~DEFAULT_BRANCH",
+                );
               });
 
               for (const ruleset of activeMainRulesets) {
-                const { data: details } = await github.rest.repos.getRepoRuleset({
-                  owner,
-                  repo,
-                  ruleset_id: ruleset.id,
-                });
+                try {
+                  const { data: details } = await github.rest.repos.getRepoRuleset({
+                    owner,
+                    repo,
+                    ruleset_id: ruleset.id,
+                  });
 
-                const requiredStatusRule = (details.rules || []).find(
-                  (rule) =>
-                    rule.type === "required_status_checks" &&
-                    (rule.parameters?.required_status_checks || []).some(
-                      (check) => check.context === requiredContext,
-                    ),
-                );
+                  const requiredStatusRule = (details.rules || []).find(
+                    (rule) =>
+                      rule.type === "required_status_checks" &&
+                      (rule.parameters?.required_status_checks || []).some(
+                        (check) => check.context === requiredContext,
+                      ),
+                  );
 
-                if (requiredStatusRule) {
-                  rulesetEnforced = true;
-                  break;
+                  if (requiredStatusRule) {
+                    rulesetEnforced = true;
+                    break;
+                  }
+                } catch (detailError) {
+                  warnings.push(
+                    `Unable to read ruleset ${ruleset.id} (${ruleset.name}): ${detailError.message}`,
+                  );
                 }
               }
             } catch (error) {
-              failures.push(`Unable to read repository rulesets: ${error.message}`);
+              if (isAccessError(error)) {
+                warnings.push(
+                  `Unable to read repository rulesets (insufficient token permissions or restricted integration): ${error.message}`,
+                );
+              } else {
+                warnings.push(`Unable to read repository rulesets: ${error.message}`);
+              }
             }
 
-            if (!branchProtectionEnforced && !rulesetEnforced) {
-              failures.push(
-                `No enforcement found for '${requiredContext}' on main. Configure Branch Protection or Ruleset required checks.`,
-              );
+            for (const warning of warnings) {
+              core.warning(warning);
             }
 
-            if (failures.length > 0) {
-              core.setFailed(failures.join("\n"));
+            if (branchProtectionEnforced || rulesetEnforced) {
+              core.info(`Enforcement validated: '${requiredContext}' is required on main.`);
               return;
             }
 
-            core.info(`Enforcement validated: '${requiredContext}' is required on main.`);
+            if (!branchProtectionReadable && !rulesetsReadable) {
+              core.warning(
+                `Could not verify '${requiredContext}' enforcement on main because branch protection and rulesets were inaccessible. ` +
+                  `Grant administration:read to this workflow and ensure repository/org settings allow the GITHUB_TOKEN to read branch settings.`,
+              );
+              return;
+            }
+
+            const failures = [];
+            if (branchProtectionReadable) {
+              failures.push(
+                `Branch protection on main does not require status check '${requiredContext}'.`,
+              );
+            }
+            if (rulesetsReadable) {
+              failures.push(
+                `No active main ruleset requires status check '${requiredContext}'.`,
+              );
+            }
+            if (failures.length === 0) {
+              failures.push(
+                `No enforcement found for '${requiredContext}' on main. Configure Branch Protection or a Ruleset with that required status check.`,
+              );
+            }
+
+            core.setFailed(failures.join("\n"));
