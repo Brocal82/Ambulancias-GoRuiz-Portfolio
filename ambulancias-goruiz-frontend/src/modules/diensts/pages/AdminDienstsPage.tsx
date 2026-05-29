@@ -100,6 +100,26 @@ function weekIncidenciaKey(item: WeeklyAssignmentSummaryData): string {
     : `user:${item.dienstNumber}:${item.role}`;
 }
 
+function extractAnchoredDienstNumber(err: unknown): number | null {
+  const data = (err as any)?.response?.data;
+  const candidates = [
+    data?.details?.dienstNumber,
+    data?.details?.anchoredDienstNumber,
+    data?.details?.conflictingDienstNumber,
+    data?.metadata?.dienstNumber,
+    data?.metadata?.anchoredDienstNumber,
+    data?.metadata?.conflictingDienstNumber,
+  ];
+  const numeric = candidates.find(
+    (value) => typeof value === "number" && Number.isFinite(value),
+  );
+  if (numeric != null) return numeric;
+
+  const message = typeof data?.message === "string" ? data.message : "";
+  const match = /\bDienst\s*#\s*(\d+)/i.exec(message);
+  return match ? Number(match[1]) : null;
+}
+
 function upsertSavedWeekIncidencia(
   prev: Record<string, WeeklyAssignmentSummaryData[]>,
   weekStartISO: string,
@@ -1750,6 +1770,18 @@ const AdminPage = () => {
                   ]);
                 } else {
                   toastT.error(["pages.diensts.adminPage.teamWeeklyConflict"]);
+                }
+              } else if (code === "team_already_anchored") {
+                const anchoredDienstNumber = extractAnchoredDienstNumber(err);
+                if (anchoredDienstNumber != null) {
+                  toastT.error([
+                    "pages.diensts.adminPage.teamAlreadyAnchoredWithDienst",
+                    { dienstNumber: anchoredDienstNumber },
+                  ]);
+                } else {
+                  toastT.error([
+                    "pages.diensts.adminPage.teamAlreadyAnchored",
+                  ]);
                 }
               } else {
                 toastT.error(["pages.diensts.adminPage.assignWeekErr"]);
