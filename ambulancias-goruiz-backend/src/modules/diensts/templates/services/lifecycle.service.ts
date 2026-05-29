@@ -19,6 +19,7 @@ import { companyHasEnabledModule } from "../../../../utils/companyEnabledModules
 import { MODULE_KEYS } from "../../../companies/constants/modules.constants";
 import {
   collectWorkerIdsFromAssignments,
+  sendPushNotification,
   voidEmitDienstPlanningChanged,
   voidEmitSchedulingMutationRealtime,
 } from "../../../notifications";
@@ -269,6 +270,24 @@ export type GenerateWeekDienstSummary = {
     workerName?: string;
   }>;
 };
+
+/** One aggregated push per assigned worker after generate-week insert succeeds. */
+export function notifyGeneratedWeekAssignedWorkers(
+  companyIdStr: string,
+  weekStartDate: string,
+  generatedWorkers: Iterable<string>,
+): void {
+  const workerIds = [...new Set(generatedWorkers)];
+  if (workerIds.length === 0) return;
+
+  void sendPushNotification(
+    workerIds,
+    "Nueva semana de turnos",
+    `Se han generado nuevas asignaciones en tu agenda para la semana del ${weekStartDate}.`,
+    { screen: "agenda", date: weekStartDate },
+    { moduleKey: MODULE_KEYS.SCHEDULING, actingCompanyId: companyIdStr },
+  );
+}
 
 export async function generateDienstTemplatesForWeek(
   weekStartDate: string,
@@ -642,6 +661,7 @@ export async function generateDienstTemplatesForWeek(
       generatedWorkers.add(workerId);
     }
   }
+  notifyGeneratedWeekAssignedWorkers(companyIdStr, weekStartDate, generatedWorkers);
   voidEmitSchedulingMutationRealtime(companyIdStr, generatedWorkers);
 
   return {

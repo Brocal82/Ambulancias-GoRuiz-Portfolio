@@ -23,8 +23,14 @@ import TeamAssignModal from "../components/TeamAssignModal";
 import UserAssignModal from "../components/UserAssignModal";
 import AmbulanceAssignModal from "../components/AmbulanceAssignModal";
 import WeeklyAssignmentSummaryModal, {
+  countWeekUnacknowledgedIncidents,
   type WeeklyAssignmentSummaryData,
 } from "../components/WeeklyAssignmentSummaryModal";
+import {
+  pruneAcknowledgedWeekIssueKeys,
+  pruneSavedWeekIncidencias,
+  pruneWeeklySummaryQueue,
+} from "./weekIncidenciasState";
 import {
   formatPersonLabel,
   getWeekStartsBerlin,
@@ -86,6 +92,28 @@ function shouldShowWeeklyUserSummary(
   )
     return true;
   return false;
+}
+
+function weekIncidenciaKey(item: WeeklyAssignmentSummaryData): string {
+  return item.kind === "team"
+    ? `team:${item.dienstNumber}`
+    : `user:${item.dienstNumber}:${item.role}`;
+}
+
+function upsertSavedWeekIncidencia(
+  prev: Record<string, WeeklyAssignmentSummaryData[]>,
+  weekStartISO: string,
+  summary: WeeklyAssignmentSummaryData,
+): Record<string, WeeklyAssignmentSummaryData[]> {
+  const existing = prev[weekStartISO] ?? [];
+  const key = weekIncidenciaKey(summary);
+  const idx = existing.findIndex((item) => weekIncidenciaKey(item) === key);
+  const next =
+    idx >= 0
+      ? existing.map((item, i) => (i === idx ? summary : item))
+      : [...existing, summary];
+  next.sort((a, b) => a.dienstNumber - b.dienstNumber);
+  return { ...prev, [weekStartISO]: next };
 }
 
 /**
@@ -810,6 +838,22 @@ const AdminPage = () => {
     Record<string, WeeklyAssignmentSummaryData[]>
   >({});
 
+  /** Issue keys marked as viewed (key = weekStartISO → scoped issue ids). */
+  const [acknowledgedWeekIssueKeys, setAcknowledgedWeekIssueKeys] = useState<
+    Record<string, string[]>
+  >({});
+
+  const acknowledgeWeekIssue = useCallback(
+    (weekStartISO: string, scopedKey: string) => {
+      setAcknowledgedWeekIssueKeys((prev) => {
+        const existing = prev[weekStartISO] ?? [];
+        if (existing.includes(scopedKey)) return prev;
+        return { ...prev, [weekStartISO]: [...existing, scopedKey] };
+      });
+    },
+    [],
+  );
+
   // Estado para colapsar/desplegar semanas (key = weekStartISO)
   const [collapsedWeeks, setCollapsedWeeks] = useState<Record<string, boolean>>(
     {},
@@ -888,6 +932,12 @@ const AdminPage = () => {
             from: fmtDate(weekStart),
             to: fmtDate(weekEnd),
           });
+
+          const unackIncidentCount = countWeekUnacknowledgedIncidents(
+            savedWeekIncidencias[weekStartISO],
+            acknowledgedWeekIssueKeys[weekStartISO] ?? [],
+            t,
+          );
 
           return (
             <WeekBlock
@@ -988,10 +1038,10 @@ const AdminPage = () => {
                     </button>
                   )}
 
-                  {/* Botón de incidencias: visible cuando hay incidencias guardadas para esta semana */}
-                  {hasWeekDiensts && (savedWeekIncidencias[weekStartISO]?.length ?? 0) > 0 && (
+                  {/* Botón de incidencias: visible mientras queden incidencias sin marcar como vistas */}
+                  {hasWeekDiensts && unackIncidentCount > 0 && (
                     <IncidenciasIconButton
-                      count={savedWeekIncidencias[weekStartISO].length}
+                      count={unackIncidentCount}
                       onClick={() =>
                         setWeeklySummaryQueue(savedWeekIncidencias[weekStartISO])
                       }
@@ -1016,6 +1066,11 @@ const AdminPage = () => {
                             "pages.diensts.adminPage.alerts.deleteOk",
                           ]);
                           setSavedWeekIncidencias((prev) => {
+                            const next = { ...prev };
+                            delete next[weekStartISO];
+                            return next;
+                          });
+                          setAcknowledgedWeekIssueKeys((prev) => {
                             const next = { ...prev };
                             delete next[weekStartISO];
                             return next;
@@ -1114,6 +1169,27 @@ const AdminPage = () => {
                                           weekStartDate: weekStartISO,
                                         },
                                         token,
+                                      );
+                                      setSavedWeekIncidencias((prev) =>
+                                        pruneSavedWeekIncidencias(
+                                          prev,
+                                          weekStartISO,
+                                          dienst.dienstNumber,
+                                        ),
+                                      );
+                                      setAcknowledgedWeekIssueKeys((prev) =>
+                                        pruneAcknowledgedWeekIssueKeys(
+                                          prev,
+                                          weekStartISO,
+                                          dienst.dienstNumber,
+                                        ),
+                                      );
+                                      setWeeklySummaryQueue((prev) =>
+                                        pruneWeeklySummaryQueue(
+                                          prev,
+                                          weekStartISO,
+                                          dienst.dienstNumber,
+                                        ),
                                       );
                                       toastT.success([
                                         "pages.diensts.adminPage.clearOk",
@@ -1597,27 +1673,29 @@ const AdminPage = () => {
               fetchDiensts();
 
               if (shouldShowWeeklyTeamSummary(resp)) {
-                setWeeklySummaryQueue([
-                  {
-                    kind: "team",
-                    dienstNumber: weekTeamModal.dienstNumber,
-                    weekStartDate: weekTeamModal.weekStartISO,
-                    driverName: displayNames?.driverName ?? "—",
-                    medicName: displayNames?.medicName ?? "—",
-                    message: resp.message,
-                    updatedCount: resp.updatedCount,
-                    daysAssignedFull: resp.daysAssignedFull,
-                    daysAssignedDriverOnly: resp.daysAssignedDriverOnly,
-                    daysAssignedMedicOnly: resp.daysAssignedMedicOnly,
-                    skippedByMinimumRest: resp.skippedByMinimumRest,
-                    skippedByMinimumRestRoles: resp.skippedByMinimumRestRoles,
-                    skippedByWeeklyConflict: resp.skippedByWeeklyConflict,
-                    skippedByVacation: resp.skippedByVacation,
-                    skippedAbsences: resp.skippedAbsences,
-                    minimumRestWarning: resp.minimumRestWarning,
-                    hints: resp.hints,
-                  },
-                ]);
+                const summary: WeeklyAssignmentSummaryData = {
+                  kind: "team",
+                  dienstNumber: weekTeamModal.dienstNumber,
+                  weekStartDate: weekTeamModal.weekStartISO,
+                  driverName: displayNames?.driverName ?? "—",
+                  medicName: displayNames?.medicName ?? "—",
+                  message: resp.message,
+                  updatedCount: resp.updatedCount,
+                  daysAssignedFull: resp.daysAssignedFull,
+                  daysAssignedDriverOnly: resp.daysAssignedDriverOnly,
+                  daysAssignedMedicOnly: resp.daysAssignedMedicOnly,
+                  skippedByMinimumRest: resp.skippedByMinimumRest,
+                  skippedByMinimumRestRoles: resp.skippedByMinimumRestRoles,
+                  skippedByWeeklyConflict: resp.skippedByWeeklyConflict,
+                  skippedByVacation: resp.skippedByVacation,
+                  skippedAbsences: resp.skippedAbsences,
+                  minimumRestWarning: resp.minimumRestWarning,
+                  hints: resp.hints,
+                };
+                setWeeklySummaryQueue([summary]);
+                setSavedWeekIncidencias((prev) =>
+                  upsertSavedWeekIncidencia(prev, weekTeamModal.weekStartISO, summary),
+                );
               }
             } catch (err: any) {
               const code = err?.response?.data?.code as string | undefined;
@@ -1714,21 +1792,23 @@ const AdminPage = () => {
               fetchDiensts();
 
               if (shouldShowWeeklyUserSummary(auw)) {
-                setWeeklySummaryQueue([
-                  {
-                    kind: "user",
-                    dienstNumber: weekUserModal.dienstNumber,
-                    weekStartDate: weekUserModal.weekStartISO,
-                    workerName,
-                    role,
-                    message: auw.message,
-                    updatedCount: auw.updatedCount,
-                    skippedByMinimumRest: auw.skippedByMinimumRest,
-                    skippedByVacation: auw.skippedByVacation,
-                    skippedBreakdown: auw.skippedBreakdown,
-                    minimumRestWarning: auw.minimumRestWarning,
-                  },
-                ]);
+                const summary: WeeklyAssignmentSummaryData = {
+                  kind: "user",
+                  dienstNumber: weekUserModal.dienstNumber,
+                  weekStartDate: weekUserModal.weekStartISO,
+                  workerName,
+                  role,
+                  message: auw.message,
+                  updatedCount: auw.updatedCount,
+                  skippedByMinimumRest: auw.skippedByMinimumRest,
+                  skippedByVacation: auw.skippedByVacation,
+                  skippedBreakdown: auw.skippedBreakdown,
+                  minimumRestWarning: auw.minimumRestWarning,
+                };
+                setWeeklySummaryQueue([summary]);
+                setSavedWeekIncidencias((prev) =>
+                  upsertSavedWeekIncidencia(prev, weekUserModal.weekStartISO, summary),
+                );
               }
             } catch (err: any) {
               console.error("❌ Error al asignar usuario a la semana:", err);
@@ -1827,6 +1907,12 @@ const AdminPage = () => {
       {weeklySummaryQueue.length > 0 && (
         <WeeklyAssignmentSummaryModal
           data={weeklySummaryQueue[0]}
+          acknowledgedIssueKeys={
+            new Set(acknowledgedWeekIssueKeys[weeklySummaryQueue[0].weekStartDate] ?? [])
+          }
+          onAcknowledgeIssue={(scopedKey) =>
+            acknowledgeWeekIssue(weeklySummaryQueue[0].weekStartDate, scopedKey)
+          }
           onClose={() =>
             setWeeklySummaryQueue((q) => (q.length <= 1 ? [] : q.slice(1)))
           }
