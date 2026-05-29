@@ -1572,6 +1572,8 @@
                 "driverPscheinWarning_other": "⚠️ El P-Schein caduca en {{count}} meses",
                 "teamWeeklyConflict": "⚠️ Este equipo ya está asignado a otro Dienst esta semana.",
                 "teamWeeklyConflictWithDates": "⚠️ Este equipo ya tiene asignaciones esta semana.",
+                "teamAlreadyAnchored": "Este equipo ya est\u00e1 asignado a otro Dienst de esta semana.",
+                "teamAlreadyAnchoredWithDienst": "Este equipo ya est\u00e1 asignado al Dienst #{{dienstNumber}} de esta semana.",
                 "errors": {
                     "pscheinExpired": "❌ No se puede asignar: el P-Schein del conductor está caducado.",
                     "weeklyConflict": "⚠️ No se puede asignar: algún miembro ya está asignado en otro Dienst esta semana.",

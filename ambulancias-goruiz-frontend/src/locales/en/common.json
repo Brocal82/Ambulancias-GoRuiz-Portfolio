@@ -1572,6 +1572,8 @@
                 "driverPscheinWarning_other": "⚠️ The P-Schein expires in {{count}} months",
                 "teamWeeklyConflict": "⚠️ This team is already assigned to another Dienst this week.",
                 "teamWeeklyConflictWithDates": "⚠️ This team already has assignments this week.",
+                "teamAlreadyAnchored": "This team is already assigned to another Dienst this week.",
+                "teamAlreadyAnchoredWithDienst": "This team is already assigned to Dienst #{{dienstNumber}} this week.",
                 "errors": {
                     "pscheinExpired": "❌ Cannot assign: driver's P-Schein is expired.",
                     "weeklyConflict": "⚠️ Cannot assign: one member is already assigned in another Dienst this week.",

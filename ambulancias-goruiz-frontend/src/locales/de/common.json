@@ -1572,6 +1572,8 @@
                 "driverPscheinWarning_other": "⚠️ Der P-Schein läuft in {{count}} Monaten ab",
                 "teamWeeklyConflict": "⚠️ Dieses Team ist diese Woche bereits einem anderen Dienst zugewiesen.",
                 "teamWeeklyConflictWithDates": "⚠️ Dieses Team hat diese Woche bereits Einsätze.",
+                "teamAlreadyAnchored": "Dieses Team ist diese Woche bereits einem anderen Dienst zugewiesen.",
+                "teamAlreadyAnchoredWithDienst": "Dieses Team ist diese Woche bereits Dienst #{{dienstNumber}} zugewiesen.",
                 "errors": {
                     "pscheinExpired": "❌ Zuweisung nicht möglich: Der P-Schein des Fahrers ist abgelaufen.",
                     "weeklyConflict": "⚠️ Zuweisung nicht möglich: Ein Mitglied ist bereits einem anderen Dienst dieser Woche zugewiesen.",
