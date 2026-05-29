@@ -6,6 +6,8 @@ import {
   deleteVacationRequestRecord,
 } from "../services/vacation-requests-write.service";
 import { requireCompanyForAdmin } from "../../../utils/requireCompany";
+import { notifyCompanyAdminsModuleGated, WS_EVENTS } from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 
 export const createVacationRequest = async (
   req: Request,
@@ -30,6 +32,14 @@ export const createVacationRequest = async (
         message: "Ya tienes una solicitud de vacaciones en ese rango de fechas",
       });
       return;
+    }
+
+    if (req.companyId) {
+      void notifyCompanyAdminsModuleGated(
+        req.companyId,
+        WS_EVENTS.VACATION_REQUEST_CHANGED,
+        MODULE_KEYS.VACATION,
+      );
     }
 
     res.status(201).json(newRequest.request);
@@ -67,6 +77,14 @@ export const cancelMyVacationRequest = async (req: any, res: any) => {
           message:
             "Solo puedes cancelar solicitudes pendientes, con opción enviada o ya aceptadas",
         });
+    }
+
+    if (req.companyId) {
+      void notifyCompanyAdminsModuleGated(
+        req.companyId,
+        WS_EVENTS.VACATION_REQUEST_CHANGED,
+        MODULE_KEYS.VACATION,
+      );
     }
 
     return res.status(200).json(result.request);

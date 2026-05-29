@@ -8,6 +8,8 @@ import {
   resolveVacationCompanyId,
   validateAlternativeResponseState,
 } from "../services/vacation-alternative-response.service";
+import { notifyCompanyAdminsModuleGated, WS_EVENTS } from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 
 export const respondToAlternativeDate = async (
   req: Request,
@@ -90,6 +92,15 @@ export const respondToAlternativeDate = async (
           stack: err instanceof Error ? err.stack : undefined,
         });
       }
+    }
+
+    const companyId = await resolveVacationCompanyId(request, req.companyId);
+    if (companyId) {
+      void notifyCompanyAdminsModuleGated(
+        companyId,
+        WS_EVENTS.VACATION_REQUEST_CHANGED,
+        MODULE_KEYS.VACATION,
+      );
     }
 
     res.status(200).json(request);

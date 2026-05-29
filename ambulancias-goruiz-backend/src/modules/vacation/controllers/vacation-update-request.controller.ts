@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { sendPushNotification } from "../../notifications";
+import {
+  sendPushNotification,
+  notifyUsersModuleGated,
+  WS_EVENTS,
+} from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 import {
   applyAdminVacationUpdateFields,
   buildAcceptedVacationRange,
@@ -48,6 +53,7 @@ export const updateVacationRequest = async (
   } | null | undefined = undefined;
 
   let vacationPush: { userId: string; status: string } | null | undefined = undefined;
+  let vacationWsWorkerId: string | null | undefined = undefined;
 
   const session = await mongoose.startSession();
 
@@ -138,6 +144,8 @@ export const updateVacationRequest = async (
         vacationPush = { userId: String(request.user), status: request.status };
       }
 
+      vacationWsWorkerId = String(request.user);
+
       res.status(200).json(request);
     });
 
@@ -162,6 +170,15 @@ export const updateVacationRequest = async (
           stack: clearErr instanceof Error ? clearErr.stack : undefined,
         });
       }
+    }
+
+    if (vacationWsWorkerId != null) {
+      void notifyUsersModuleGated(
+        [vacationWsWorkerId],
+        WS_EVENTS.VACATION_REQUEST_CHANGED,
+        MODULE_KEYS.VACATION,
+        companyResult.companyId,
+      );
     }
 
     if (vacationPush != null) {

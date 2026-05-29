@@ -103,6 +103,9 @@ export function WorkerTabsShell({
   const [wsTrigger, setWsTrigger] = useState(0);
   const [agendaWsTrigger, setAgendaWsTrigger] = useState(0);
   const [workdayWsTrigger, setWorkdayWsTrigger] = useState(0);
+  const [vacationWsTrigger, setVacationWsTrigger] = useState(0);
+  const [sickLeaveWsTrigger, setSickLeaveWsTrigger] = useState(0);
+  const [appointmentWsTrigger, setAppointmentWsTrigger] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsReconnectDelayRef = useRef(1000);
@@ -142,7 +145,12 @@ export function WorkerTabsShell({
   }, [refreshUnreadMessagesCount]);
 
   const hasRealtimeModule =
-    hasMessagesModule || hasAgendaModule || hasWorkdayModule;
+    hasMessagesModule ||
+    hasAgendaModule ||
+    hasWorkdayModule ||
+    hasVacationModule ||
+    hasSickLeavesModule ||
+    hasAppointmentsModule;
 
   useEffect(() => {
     if (!hasRealtimeModule) {
@@ -201,6 +209,12 @@ export function WorkerTabsShell({
             setAgendaWsTrigger((prev) => prev + 1);
           } else if (msg.event === "workday_summary_changed") {
             setWorkdayWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "vacation_request_changed" && hasVacationModule) {
+            setVacationWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "sick_leave_changed" && hasSickLeavesModule) {
+            setSickLeaveWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "appointment_changed" && hasAppointmentsModule) {
+            setAppointmentWsTrigger((prev) => prev + 1);
           }
         } catch {
           // ignore malformed frames
@@ -244,7 +258,13 @@ export function WorkerTabsShell({
       closeSocket();
       appStateSubscription.remove();
     };
-  }, [hasRealtimeModule, refreshUnreadMessagesCount]);
+  }, [
+    hasRealtimeModule,
+    hasVacationModule,
+    hasSickLeavesModule,
+    hasAppointmentsModule,
+    refreshUnreadMessagesCount,
+  ]);
 
   const content = useMemo(() => {
     switch (activeTab) {
@@ -305,7 +325,7 @@ export function WorkerTabsShell({
         );
       case "vacations":
         return hasVacationModule ? (
-          <WorkerVacationsScreen />
+          <WorkerVacationsScreen wsTrigger={vacationWsTrigger} />
         ) : (
           <PlaceholderScreen
             title="Vacaciones y ausencias"
@@ -314,7 +334,7 @@ export function WorkerTabsShell({
         );
       case "sickLeaves":
         return hasSickLeavesModule ? (
-          <WorkerSickLeavesScreen />
+          <WorkerSickLeavesScreen wsTrigger={sickLeaveWsTrigger} />
         ) : (
           <PlaceholderScreen
             title="Bajas"
@@ -323,7 +343,7 @@ export function WorkerTabsShell({
         );
       case "appointments":
         return hasAppointmentsModule ? (
-          <WorkerAppointmentsScreen />
+          <WorkerAppointmentsScreen wsTrigger={appointmentWsTrigger} />
         ) : (
           <PlaceholderScreen
             title="Citas"

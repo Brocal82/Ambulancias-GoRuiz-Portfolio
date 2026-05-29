@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -80,7 +80,7 @@ function statusLabel(status: AppointmentStatus): string {
 const ACTIVE_STATUSES: AppointmentStatus[] = ["pending", "proposed", "cancellation_requested"];
 const HISTORY_STATUSES: AppointmentStatus[] = ["confirmed", "rescheduled", "cancelled"];
 
-export function WorkerAppointmentsScreen() {
+export function WorkerAppointmentsScreen({ wsTrigger }: { wsTrigger?: number }) {
   const [items, setItems] = useState<AppointmentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -128,6 +128,13 @@ export function WorkerAppointmentsScreen() {
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  const prevWsTrigger = useRef(wsTrigger);
+  useEffect(() => {
+    if (wsTrigger === undefined || wsTrigger === prevWsTrigger.current) return;
+    prevWsTrigger.current = wsTrigger;
+    void loadAll(true);
+  }, [wsTrigger, loadAll]);
 
   const activeItems = useMemo(
     () => items.filter((i) => ACTIVE_STATUSES.includes(i.status)),

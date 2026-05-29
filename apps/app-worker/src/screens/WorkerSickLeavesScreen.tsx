@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -102,7 +102,7 @@ function sortByCreatedDesc(items: SickLeaveItem[]): SickLeaveItem[] {
   );
 }
 
-export function WorkerSickLeavesScreen() {
+export function WorkerSickLeavesScreen({ wsTrigger }: { wsTrigger?: number }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -147,6 +147,13 @@ export function WorkerSickLeavesScreen() {
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  const prevWsTrigger = useRef(wsTrigger);
+  useEffect(() => {
+    if (wsTrigger === undefined || wsTrigger === prevWsTrigger.current) return;
+    prevWsTrigger.current = wsTrigger;
+    void loadAll(true);
+  }, [wsTrigger, loadAll]);
 
   const isInSelectedRange = useCallback(
     (dayKey: string): boolean => {

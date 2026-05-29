@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 import { clearUserFromDienstsInRange } from "../../../utils/dienstClearUtils";
 import { calculateSickDocumentRequirements } from "../utils/sick-workflow.helpers";
 import { toBerlinEndOfDay, toBerlinStartOfDay } from "../utils/sick-date.helpers";
-import { sendPushNotification } from "../../notifications";
+import { sendPushNotification, notifyUsersModuleGated, WS_EVENTS } from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 
 /** Resolves user id whether `user` is an ObjectId, string id, or populated { _id, ... }. */
 export function resolveSickUserId(user: unknown): string | null {
@@ -74,6 +75,15 @@ export async function acceptSickLeaveWorkflow(sick: any) {
       "Tu solicitud de baja ha sido aceptada.",
       { type: "sick_leave_accepted", sickLeaveId: String(sick._id), screen: "sickLeaves" },
     );
+    const companyId = sick.companyId ? String(sick.companyId) : null;
+    if (companyId) {
+      void notifyUsersModuleGated(
+        [userIdStr],
+        WS_EVENTS.SICK_LEAVE_CHANGED,
+        MODULE_KEYS.SICK_LEAVES,
+        companyId,
+      );
+    }
   }
 
   return {

@@ -4,6 +4,9 @@ import { dispatchWebSocketEvent } from "./dispatchWebSocketEvent";
 import { emitDienstsChanged } from "../modules/diensts/utils/dienstEvents";
 import { emitWorkdaySummariesChanged } from "../modules/workday/utils/workdayEvents";
 import { emitAdminDashboardCountsRefresh } from "../modules/admin-dashboard/utils/adminDashboardCountsEvents";
+import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
+import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
+import { emitAppointmentsChanged } from "../modules/appointments/utils/appointmentEvents";
 
 vi.mock("../modules/diensts/utils/dienstEvents", () => ({
   emitDienstsChanged: vi.fn(),
@@ -19,6 +22,18 @@ vi.mock("../modules/workday/utils/workdayEvents", () => ({
 
 vi.mock("../modules/admin-dashboard/utils/adminDashboardCountsEvents", () => ({
   emitAdminDashboardCountsRefresh: vi.fn(),
+}));
+
+vi.mock("../modules/vacation/utils/vacationEvents", () => ({
+  emitVacationRequestsUpdated: vi.fn(),
+}));
+
+vi.mock("../modules/sick/utils/sickEvents", () => ({
+  emitSickLeavesChanged: vi.fn(),
+}));
+
+vi.mock("../modules/appointments/utils/appointmentEvents", () => ({
+  emitAppointmentsChanged: vi.fn(),
 }));
 
 describe("dispatchWebSocketEvent", () => {
@@ -40,6 +55,15 @@ describe("dispatchWebSocketEvent", () => {
   it("maps admin_counts_changed to coalesced dashboard refresh signal", () => {
     dispatchWebSocketEvent({ event: WS_EVENTS.ADMIN_COUNTS_CHANGED });
     expect(emitAdminDashboardCountsRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps P0 vacation, sick, and appointment events to local refresh emitters", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.VACATION_REQUEST_CHANGED });
+    dispatchWebSocketEvent({ event: WS_EVENTS.SICK_LEAVE_CHANGED });
+    dispatchWebSocketEvent({ event: WS_EVENTS.APPOINTMENT_CHANGED });
+    expect(emitVacationRequestsUpdated).toHaveBeenCalledWith({ type: "updated", id: "ws-sync" });
+    expect(emitSickLeavesChanged).toHaveBeenCalledTimes(1);
+    expect(emitAppointmentsChanged).toHaveBeenCalledTimes(1);
   });
 
   it("ignores unknown events", () => {

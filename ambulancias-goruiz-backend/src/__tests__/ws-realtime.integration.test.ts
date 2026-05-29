@@ -18,6 +18,7 @@ import {
 } from "../modules/notifications/ws-manager";
 import {
   notifyUsersModuleGated,
+  notifyCompanyAdminsModuleGated,
   voidEmitSchedulingMutationRealtime,
   WS_EVENTS,
 } from "../modules/notifications";
@@ -83,7 +84,7 @@ describe("P1 ws-realtime", () => {
 
     await Company.updateOne(
       { _id: companyAId },
-      { $addToSet: { enabledModules: { $each: [MODULE_KEYS.SCHEDULING, MODULE_KEYS.WORKDAY] } } },
+      { $addToSet: { enabledModules: { $each: [MODULE_KEYS.SCHEDULING, MODULE_KEYS.WORKDAY, MODULE_KEYS.VACATION] } } },
     );
     await Company.updateOne(
       { _id: companyBId },
@@ -158,5 +159,20 @@ describe("P1 ws-realtime", () => {
     expect(frame.event).toBe(WS_EVENTS.WORKDAY_SUMMARY_CHANGED);
 
     workerWs.close();
+  });
+
+  it("delivers vacation_request_changed to connected admin", async () => {
+    const adminWs = await connectWs(port, adminAToken);
+    const msgPromise = waitForWsMessage(adminWs);
+
+    await notifyCompanyAdminsModuleGated(
+      companyAId,
+      WS_EVENTS.VACATION_REQUEST_CHANGED,
+      MODULE_KEYS.VACATION,
+    );
+
+    const frame = await msgPromise;
+    expect(frame).toEqual({ event: WS_EVENTS.VACATION_REQUEST_CHANGED });
+    adminWs.close();
   });
 });

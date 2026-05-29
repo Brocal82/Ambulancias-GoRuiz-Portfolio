@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 import SickLeave from "../models/sick-leave.model";
-import { sendPushNotification } from "../../notifications";
+import {
+  sendPushNotification,
+  notifyUsersModuleGated,
+  WS_EVENTS,
+} from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 import { findOverlappingActiveSickLeave } from "./sick-range.service";
 import { validateSickDocumentStoredPath } from "../utils/sick-document.validation";
 
@@ -75,6 +80,15 @@ export async function rejectSickLeaveRecord(sick: any) {
       "Tu solicitud de baja no ha podido ser aceptada.",
       { type: "sick_leave_rejected", sickLeaveId: String(sick._id), screen: "sickLeaves" },
     );
+    const companyId = sick.companyId ? String(sick.companyId) : null;
+    if (companyId) {
+      void notifyUsersModuleGated(
+        [userId],
+        WS_EVENTS.SICK_LEAVE_CHANGED,
+        MODULE_KEYS.SICK_LEAVES,
+        companyId,
+      );
+    }
   }
   return sick;
 }

@@ -3,8 +3,9 @@ import { Message } from "../models/message.model";
 import User from "../../users/models/user.model";
 import {
   sendPushNotification,
-  notifyUsers,
+  notifyUsersModuleGated,
   buildNotificationData,
+  WS_EVENTS,
 } from "../../notifications";
 import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 import { unlinkUnreferencedMessageAttachments } from "../utils/messageAttachments";
@@ -95,7 +96,12 @@ export async function createMessage(input: CreateMessageInput) {
     { moduleKey: MODULE_KEYS.MESSAGES, actingCompanyId: input.senderCompanyId },
   );
 
-  notifyUsers(finalRecipients, "new_message");
+  void notifyUsersModuleGated(
+    finalRecipients,
+    WS_EVENTS.NEW_MESSAGE,
+    MODULE_KEYS.MESSAGES,
+    input.senderCompanyId,
+  );
 
   return newMessage;
 }

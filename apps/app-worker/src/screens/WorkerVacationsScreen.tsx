@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
@@ -168,7 +168,7 @@ function sortByRequestedAtDesc(items: VacationRequestItem[]): VacationRequestIte
   );
 }
 
-export function WorkerVacationsScreen() {
+export function WorkerVacationsScreen({ wsTrigger }: { wsTrigger?: number }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -274,6 +274,13 @@ export function WorkerVacationsScreen() {
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  const prevWsTrigger = useRef(wsTrigger);
+  useEffect(() => {
+    if (wsTrigger === undefined || wsTrigger === prevWsTrigger.current) return;
+    prevWsTrigger.current = wsTrigger;
+    void loadAll({ silent: true });
+  }, [wsTrigger, loadAll]);
 
   const isRedDay = useCallback(
     (dayKey: string): boolean => {

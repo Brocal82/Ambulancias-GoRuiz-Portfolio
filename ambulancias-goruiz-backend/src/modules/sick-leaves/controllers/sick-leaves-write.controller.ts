@@ -13,6 +13,8 @@ import {
   assertNoOverlappingActiveSickLeave,
 } from "../services/sick-leaves-write.service";
 import { requireCompanyForAdmin, isSameCompany } from "../../../utils/requireCompany";
+import { notifyCompanyAdminsModuleGated, WS_EVENTS } from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 
 const createSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -76,6 +78,14 @@ export async function createSickLeave(req: Request, res: Response) {
     if (result.kind === "invalid_document") {
       res.status(400).json({ message: result.message });
       return;
+    }
+
+    if (req.companyId) {
+      void notifyCompanyAdminsModuleGated(
+        req.companyId,
+        WS_EVENTS.SICK_LEAVE_CHANGED,
+        MODULE_KEYS.SICK_LEAVES,
+      );
     }
 
     res.status(201).json(result.doc);

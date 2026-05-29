@@ -8,6 +8,38 @@ import {
   validateSickLeaveDocumentUrl,
 } from "../services/sick-documents.service";
 import { requireCompanyForAdmin, isSameCompany } from "../../../utils/requireCompany";
+import {
+  notifyCompanyAdminsModuleGated,
+  WS_EVENTS,
+} from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
+
+async function notifySickLeaveAdminsAfterWorkerUpload(
+  isAdmin: boolean,
+  sick: { companyId?: unknown; user: unknown },
+  reqCompanyId?: string,
+): Promise<void> {
+  if (isAdmin) return;
+
+  let companyId =
+    sick.companyId && mongoose.Types.ObjectId.isValid(String(sick.companyId))
+      ? String(sick.companyId)
+      : reqCompanyId;
+
+  if (!companyId) {
+    const userDoc = await User.findById(sick.user).select("companyId").lean();
+    const userCo = userDoc ? (userDoc as { companyId?: unknown }).companyId : null;
+    companyId = userCo ? String(userCo) : undefined;
+  }
+
+  if (companyId) {
+    void notifyCompanyAdminsModuleGated(
+      companyId,
+      WS_EVENTS.SICK_LEAVE_CHANGED,
+      MODULE_KEYS.SICK_LEAVES,
+    );
+  }
+}
 
 function getUploadedFile(req: Request): {
   location?: string;
@@ -84,6 +116,8 @@ export async function attachSickDocument(req: Request, res: Response) {
       sick,
       documentUrl: urlValidation.normalized,
     });
+
+    await notifySickLeaveAdminsAfterWorkerUpload(isAdmin, sick, req.companyId);
 
     res.status(200).json({
       message: "Documento (URL) adjuntado correctamente",
@@ -188,6 +222,8 @@ export async function attachSickDocumentFile(req: Request, res: Response) {
       sick,
       documentUrl: urlValidation.normalized,
     });
+
+    await notifySickLeaveAdminsAfterWorkerUpload(isAdmin, sick, req.companyId);
 
     res.status(200).json({
       message: "Documento (archivo) adjuntado correctamente",

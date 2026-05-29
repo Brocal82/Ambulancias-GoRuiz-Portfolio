@@ -3,7 +3,13 @@ import { Appointment } from "../models/appointment.model";
 import User from "../../users/models/user.model";
 import { APPOINTMENT_STATUS_VALUES } from "../schemas/appointment.schema";
 import { AppointmentStatus, IAppointment, TimeSlot } from "../types/appointment.types";
-import { sendPushNotification } from "../../notifications";
+import {
+  sendPushNotification,
+  notifyCompanyAdminsModuleGated,
+  notifyUsersModuleGated,
+  WS_EVENTS,
+} from "../../notifications";
+import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 
 async function getWorkerIdsForCompany(companyId: string): Promise<mongoose.Types.ObjectId[]> {
   const users = await User.find({
@@ -12,6 +18,42 @@ async function getWorkerIdsForCompany(companyId: string): Promise<mongoose.Types
     .select("_id")
     .lean();
   return users.map((u) => (u as unknown as { _id: mongoose.Types.ObjectId })._id);
+}
+
+async function resolveAppointmentCompanyId(
+  appointment: Pick<IAppointment, "companyId" | "workerId">,
+): Promise<string | null> {
+  if (appointment.companyId) {
+    return String(appointment.companyId);
+  }
+  const worker = await User.findById(appointment.workerId).select("companyId").lean();
+  const workerCo = worker ? (worker as { companyId?: unknown }).companyId : null;
+  return workerCo ? String(workerCo) : null;
+}
+
+function notifyAppointmentWorker(appointment: Pick<IAppointment, "workerId" | "companyId">) {
+  void (async () => {
+    const companyId = await resolveAppointmentCompanyId(appointment);
+    if (!companyId) return;
+    await notifyUsersModuleGated(
+      [appointment.workerId.toString()],
+      WS_EVENTS.APPOINTMENT_CHANGED,
+      MODULE_KEYS.APPOINTMENTS,
+      companyId,
+    );
+  })();
+}
+
+function notifyAppointmentAdmins(appointment: Pick<IAppointment, "workerId" | "companyId">) {
+  void (async () => {
+    const companyId = await resolveAppointmentCompanyId(appointment);
+    if (!companyId) return;
+    await notifyCompanyAdminsModuleGated(
+      companyId,
+      WS_EVENTS.APPOINTMENT_CHANGED,
+      MODULE_KEYS.APPOINTMENTS,
+    );
+  })();
 }
 
 /** Error con código HTTP para mapeo en controller */
@@ -87,7 +129,15 @@ export async function requestAppointment(
     }),
   };
 
-  return await Appointment.create(appointment);
+  const created = await Appointment.create(appointment);
+  if (companyId) {
+    void notifyCompanyAdminsModuleGated(
+      companyId,
+      WS_EVENTS.APPOINTMENT_CHANGED,
+      MODULE_KEYS.APPOINTMENTS,
+    );
+  }
+  return created;
 }
 
 export async function getMyAppointments(workerId: string) {
@@ -182,6 +232,7 @@ export async function proposeSlots(
     "El administrador te ha propuesto horarios para tu cita.",
     { type: "appointment_proposed", appointmentId: String(appointment._id), screen: "appointments" },
   );
+  notifyAppointmentWorker(appointment);
   return saved;
 }
 
@@ -234,7 +285,9 @@ export async function selectSlot(
   appointment.selectedSlot = sel;
   appointment.status = "confirmed";
 
-  return await appointment.save();
+  const saved = await appointment.save();
+  notifyAppointmentAdmins(appointment);
+  return saved;
 }
 
 export async function rejectProposal(workerId: string, id: string) {
@@ -259,7 +312,9 @@ export async function rejectProposal(workerId: string, id: string) {
   appointment.proposedSlots = [];
   appointment.selectedSlot = null;
 
-  return await appointment.save();
+  const saved = await appointment.save();
+  notifyAppointmentAdmins(appointment);
+  return saved;
 }
 
 export async function getCalendarAppointments(
@@ -363,7 +418,9 @@ export async function updateAppointment(
   appointment.status = status as IAppointment["status"];
   appointment.adminId = new mongoose.Types.ObjectId(adminId);
 
-  return await appointment.save();
+  const saved = await appointment.save();
+  notifyAppointmentWorker(appointment);
+  return saved;
 }
 
 export async function cancelAppointment(
@@ -395,7 +452,9 @@ export async function cancelAppointment(
   appointment.status = "cancelled";
   appointment.adminId = new mongoose.Types.ObjectId(adminId);
 
-  return await appointment.save();
+  const saved = await appointment.save();
+  notifyAppointmentWorker(appointment);
+  return saved;
 }
 
 export async function requestCancellation(
@@ -423,7 +482,9 @@ export async function requestCancellation(
   appointment.status = "cancellation_requested";
   appointment.cancellationMessage = message.trim();
 
-  return await appointment.save();
+  const saved = await appointment.save();
+  notifyAppointmentAdmins(appointment);
+  return saved;
 }
 
 export async function acceptCancellation(
@@ -459,7 +520,9 @@ export async function acceptCancellation(
   appointment.status = "cancelled";
   appointment.adminId = new mongoose.Types.ObjectId(adminId);
 
-  return await appointment.save();
+  const saved = await appointment.save();
+  notifyAppointmentWorker(appointment);
+  return saved;
 }
 
 export async function deleteMyAppointment(workerId: string, id: string) {

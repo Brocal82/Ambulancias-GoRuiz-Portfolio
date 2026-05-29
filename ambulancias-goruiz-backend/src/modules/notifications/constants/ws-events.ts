@@ -1,6 +1,9 @@
 /** Canonical websocket event names — payload is always `{ event: string }`. */
 export const WS_EVENTS = {
   NEW_MESSAGE: "new_message",
+  VACATION_REQUEST_CHANGED: "vacation_request_changed",
+  SICK_LEAVE_CHANGED: "sick_leave_changed",
+  APPOINTMENT_CHANGED: "appointment_changed",
   DIENST_CHANGED: "dienst_changed",
   AGENDA_CHANGED: "agenda_changed",
   WORKDAY_SUMMARY_CHANGED: "workday_summary_changed",

@@ -1,5 +1,8 @@
+import { emitAppointmentsChanged } from "../modules/appointments/utils/appointmentEvents";
 import { emitDienstsChanged } from "../modules/diensts/utils/dienstEvents";
 import { emitMessagesChanged } from "../modules/messages/utils/messageEvents";
+import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
+import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
 import { emitWorkdaySummariesChanged } from "../modules/workday/utils/workdayEvents";
 import { emitAdminDashboardCountsRefresh } from "../modules/admin-dashboard/utils/adminDashboardCountsEvents";
 import { WS_EVENTS, type WsFrame } from "./wsEvents";
@@ -15,6 +18,15 @@ export function dispatchWebSocketEvent(frame: WsFrame): void {
   switch (event) {
     case WS_EVENTS.NEW_MESSAGE:
       emitMessagesChanged();
+      return;
+    case WS_EVENTS.VACATION_REQUEST_CHANGED:
+      emitVacationRequestsUpdated({ type: "updated", id: "ws-sync" });
+      return;
+    case WS_EVENTS.SICK_LEAVE_CHANGED:
+      emitSickLeavesChanged();
+      return;
+    case WS_EVENTS.APPOINTMENT_CHANGED:
+      emitAppointmentsChanged();
       return;
     case WS_EVENTS.DIENST_CHANGED:
     case WS_EVENTS.AGENDA_CHANGED:
