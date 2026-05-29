@@ -1502,6 +1502,41 @@ export async function assignTeamToWeek(
     throw new DienstAssignmentError(403, "forbidden", "No tienes permiso para modificar este Dienst");
   }
 
+  const teamRotationMode = (team as any).rotationMode ?? "rotating";
+  const teamFixedDienst = (team as any).fixedDienstNumber as
+    | number
+    | null
+    | undefined;
+  if (teamRotationMode === "fixed") {
+    const fixedDn =
+      typeof teamFixedDienst === "number" ? teamFixedDienst : null;
+    if (fixedDn != null && fixedDn !== dienstNumber) {
+      throw new DienstAssignmentError(
+        409,
+        "fixed_team_wrong_dienst",
+        `Este equipo está fijo en el Dienst #${fixedDn} y no puede asignarse al Dienst #${dienstNumber}.`,
+      );
+    }
+  }
+
+  const existingAnchor = await Dienst.findOne({
+    companyId: new mongoose.Types.ObjectId(callerCo),
+    weekStartDate: { $gte: weekStart, $lte: weekEnd },
+    dienstNumber: { $ne: dienstNumber },
+    weekTeamId: new mongoose.Types.ObjectId(teamId),
+  })
+    .select("dienstNumber")
+    .lean();
+
+  if (existingAnchor) {
+    const anchoredDn = (existingAnchor as { dienstNumber?: number }).dienstNumber;
+    throw new DienstAssignmentError(
+      409,
+      "team_already_anchored",
+      `Este equipo ya está anclado al Dienst #${anchoredDn ?? "?"} en esa semana. Asígnalo solo desde ese Dienst o quítalo primero.`,
+    );
+  }
+
   const dates = extractValidDatesFromAssignments(dienst.assignments);
 
   let driverExpiredButBothHint = false;

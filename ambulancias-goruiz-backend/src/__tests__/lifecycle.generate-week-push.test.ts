@@ -246,6 +246,72 @@ describe("generateDienstTemplatesForWeek push + websocket", () => {
     expect(wsSpy).not.toHaveBeenCalled();
   });
 
+  it("duplicate weekTeamId anchors: team rotates exactly once and generation succeeds", async () => {
+    const driverId = new mongoose.Types.ObjectId();
+    const medicId = new mongoose.Types.ObjectId();
+    const rotatingTeam = {
+      _id: new mongoose.Types.ObjectId(),
+      rotationMode: "rotating",
+      fixedDienstNumber: null,
+      driver: { _id: driverId, name: "R", lastName: "Drv", ambulanceRole: "driver" },
+      medic: { _id: medicId, name: "R", lastName: "Med", ambulanceRole: "medic" },
+      ambulanceId: null,
+      createdAt: new Date(),
+    };
+
+    mockTemplateFind.mockImplementation(() =>
+      chainLean([
+        { dienstNumber: 1, startTime: "08:00", endTime: "16:00", daysOff: [] },
+        { dienstNumber: 100, startTime: "08:00", endTime: "16:00", daysOff: [] },
+      ]),
+    );
+
+    const prevWeekDiensts = [
+      {
+        dienstNumber: 1,
+        weekTeamId: rotatingTeam._id,
+        assignments: [{ driver: driverId, medic: medicId, date: "2029-12-30" }],
+      },
+      {
+        dienstNumber: 100,
+        weekTeamId: rotatingTeam._id,
+        assignments: [{ driver: driverId, medic: medicId, date: "2029-12-30" }],
+      },
+    ];
+
+    let findCall = 0;
+    mockDienstFind.mockImplementation(() => {
+      findCall += 1;
+      if (findCall === 1) return chainLean([]);
+      return chainLean(prevWeekDiensts);
+    });
+
+    mockTeamFind.mockImplementation(() => chainLean([rotatingTeam]));
+
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    const result = await generateDienstTemplatesForWeek(weekStart, companyId);
+
+    expect(result.count).toBe(2);
+    expect(mockInsertMany).toHaveBeenCalledTimes(1);
+
+    const inserted = mockInsertMany.mock.calls[0][0] as Array<{
+      dienstNumber: number;
+      weekTeamId?: mongoose.Types.ObjectId | null;
+    }>;
+    const assignedDiensts = inserted
+      .filter((d) => d.weekTeamId?.toString() === rotatingTeam._id.toString())
+      .map((d) => d.dienstNumber);
+    expect(assignedDiensts).toHaveLength(1);
+    expect(assignedDiensts[0]).toBe(100);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("duplicate rotation anchor ignored"),
+    );
+
+    warnSpy.mockRestore();
+  });
+
   it("does not push workers blocked by absence or invalid P-Schein", async () => {
     const driverId = new mongoose.Types.ObjectId();
     const medicId = new mongoose.Types.ObjectId();
