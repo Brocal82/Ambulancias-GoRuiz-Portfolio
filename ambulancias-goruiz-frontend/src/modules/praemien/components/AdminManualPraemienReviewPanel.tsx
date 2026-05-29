@@ -13,7 +13,10 @@ import {
 } from "../domain/manualDailyApi";
 import { usePraemienDienstDayTints } from "../hooks/usePraemienDienstDayTints";
 import { maxNavigablePraemienYm } from "../utils/dienstCalendarTints";
-import { dispatchPraemienManualPendingChanged } from "../utils/praemienManualPendingEvents";
+import {
+  PRAEMIEN_MANUAL_PENDING_CHANGED,
+  dispatchPraemienManualPendingChanged,
+} from "../utils/praemienManualPendingEvents";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
 import MonthlyMiniCalendar, { type ViewMonth } from "./MonthlyMiniCalendar";
 import {
@@ -60,6 +63,7 @@ const AdminManualPraemienReviewPanel = ({
   );
   const [queueRowLoading, setQueueRowLoading] = useState(false);
   const queueFetchSeq = useRef(0);
+  const selectedDateRef = useRef<string | null>(null);
 
   const tStart = useMemo(() => todayStart(), []);
   const effStart = useMemo(
@@ -105,6 +109,10 @@ const AdminManualPraemienReviewPanel = ({
     void load();
   }, [load]);
 
+  useEffect(() => {
+    selectedDateRef.current = selected?.date ?? null;
+  }, [selected?.date]);
+
   const refreshQueueRow = useCallback(
     async (date: string | null) => {
       const id = ++queueFetchSeq.current;
@@ -131,6 +139,25 @@ const AdminManualPraemienReviewPanel = ({
     },
     [userId],
   );
+
+  useEffect(() => {
+    const onChanged = () => {
+      void (async () => {
+        const selDate = selectedDateRef.current;
+        const data = await load();
+        if (selDate) {
+          setSelected((prev) => {
+            if (!prev || prev.date !== selDate) return prev;
+            return data.find((r) => r.date === selDate) ?? prev;
+          });
+          await refreshQueueRow(selDate);
+        }
+      })();
+    };
+    window.addEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
+    return () =>
+      window.removeEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
+  }, [load, refreshQueueRow]);
 
   useEffect(() => {
     if (!selected) {

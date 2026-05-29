@@ -11,7 +11,10 @@ import {
 import type { MonthlyPraemienDay } from "../domain/api";
 import { usePraemienDienstDayTints } from "../hooks/usePraemienDienstDayTints";
 import { maxNavigablePraemienYm } from "../utils/dienstCalendarTints";
-import { dispatchPraemienManualPendingChanged } from "../utils/praemienManualPendingEvents";
+import {
+  PRAEMIEN_MANUAL_PENDING_CHANGED,
+  dispatchPraemienManualPendingChanged,
+} from "../utils/praemienManualPendingEvents";
 import { labelPraemienManualStatus } from "../utils/labelPraemienManualStatus";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
 import { fmtDDMM } from "../../../utils/timeUtils";
@@ -161,6 +164,13 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
 
   useEffect(() => {
     void loadMonth();
+  }, [loadMonth]);
+
+  useEffect(() => {
+    const onChanged = () => void loadMonth();
+    window.addEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
+    return () =>
+      window.removeEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
   }, [loadMonth]);
 
   const byDate = useMemo(() => {
