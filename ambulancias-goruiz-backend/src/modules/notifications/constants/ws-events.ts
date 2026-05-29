@@ -7,6 +7,7 @@ export const WS_EVENTS = {
   DIENST_CHANGED: "dienst_changed",
   AGENDA_CHANGED: "agenda_changed",
   WORKDAY_SUMMARY_CHANGED: "workday_summary_changed",
+  MECHANICS_CHANGED: "mechanics_changed",
   ADMIN_COUNTS_CHANGED: "admin_counts_changed",
 } as const;
 

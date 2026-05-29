@@ -4,6 +4,7 @@ import { emitMessagesChanged } from "../modules/messages/utils/messageEvents";
 import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
 import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
 import { emitWorkdaySummariesChanged } from "../modules/workday/utils/workdayEvents";
+import { emitMechanicsIssuesChanged } from "../modules/mechanics/utils/mechanicsEvents";
 import { emitAdminDashboardCountsRefresh } from "../modules/admin-dashboard/utils/adminDashboardCountsEvents";
 import { WS_EVENTS, type WsFrame } from "./wsEvents";
 
@@ -34,6 +35,9 @@ export function dispatchWebSocketEvent(frame: WsFrame): void {
       return;
     case WS_EVENTS.WORKDAY_SUMMARY_CHANGED:
       emitWorkdaySummariesChanged();
+      return;
+    case WS_EVENTS.MECHANICS_CHANGED:
+      emitMechanicsIssuesChanged();
       return;
     case WS_EVENTS.ADMIN_COUNTS_CHANGED:
       emitAdminDashboardCountsRefresh();

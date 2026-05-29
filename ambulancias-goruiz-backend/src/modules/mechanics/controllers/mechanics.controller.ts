@@ -9,6 +9,7 @@ import {
   getIssuesCount as svcGetIssuesCount,
   getIssueReportsByWorker as svcGetIssueReportsByWorker,
 } from "../services/mechanics.service";
+import { voidEmitMechanicsChanged } from "../../notifications";
 
 function handleError(
   error: unknown,
@@ -51,6 +52,10 @@ export const reportIssue = async (req: Request, res: Response): Promise<void> =>
       req.userRole ?? "",
       req.companyId ?? null,
     );
+    const issueCompanyId = (newIssue as { companyId?: unknown }).companyId;
+    if (issueCompanyId) {
+      voidEmitMechanicsChanged(String(issueCompanyId));
+    }
     res.status(201).json(newIssue);
   } catch (error) {
     handleError(
@@ -142,6 +147,7 @@ export const deleteIssueReport = async (
     }
     const { id } = req.params;
     const result = await svcDeleteIssueReport(id, rawCompanyId);
+    voidEmitMechanicsChanged(rawCompanyId);
     res.status(200).json(result);
   } catch (error) {
     handleError(
@@ -169,6 +175,7 @@ export const markIssueSeen = async (req: Request, res: Response): Promise<void> 
     }
     const { id } = req.params;
     const updated = await svcMarkIssueSeen(id, rawCompanyId);
+    voidEmitMechanicsChanged(rawCompanyId);
     res.status(200).json(updated);
   } catch (error) {
     handleError(
