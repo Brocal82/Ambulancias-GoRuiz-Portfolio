@@ -82,6 +82,63 @@ router.post(
   DienstLifecycle.deleteDienstsForWeek,
 );
 
+// Asignaciones semanales (rutas literales antes de /:id)
+router.post(
+  "/assign-team-to-week",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  requireModule(MODULE_KEYS.TEAMS),
+  authorizeRole("admin"),
+  validateBody(assignTeamToWeekSchema),
+  DienstAssignments.assignTeamToWeek,
+);
+
+router.post(
+  "/assign-user-to-week",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  validateBody(assignUserToWeekSchema),
+  DienstAssignments.assignUserToWeek,
+);
+
+router.post(
+  "/clear-week-people",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  validateBody(clearWeekPeopleSchema),
+  DienstAssignments.clearPeopleForWeek,
+);
+
+router.post(
+  "/move-slot-same-week",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  validateBody(moveSlotSameWeekSchema),
+  DienstAssignments.moveSlotSameWeek,
+);
+
+router.post(
+  "/dnd-cross-dienst-same-week",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  validateBody(dndCrossDienstSameWeekSchema),
+  DienstAssignments.dndCrossDienstSameWeek,
+);
+
+router.post(
+  "/assign-ambulance-to-week",
+  authenticateToken,
+  requireModule(MODULE_KEYS.SCHEDULING),
+  authorizeRole("admin"),
+  requireModule(MODULE_KEYS.AMBULANCES),
+  validateBody(assignAmbulanceToWeekSchema),
+  DienstAssignments.assignAmbulanceToWeek,
+);
+
 // CRUD de plantillas DienstTemplate (solo admin)
 router.use("/templates", dienstTemplateRoutes);
 
@@ -129,65 +186,6 @@ router.delete(
   authorizeRole("admin"),
   validateObjectId("id"),
   DienstLifecycle.deleteDienst,
-);
-
-// Asignar un Team completo a todos los días de una semana (solo admin)
-router.post(
-  "/assign-team-to-week",
-  authenticateToken,
-  requireModule(MODULE_KEYS.SCHEDULING),
-  requireModule(MODULE_KEYS.TEAMS),
-  authorizeRole("admin"),
-  validateBody(assignTeamToWeekSchema),
-  DienstAssignments.assignTeamToWeek,
-);
-
-// Asignar UN usuario (driver/medic) a toda la semana de un Dienst
-router.post(
-  "/assign-user-to-week",
-  authenticateToken,
-  requireModule(MODULE_KEYS.SCHEDULING),
-  authorizeRole("admin"),
-  validateBody(assignUserToWeekSchema),
-  DienstAssignments.assignUserToWeek,
-);
-
-router.post(
-  "/clear-week-people",
-  authenticateToken,
-  requireModule(MODULE_KEYS.SCHEDULING),
-  authorizeRole("admin"),
-  validateBody(clearWeekPeopleSchema),
-  DienstAssignments.clearPeopleForWeek,
-);
-
-router.post(
-  "/move-slot-same-week",
-  authenticateToken,
-  requireModule(MODULE_KEYS.SCHEDULING),
-  authorizeRole("admin"),
-  validateBody(moveSlotSameWeekSchema),
-  DienstAssignments.moveSlotSameWeek,
-);
-
-router.post(
-  "/dnd-cross-dienst-same-week",
-  authenticateToken,
-  requireModule(MODULE_KEYS.SCHEDULING),
-  authorizeRole("admin"),
-  validateBody(dndCrossDienstSameWeekSchema),
-  DienstAssignments.dndCrossDienstSameWeek,
-);
-
-// Asignar una ambulancia a todos los días de una semana (solo admin)
-router.post(
-  "/assign-ambulance-to-week",
-  authenticateToken,
-  requireModule(MODULE_KEYS.SCHEDULING),
-  authorizeRole("admin"),
-  requireModule(MODULE_KEYS.AMBULANCES),
-  validateBody(assignAmbulanceToWeekSchema),
-  DienstAssignments.assignAmbulanceToWeek,
 );
 
 export default router;

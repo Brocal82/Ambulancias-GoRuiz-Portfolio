@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -127,6 +127,7 @@ type Props = {
   hasPraemienModule: boolean;
   user: AuthUser;
   showBottomPreview?: boolean;
+  agendaWsTrigger?: number;
 };
 
 export function HomeScreen({
@@ -153,6 +154,7 @@ export function HomeScreen({
   hasPraemienModule,
   user,
   showBottomPreview = true,
+  agendaWsTrigger,
 }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -323,6 +325,15 @@ export function HomeScreen({
   useEffect(() => {
     void loadDienstAndPraemie();
   }, [loadDienstAndPraemie]);
+
+  const prevAgendaWsTrigger = useRef(agendaWsTrigger);
+  useEffect(() => {
+    if (agendaWsTrigger === undefined || agendaWsTrigger === prevAgendaWsTrigger.current) {
+      return;
+    }
+    prevAgendaWsTrigger.current = agendaWsTrigger;
+    void loadDienstAndPraemie();
+  }, [agendaWsTrigger, loadDienstAndPraemie]);
 
   const pscheinExpiryDate = user.pscheinExpiry ? new Date(user.pscheinExpiry) : null;
   const displayName = `${user.name ?? ""} ${user.lastName ?? ""}`.trim() || "Usuario";
