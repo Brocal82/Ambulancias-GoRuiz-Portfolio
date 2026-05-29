@@ -8,6 +8,7 @@ import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationE
 import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
 import { emitAppointmentsChanged } from "../modules/appointments/utils/appointmentEvents";
 import { emitMechanicsIssuesChanged } from "../modules/mechanics/utils/mechanicsEvents";
+import { dispatchPraemienManualPendingChanged } from "../modules/praemien/utils/praemienManualPendingEvents";
 
 vi.mock("../modules/diensts/utils/dienstEvents", () => ({
   emitDienstsChanged: vi.fn(),
@@ -39,6 +40,10 @@ vi.mock("../modules/appointments/utils/appointmentEvents", () => ({
 
 vi.mock("../modules/mechanics/utils/mechanicsEvents", () => ({
   emitMechanicsIssuesChanged: vi.fn(),
+}));
+
+vi.mock("../modules/praemien/utils/praemienManualPendingEvents", () => ({
+  dispatchPraemienManualPendingChanged: vi.fn(),
 }));
 
 describe("dispatchWebSocketEvent", () => {
@@ -76,10 +81,16 @@ describe("dispatchWebSocketEvent", () => {
     expect(emitMechanicsIssuesChanged).toHaveBeenCalledTimes(1);
   });
 
+  it("maps praemien_changed to existing Praemien local refresh event", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.PRAEMIEN_CHANGED });
+    expect(dispatchPraemienManualPendingChanged).toHaveBeenCalledTimes(1);
+  });
+
   it("ignores unknown events", () => {
     dispatchWebSocketEvent({ event: "unknown_event" });
     expect(emitDienstsChanged).not.toHaveBeenCalled();
     expect(emitWorkdaySummariesChanged).not.toHaveBeenCalled();
     expect(emitAdminDashboardCountsRefresh).not.toHaveBeenCalled();
+    expect(dispatchPraemienManualPendingChanged).not.toHaveBeenCalled();
   });
 });

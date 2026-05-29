@@ -5,6 +5,7 @@ import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
 import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
 import { emitWorkdaySummariesChanged } from "../modules/workday/utils/workdayEvents";
 import { emitMechanicsIssuesChanged } from "../modules/mechanics/utils/mechanicsEvents";
+import { dispatchPraemienManualPendingChanged } from "../modules/praemien/utils/praemienManualPendingEvents";
 import { emitAdminDashboardCountsRefresh } from "../modules/admin-dashboard/utils/adminDashboardCountsEvents";
 import { WS_EVENTS, type WsFrame } from "./wsEvents";
 
@@ -38,6 +39,9 @@ export function dispatchWebSocketEvent(frame: WsFrame): void {
       return;
     case WS_EVENTS.MECHANICS_CHANGED:
       emitMechanicsIssuesChanged();
+      return;
+    case WS_EVENTS.PRAEMIEN_CHANGED:
+      dispatchPraemienManualPendingChanged();
       return;
     case WS_EVENTS.ADMIN_COUNTS_CHANGED:
       emitAdminDashboardCountsRefresh();

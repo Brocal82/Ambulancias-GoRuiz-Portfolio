@@ -3,7 +3,7 @@ import User from "../../users/models/user.model";
 import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import PraemienManualDailyEntry from "../models/praemien-manual-daily-entry.model";
 import type { PraemienManualDailyStatus } from "../models/praemien-manual-daily-entry.model";
-import { sendPushNotification } from "../../notifications";
+import { sendPushNotification, voidEmitPraemienAdminSideEffects, voidEmitPraemienWorkerRefresh } from "../../notifications";
 import {
   assertManualPraemienDailyApisAllowed,
 } from "./assert-manual-praemien-phase.service";
@@ -349,6 +349,11 @@ export async function adminApproveManualDailyEntry(params: {
     });
   }
 
+  if (params.companyIdStr) {
+    voidEmitPraemienWorkerRefresh([params.targetUserId], params.companyIdStr);
+    voidEmitPraemienAdminSideEffects(params.companyIdStr);
+  }
+
   return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 
@@ -418,6 +423,10 @@ export async function adminRejectManualDailyEntry(params: {
     `Tu Prämie manual del ${params.date} ha sido rechazada. Revisa el motivo en la app.`,
     { screen: "praemien" },
   );
+  if (params.companyIdStr) {
+    voidEmitPraemienWorkerRefresh([params.targetUserId], params.companyIdStr);
+    voidEmitPraemienAdminSideEffects(params.companyIdStr);
+  }
   return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 
@@ -496,6 +505,11 @@ export async function adminCorrectApproveManualDailyEntry(params: {
     finalValue: num,
   });
 
+  if (params.companyIdStr) {
+    voidEmitPraemienWorkerRefresh([params.targetUserId], params.companyIdStr);
+    voidEmitPraemienAdminSideEffects(params.companyIdStr);
+  }
+
   return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 
@@ -550,6 +564,10 @@ export async function adminReopenManualDailyEntry(params: {
     date: params.date,
     adminUserId: params.adminUserId,
   });
+  if (params.companyIdStr) {
+    voidEmitPraemienWorkerRefresh([params.targetUserId], params.companyIdStr);
+    voidEmitPraemienAdminSideEffects(params.companyIdStr);
+  }
   return { ok: true, entry: await enrichManualDailyDto(dto) };
 }
 

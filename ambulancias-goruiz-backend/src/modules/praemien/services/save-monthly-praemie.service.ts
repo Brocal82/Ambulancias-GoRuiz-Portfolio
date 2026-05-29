@@ -1,5 +1,5 @@
 import { endOfMonth, startOfMonth } from "date-fns";
-import { sendPushNotification } from "../../notifications";
+import { sendPushNotification, voidEmitPraemienWorkerRefresh } from "../../notifications";
 import MonthlyPraemie from "../models/monthly-praemie.model";
 import { computeMonthlyPraemienStatsForUser } from "./get-monthly-summary.service";
 import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
@@ -70,6 +70,8 @@ export async function saveMonthlyPraemieForUser(
     `Tu bonificación de ${month}/${year} ha sido calculada.`,
     { screen: "praemien" },
   );
+
+  voidEmitPraemienWorkerRefresh([userId], String(companyId));
 
   return {
     hasData: true as const,

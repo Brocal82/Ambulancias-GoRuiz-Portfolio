@@ -152,3 +152,36 @@ export function voidEmitMechanicsChanged(companyId: string): void {
     }
   })();
 }
+
+/** Worker manual submit / admin queue refresh + dashboard counters. */
+export function voidEmitPraemienAdminSideEffects(companyId: string): void {
+  void (async () => {
+    try {
+      await notifyCompanyAdminsModuleGated(
+        companyId,
+        WS_EVENTS.PRAEMIEN_CHANGED,
+        MODULE_KEYS.PRAEMIEN,
+      );
+      await notifyCompanyAdminsModuleGated(
+        companyId,
+        WS_EVENTS.ADMIN_COUNTS_CHANGED,
+        MODULE_KEYS.PRAEMIEN,
+      );
+    } catch (err) {
+      console.error("[ws-notify] voidEmitPraemienAdminSideEffects failed:", err);
+    }
+  })();
+}
+
+/** Admin review / save-monthly → worker Prämien page refresh. */
+export function voidEmitPraemienWorkerRefresh(
+  workerIds: Iterable<string>,
+  companyId: string,
+): void {
+  void notifyUsersModuleGated(
+    [...workerIds],
+    WS_EVENTS.PRAEMIEN_CHANGED,
+    MODULE_KEYS.PRAEMIEN,
+    companyId,
+  );
+}

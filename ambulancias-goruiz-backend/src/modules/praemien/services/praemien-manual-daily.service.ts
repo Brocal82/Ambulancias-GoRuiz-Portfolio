@@ -18,6 +18,7 @@ import {
   type ManualDailyEntryDto,
 } from "./praemien-manual-daily-mapper";
 import { syncDienstPartnersManualDailySubmitted } from "./manual-daily-dienst-teammates";
+import { voidEmitPraemienAdminSideEffects } from "../../notifications";
 import { legacyAwareWorkdayCompanyFilter } from "../utils/legacyWorkdayCompanyFilter";
 import { isValidPraemienYearMonth } from "../utils/parsePraemienYearMonth";
 
@@ -206,6 +207,7 @@ export async function upsertMyManualDailyEntry(params: {
         dateStr,
         submittedValue: submittedTotal,
       });
+      voidEmitPraemienAdminSideEffects(String(gate.companyObjectId));
     }
     return {
       ok: true,
@@ -247,6 +249,7 @@ export async function upsertMyManualDailyEntry(params: {
       dateStr,
       submittedValue: submittedTotal,
     });
+    voidEmitPraemienAdminSideEffects(String(gate.companyObjectId));
   }
   return {
     ok: true,
