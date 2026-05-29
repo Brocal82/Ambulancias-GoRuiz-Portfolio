@@ -74,15 +74,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    services:
-      mongodb:
-        image: mongo:6
-        ports:
-          - 27017:27017
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name mongodb-ci -p 27017:27017 mongo:6 mongod --replSet rs0 --bind_ip_all
+          for i in $(seq 1 30); do
+            if docker run --rm --network host mongo:6 mongosh "mongodb://127.0.0.1:27017" --eval "db.adminCommand({ ping: 1 })" --quiet 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          docker run --rm --network host mongo:6 mongosh "mongodb://127.0.0.1:27017" --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
+          for i in $(seq 1 30); do
+            if [ "$(docker run --rm --network host mongo:6 mongosh "mongodb://127.0.0.1:27017" --eval "rs.status().ok" --quiet 2>/dev/null || echo 0)" = "1" ]; then
+              echo "MongoDB replica set ready"
+              break
+            fi
+            sleep 2
+          done
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -96,7 +108,7 @@ jobs:
         working-directory: ambulancias-goruiz-backend
         run: |
           cat > .env.test <<'EOF'
-          MONGODB_URI_TEST=mongodb://127.0.0.1:27017/ambulancias_ci_test
+          MONGODB_URI_TEST=mongodb://127.0.0.1:27017/ambulancias_ci_test?replicaSet=rs0
           JWT_SECRET=ci-test-jwt-secret-minimum-32-characters-long
           EOF
 
