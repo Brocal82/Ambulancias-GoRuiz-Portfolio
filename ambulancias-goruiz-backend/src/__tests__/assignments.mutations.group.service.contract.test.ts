@@ -1533,6 +1533,274 @@ describe("assignments.service mutations group (company contract)", () => {
       await User.deleteMany({ _id: { $in: [driver._id, medic._id] } });
       await Dienst.deleteMany({ dienstNumber: 93142 });
     });
+
+    it("rechaza segundo anclaje del mismo equipo en otro Dienst de la semana (409)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const weekStartISO = "2035-05-05";
+      const pw = await hashPw();
+      const driver = await User.create({
+        name: "D",
+        lastName: "Dup",
+        email: `drv-dup-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "driver",
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date(),
+      });
+      const medic = await User.create({
+        name: "M",
+        lastName: "Dup",
+        email: `med-dup-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "medic",
+      });
+      const team = await Team.create({
+        driver: driver._id,
+        medic: medic._id,
+        rotationMode: "rotating",
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      const day = { date: "2035-05-06", startTime: "08:00", endTime: "16:00" };
+      await Dienst.create({
+        dienstNumber: 93150,
+        weekStartDate: new Date(weekStartISO),
+        weekEndDate: new Date("2035-05-11"),
+        assignments: [day],
+        companyId: new mongoose.Types.ObjectId(co),
+        weekTeamId: team._id,
+      });
+      await Dienst.create({
+        dienstNumber: 93151,
+        weekStartDate: new Date(weekStartISO),
+        weekEndDate: new Date("2035-05-11"),
+        assignments: [day],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      await expect(
+        assignTeamToWeek(
+          {
+            dienstNumber: 93151,
+            weekStartDate: weekStartISO,
+            teamId: String(team._id),
+          },
+          co,
+        ),
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        code: "team_already_anchored",
+      });
+      await Team.deleteOne({ _id: team._id });
+      await User.deleteMany({ _id: { $in: [driver._id, medic._id] } });
+      await Dienst.deleteMany({ dienstNumber: { $in: [93150, 93151] } });
+    });
+
+    it("rechaza equipo fijo asignado a otro Dienst (409)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const weekStartISO = "2035-05-12";
+      const pw = await hashPw();
+      const driver = await User.create({
+        name: "D",
+        lastName: "Fix",
+        email: `drv-fix-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "driver",
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date(),
+      });
+      const medic = await User.create({
+        name: "M",
+        lastName: "Fix",
+        email: `med-fix-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "medic",
+      });
+      const team = await Team.create({
+        driver: driver._id,
+        medic: medic._id,
+        rotationMode: "fixed",
+        fixedDienstNumber: 100,
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      await Dienst.create({
+        dienstNumber: 93152,
+        weekStartDate: new Date(weekStartISO),
+        weekEndDate: new Date("2035-05-18"),
+        assignments: [
+          { date: "2035-05-13", startTime: "08:00", endTime: "16:00" },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      await expect(
+        assignTeamToWeek(
+          {
+            dienstNumber: 93152,
+            weekStartDate: weekStartISO,
+            teamId: String(team._id),
+          },
+          co,
+        ),
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        code: "fixed_team_wrong_dienst",
+      });
+      await Team.deleteOne({ _id: team._id });
+      await User.deleteMany({ _id: { $in: [driver._id, medic._id] } });
+      await Dienst.deleteMany({ dienstNumber: 93152 });
+    });
+
+    it("permite equipo fijo en su Dienst fijo (éxito)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const weekStartISO = "2035-05-19";
+      const pw = await hashPw();
+      const driver = await User.create({
+        name: "D",
+        lastName: "FixOk",
+        email: `drv-fixok-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "driver",
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date(),
+      });
+      const medic = await User.create({
+        name: "M",
+        lastName: "FixOk",
+        email: `med-fixok-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "medic",
+      });
+      const team = await Team.create({
+        driver: driver._id,
+        medic: medic._id,
+        rotationMode: "fixed",
+        fixedDienstNumber: 93153,
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      const d = await Dienst.create({
+        dienstNumber: 93153,
+        weekStartDate: new Date(weekStartISO),
+        weekEndDate: new Date("2035-05-25"),
+        assignments: [
+          { date: "2035-05-20", startTime: "08:00", endTime: "16:00" },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      const out = await assignTeamToWeek(
+        {
+          dienstNumber: 93153,
+          weekStartDate: weekStartISO,
+          teamId: String(team._id),
+        },
+        co,
+      );
+      expect(out.updatedCount).toBeGreaterThan(0);
+      await Team.deleteOne({ _id: team._id });
+      await User.deleteMany({ _id: { $in: [driver._id, medic._id] } });
+      await Dienst.deleteOne({ _id: d._id });
+    });
+
+    it("no bloquea anclaje por weekTeamId de otra empresa (aislamiento)", async () => {
+      const coA = new mongoose.Types.ObjectId().toString();
+      const coB = new mongoose.Types.ObjectId().toString();
+      const weekStartISO = "2035-05-26";
+      const pw = await hashPw();
+      const driverB = await User.create({
+        name: "D",
+        lastName: "Iso",
+        email: `drv-iso-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(coB),
+        ambulanceRole: "driver",
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date(),
+      });
+      const medicB = await User.create({
+        name: "M",
+        lastName: "Iso",
+        email: `med-iso-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(coB),
+        ambulanceRole: "medic",
+      });
+      const teamB = await Team.create({
+        driver: driverB._id,
+        medic: medicB._id,
+        rotationMode: "rotating",
+        companyId: new mongoose.Types.ObjectId(coB),
+      });
+      const day = { date: "2035-05-27", startTime: "08:00", endTime: "16:00" };
+      await Dienst.create({
+        dienstNumber: 93154,
+        weekStartDate: new Date(weekStartISO),
+        weekEndDate: new Date("2035-06-01"),
+        assignments: [day],
+        companyId: new mongoose.Types.ObjectId(coB),
+        weekTeamId: teamB._id,
+      });
+
+      const driverA = await User.create({
+        name: "D",
+        lastName: "IsoA",
+        email: `drv-isoa-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(coA),
+        ambulanceRole: "driver",
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date(),
+      });
+      const medicA = await User.create({
+        name: "M",
+        lastName: "IsoA",
+        email: `med-isoa-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(coA),
+        ambulanceRole: "medic",
+      });
+      const teamA = await Team.create({
+        driver: driverA._id,
+        medic: medicA._id,
+        rotationMode: "rotating",
+        companyId: new mongoose.Types.ObjectId(coA),
+      });
+      const dA = await Dienst.create({
+        dienstNumber: 93155,
+        weekStartDate: new Date(weekStartISO),
+        weekEndDate: new Date("2035-06-01"),
+        assignments: [day],
+        companyId: new mongoose.Types.ObjectId(coA),
+      });
+
+      const out = await assignTeamToWeek(
+        {
+          dienstNumber: 93155,
+          weekStartDate: weekStartISO,
+          teamId: String(teamA._id),
+        },
+        coA,
+      );
+      expect(out.updatedCount).toBeGreaterThan(0);
+
+      await Team.deleteMany({ _id: { $in: [teamA._id, teamB._id] } });
+      await User.deleteMany({
+        _id: { $in: [driverA._id, medicA._id, driverB._id, medicB._id] },
+      });
+      await Dienst.deleteMany({ dienstNumber: { $in: [93154, 93155] } });
+    });
   });
 
   describe("assignTeamToWeek (descanso mínimo, roles independientes)", () => {
