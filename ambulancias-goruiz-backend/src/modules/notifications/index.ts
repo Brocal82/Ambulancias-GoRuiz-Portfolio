@@ -15,5 +15,6 @@ export {
   voidEmitDienstPlanningChanged,
   voidEmitWorkdayAdminSideEffects,
   voidEmitWorkdayWorkerRefresh,
+  voidEmitMechanicsChanged,
 } from "./utils/ws-notify";
 export { notifyUsers, setupWebSocketServer } from "./ws-manager";

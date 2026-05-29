@@ -126,3 +126,29 @@ export function voidEmitWorkdayWorkerRefresh(
     companyId,
   );
 }
+
+const MECHANICS_WS_ROLES = ["admin", "jefe_mecanicos", "mecanico"] as const;
+
+/** Mechanics issue mutations → admin / jefe_mecanicos / mecanico dashboards. */
+export function voidEmitMechanicsChanged(companyId: string): void {
+  void (async () => {
+    try {
+      const companyOid = new mongoose.Types.ObjectId(companyId);
+      const users = await User.find({
+        companyId: companyOid,
+        role: { $in: [...MECHANICS_WS_ROLES] },
+      })
+        .select("_id")
+        .lean();
+      const ids = users.map((user) => String(user._id));
+      await notifyUsersModuleGated(
+        ids,
+        WS_EVENTS.MECHANICS_CHANGED,
+        MODULE_KEYS.MECHANICS,
+        companyId,
+      );
+    } catch (err) {
+      console.error("[ws-notify] voidEmitMechanicsChanged failed:", err);
+    }
+  })();
+}

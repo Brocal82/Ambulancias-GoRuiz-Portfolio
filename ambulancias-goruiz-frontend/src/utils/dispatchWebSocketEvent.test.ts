@@ -7,6 +7,7 @@ import { emitAdminDashboardCountsRefresh } from "../modules/admin-dashboard/util
 import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
 import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
 import { emitAppointmentsChanged } from "../modules/appointments/utils/appointmentEvents";
+import { emitMechanicsIssuesChanged } from "../modules/mechanics/utils/mechanicsEvents";
 
 vi.mock("../modules/diensts/utils/dienstEvents", () => ({
   emitDienstsChanged: vi.fn(),
@@ -34,6 +35,10 @@ vi.mock("../modules/sick/utils/sickEvents", () => ({
 
 vi.mock("../modules/appointments/utils/appointmentEvents", () => ({
   emitAppointmentsChanged: vi.fn(),
+}));
+
+vi.mock("../modules/mechanics/utils/mechanicsEvents", () => ({
+  emitMechanicsIssuesChanged: vi.fn(),
 }));
 
 describe("dispatchWebSocketEvent", () => {
@@ -64,6 +69,11 @@ describe("dispatchWebSocketEvent", () => {
     expect(emitVacationRequestsUpdated).toHaveBeenCalledWith({ type: "updated", id: "ws-sync" });
     expect(emitSickLeavesChanged).toHaveBeenCalledTimes(1);
     expect(emitAppointmentsChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps mechanics_changed to mechanics local refresh (admin dashboard counts path)", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.MECHANICS_CHANGED });
+    expect(emitMechanicsIssuesChanged).toHaveBeenCalledTimes(1);
   });
 
   it("ignores unknown events", () => {
