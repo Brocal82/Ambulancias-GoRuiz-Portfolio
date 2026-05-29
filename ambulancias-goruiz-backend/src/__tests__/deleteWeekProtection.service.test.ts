@@ -7,6 +7,7 @@ import Dienst from "../modules/diensts/models/dienst.model";
 import { Trip } from "../modules/trips/models/trip.model";
 import { deleteDienstsForWeek } from "../modules/diensts/templates/services/lifecycle.service";
 import { DeleteWeekConflictError } from "../modules/diensts/utils/dienstWeekReferences";
+import * as wsNotify from "../modules/notifications/utils/ws-notify";
 import { getWeekMongoDateRange } from "../utils/time";
 
 describe("deleteDienstsForWeek downstream protection", () => {
@@ -27,6 +28,7 @@ describe("deleteDienstsForWeek downstream protection", () => {
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await Trip.deleteMany({ companyId: companyOid });
     await Dienst.deleteMany({ companyId: companyOid });
   });
@@ -84,5 +86,40 @@ describe("deleteDienstsForWeek downstream protection", () => {
 
     const { deletedCount } = await deleteDienstsForWeek(weekStart, companyId);
     expect(deletedCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it("deleteDienstsForWeek omite assignment _id inválido sin lanzar error", async () => {
+    const { start } = getWeekMongoDateRange(weekStart);
+    await Dienst.collection.insertOne({
+      dienstNumber: 99002,
+      weekStartDate: start,
+      companyId: companyOid,
+      assignments: [
+        {
+          _id: "not-a-valid-objectid",
+          date: "2099-03-01",
+          startTime: "08:00",
+          endTime: "16:00",
+          driver: adminUserId,
+          medic: adminUserId,
+        },
+      ],
+    });
+
+    const { deletedCount } = await deleteDienstsForWeek(weekStart, companyId);
+    expect(deletedCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it("deleteDienstsForWeek elimina aunque falle el notify websocket", async () => {
+    jest
+      .spyOn(wsNotify, "notifyCompanyAdminsModuleGated")
+      .mockRejectedValue(new Error("WS down"));
+
+    await seedDienstWithAssignment();
+
+    const { deletedCount } = await deleteDienstsForWeek(weekStart, companyId);
+    expect(deletedCount).toBeGreaterThanOrEqual(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
   });
 });

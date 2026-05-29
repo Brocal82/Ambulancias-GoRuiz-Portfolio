@@ -101,6 +101,8 @@ export function WorkerTabsShell({
   const hasPraemienModule = enabledModules.includes(MODULE_KEYS.PRAEMIEN);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [wsTrigger, setWsTrigger] = useState(0);
+  const [agendaWsTrigger, setAgendaWsTrigger] = useState(0);
+  const [workdayWsTrigger, setWorkdayWsTrigger] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsReconnectDelayRef = useRef(1000);
@@ -139,8 +141,11 @@ export function WorkerTabsShell({
     };
   }, [refreshUnreadMessagesCount]);
 
+  const hasRealtimeModule =
+    hasMessagesModule || hasAgendaModule || hasWorkdayModule;
+
   useEffect(() => {
-    if (!hasMessagesModule) {
+    if (!hasRealtimeModule) {
       wsRef.current?.close();
       if (wsReconnectTimerRef.current) {
         clearTimeout(wsReconnectTimerRef.current);
@@ -192,6 +197,10 @@ export function WorkerTabsShell({
           if (msg.event === "new_message") {
             void refreshUnreadMessagesCount();
             setWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "agenda_changed" || msg.event === "dienst_changed") {
+            setAgendaWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "workday_summary_changed") {
+            setWorkdayWsTrigger((prev) => prev + 1);
           }
         } catch {
           // ignore malformed frames
@@ -235,7 +244,7 @@ export function WorkerTabsShell({
       closeSocket();
       appStateSubscription.remove();
     };
-  }, [hasMessagesModule, refreshUnreadMessagesCount]);
+  }, [hasRealtimeModule, refreshUnreadMessagesCount]);
 
   const content = useMemo(() => {
     switch (activeTab) {
@@ -264,6 +273,7 @@ export function WorkerTabsShell({
             hasPayrollModule={hasPayrollModule}
             hasMessagesModule={hasMessagesModule}
             hasPraemienModule={hasPraemienModule}
+            agendaWsTrigger={agendaWsTrigger}
             showBottomPreview={false}
           />
         );
@@ -273,6 +283,8 @@ export function WorkerTabsShell({
             user={user}
             enabledModules={enabledModules}
             onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)}
+            workdayWsTrigger={workdayWsTrigger}
+            agendaWsTrigger={agendaWsTrigger}
           />
         ) : (
           <PlaceholderScreen
@@ -288,6 +300,7 @@ export function WorkerTabsShell({
             hasVacationModule={hasVacationModule}
             hasSickLeavesModule={hasSickLeavesModule}
             initialDate={initialAgendaDate}
+            agendaWsTrigger={agendaWsTrigger}
           />
         );
       case "vacations":

@@ -9,8 +9,10 @@ vi.mock("../domain/api", () => ({
   getMyMessages: vi.fn(),
 }));
 
+const useAuthMock = vi.fn(() => ({ token: "worker-token", role: "worker" }));
+
 vi.mock("../../../hooks/useAuth", () => ({
-  useAuth: () => ({ token: "worker-token" }),
+  useAuth: () => useAuthMock(),
 }));
 
 vi.mock("./useMessagesChanged", () => ({
@@ -19,6 +21,7 @@ vi.mock("./useMessagesChanged", () => ({
 
 describe("useUnreadMessagesCount", () => {
   beforeEach(() => {
+    useAuthMock.mockReturnValue({ token: "worker-token", role: "worker" });
     vi.mocked(api.getMyMessages).mockReset();
     vi.mocked(useMessagesChangedModule.useMessagesChanged).mockImplementation(() => {});
   });
@@ -40,7 +43,24 @@ describe("useUnreadMessagesCount", () => {
     expect(api.getMyMessages).not.toHaveBeenCalled();
   });
 
-  it("actualiza count con la longitud de mensajes no leídos", async () => {
+  it("skip=true con rol admin (patrón AdminSidebarLayout) no llama a la API", async () => {
+    useAuthMock.mockReturnValue({ token: "admin-token", role: "admin" });
+
+    const { result } = renderHook(() =>
+      useUnreadMessagesCount({
+        skip: true,
+        pollMs: 0,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.count).toBe(0);
+    });
+
+    expect(api.getMyMessages).not.toHaveBeenCalled();
+  });
+
+  it("worker con skip=false sigue obteniendo el conteo", async () => {
     vi.mocked(api.getMyMessages).mockResolvedValue([
       { _id: "1" } as never,
       { _id: "2" } as never,
@@ -53,6 +73,31 @@ describe("useUnreadMessagesCount", () => {
     await waitFor(() => {
       expect(result.current.count).toBe(2);
     });
+
+    expect(api.getMyMessages).toHaveBeenCalled();
+  });
+
+  it("403 detiene reintentos posteriores", async () => {
+    const forbiddenError = Object.assign(new Error("Forbidden"), {
+      response: { status: 403 },
+    });
+    vi.mocked(api.getMyMessages).mockRejectedValue(forbiddenError);
+
+    const { result } = renderHook(() => useUnreadMessagesCount({ pollMs: 0 }));
+
+    await waitFor(() => {
+      expect(result.current.error).toBeTruthy();
+      expect(result.current.count).toBe(0);
+    });
+
+    vi.mocked(api.getMyMessages).mockClear();
+
+    await act(async () => {
+      await result.current.refresh();
+      await result.current.refresh();
+    });
+
+    expect(api.getMyMessages).not.toHaveBeenCalled();
   });
 
   it("limpia intervalo de polling al desmontar", async () => {

@@ -18,6 +18,11 @@ import {
 import { companyHasEnabledModule } from "../../../../utils/companyEnabledModules";
 import { MODULE_KEYS } from "../../../companies/constants/modules.constants";
 import {
+  collectWorkerIdsFromAssignments,
+  voidEmitDienstPlanningChanged,
+  voidEmitSchedulingMutationRealtime,
+} from "../../../notifications";
+import {
   getWeekMongoDateRange,
   parseWeekStartISO,
 } from "../../../../utils/time";
@@ -120,7 +125,14 @@ export async function createDienst(data: DienstCreateInput, companyId?: string |
     companyId: new mongoose.Types.ObjectId(companyIdStr),
   };
   const newDienst = new Dienst(payload);
-  return newDienst.save();
+  const saved = await newDienst.save();
+  voidEmitSchedulingMutationRealtime(
+    companyIdStr,
+    collectWorkerIdsFromAssignments(
+      (data.assignments || []) as Array<{ driver?: unknown; medic?: unknown }>,
+    ),
+  );
+  return saved;
 }
 
 export async function updateDienst(
@@ -128,7 +140,7 @@ export async function updateDienst(
   data: DienstUpdateInput,
   companyId?: string | null,
 ) {
-  const existing = await Dienst.findById(id).select("companyId").lean();
+  const existing = await Dienst.findById(id).select("companyId assignments").lean();
   if (!existing) return null;
   const existingCompany = (existing as any).companyId;
   if (existingCompany == null) {
@@ -146,13 +158,28 @@ export async function updateDienst(
     const assignList = data.assignments as Array<{ ambulanceId?: string; driver?: string; medic?: string }>;
     await validateAssignmentCompanies(assignList, dienstCompanyId);
   }
-  return Dienst.findByIdAndUpdate(id, data, {
+  const updated = await Dienst.findByIdAndUpdate(id, data, {
     new: true,
   }).populate("assignments.driver assignments.medic assignments.ambulanceId");
+  if (updated) {
+    if (data.assignments !== undefined) {
+      const oldWorkers = collectWorkerIdsFromAssignments(
+        (existing as { assignments?: Array<{ driver?: unknown; medic?: unknown }> }).assignments,
+      );
+      const newWorkers = collectWorkerIdsFromAssignments(
+        data.assignments as Array<{ driver?: unknown; medic?: unknown }>,
+      );
+      const affected = new Set<string>([...oldWorkers, ...newWorkers]);
+      voidEmitSchedulingMutationRealtime(dienstCompanyId, affected);
+    } else {
+      voidEmitDienstPlanningChanged(dienstCompanyId);
+    }
+  }
+  return updated;
 }
 
 export async function deleteDienst(id: string, companyId?: string | null) {
-  const existing = await Dienst.findById(id).select("companyId").lean();
+  const existing = await Dienst.findById(id).select("companyId assignments").lean();
   if (!existing) return null;
   const existingCompany = (existing as any).companyId;
   if (existingCompany == null) {
@@ -161,7 +188,15 @@ export async function deleteDienst(id: string, companyId?: string | null) {
   if (!companyId || String(existingCompany) !== String(companyId)) {
     return null;
   }
-  return Dienst.findByIdAndDelete(id);
+  const dienstCompanyId = String(existingCompany);
+  const affectedWorkers = collectWorkerIdsFromAssignments(
+    (existing as { assignments?: Array<{ driver?: unknown; medic?: unknown }> }).assignments,
+  );
+  const deleted = await Dienst.findByIdAndDelete(id);
+  if (deleted) {
+    voidEmitSchedulingMutationRealtime(dienstCompanyId, affectedWorkers);
+  }
+  return deleted;
 }
 
 export async function deleteDienstsForWeek(
@@ -184,20 +219,27 @@ export async function deleteDienstsForWeek(
   };
 
   const dienstsInWeek = await Dienst.find(filter)
-    .select("dienstNumber assignments._id")
+    .select("dienstNumber assignments")
     .lean();
 
+  const affectedWorkers = new Set<string>();
   const assignmentIds: mongoose.Types.ObjectId[] = [];
   const dienstNumbers = new Set<number>();
   for (const d of dienstsInWeek) {
     if (typeof (d as { dienstNumber?: number }).dienstNumber === "number") {
       dienstNumbers.add((d as { dienstNumber: number }).dienstNumber);
     }
+    for (const workerId of collectWorkerIdsFromAssignments(
+      (d as { assignments?: Array<{ driver?: unknown; medic?: unknown }> }).assignments,
+    )) {
+      affectedWorkers.add(workerId);
+    }
     for (const a of (d as { assignments?: Array<{ _id?: unknown }> }).assignments ??
       []) {
-      if (a._id != null) {
-        assignmentIds.push(new mongoose.Types.ObjectId(String(a._id)));
-      }
+      if (a._id == null) continue;
+      const idStr = String(a._id);
+      if (!mongoose.Types.ObjectId.isValid(idStr)) continue;
+      assignmentIds.push(new mongoose.Types.ObjectId(idStr));
     }
   }
 
@@ -212,6 +254,9 @@ export async function deleteDienstsForWeek(
   }
 
   const deleted = await Dienst.deleteMany(filter);
+  if ((deleted.deletedCount ?? 0) > 0) {
+    voidEmitSchedulingMutationRealtime(companyIdStr, affectedWorkers);
+  }
   return { deletedCount: deleted.deletedCount ?? 0 };
 }
 
@@ -588,6 +633,16 @@ export async function generateDienstTemplatesForWeek(
   );
 
   await Dienst.insertMany(built.map((b) => b.doc));
+
+  const generatedWorkers = new Set<string>();
+  for (const item of built) {
+    for (const workerId of collectWorkerIdsFromAssignments(
+      (item.doc.assignments || []) as Array<{ driver?: unknown; medic?: unknown }>,
+    )) {
+      generatedWorkers.add(workerId);
+    }
+  }
+  voidEmitSchedulingMutationRealtime(companyIdStr, generatedWorkers);
 
   return {
     count: built.length,

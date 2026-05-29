@@ -15,6 +15,8 @@ import { normalizeAmbulanceIdToString } from "../../diensts";
 import { toastT } from "../../../utils/toast";
 import { notifyAdminIssuesChanged } from "../../mechanics";
 import { emitWorkdaySummariesChanged } from "../utils/workdayEvents";
+import { useDienstsChanged } from "../../diensts/hooks/useDienstsChanged";
+import { useWorkdaySummariesChanged } from "../hooks/useWorkdaySummariesChanged";
 
 import type { Trip, TripData } from "../domain/types/trip";
 import type { Ambulance } from "../../ambulances/domain/types";
@@ -85,6 +87,7 @@ const MyWorkday = () => {
     setTrips,
     isClosingDay,
     getClosedDayKeyByDate,
+    refreshTrips,
   } = useWorkdayTrips({
     token,
     userId: user?._id,
@@ -94,10 +97,20 @@ const MyWorkday = () => {
   const {
     assignedDay,
     canStartWork,
+    refreshAssignedDay,
   } = useWorkdayAssignment({
     token,
     userId: user?._id,
     today,
+  });
+
+  useDienstsChanged(() => {
+    void refreshAssignedDay();
+  });
+
+  useWorkdaySummariesChanged(() => {
+    void refreshAssignedDay();
+    void refreshTrips();
   });
 
 

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -177,6 +177,8 @@ type Props = {
   enabledModules?: CompanyModuleKey[];
   /** Chip “jornada en curso” → pantalla completa de cierre (desde WorkerTabsShell). */
   onOpenWorkdayClosure?: () => void;
+  workdayWsTrigger?: number;
+  agendaWsTrigger?: number;
 };
 
 type WorkdayStatus = "no-assignment" | "ready" | "in-progress" | "partial-closed" | "final-closed";
@@ -218,7 +220,13 @@ function summaryStateForAssignment(summaries: WorkdaySummary[], assignmentId: st
   return "ready";
 }
 
-export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure }: Props) {
+export function WorkerWorkdayScreen({
+  user,
+  enabledModules,
+  onOpenWorkdayClosure,
+  workdayWsTrigger,
+  agendaWsTrigger,
+}: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
@@ -283,6 +291,24 @@ export function WorkerWorkdayScreen({ user, enabledModules, onOpenWorkdayClosure
   useEffect(() => {
     void loadWorkday();
   }, [loadWorkday]);
+
+  const prevWorkdayWsTrigger = useRef(workdayWsTrigger);
+  useEffect(() => {
+    if (workdayWsTrigger === undefined || workdayWsTrigger === prevWorkdayWsTrigger.current) {
+      return;
+    }
+    prevWorkdayWsTrigger.current = workdayWsTrigger;
+    void loadWorkday({ silent: true });
+  }, [workdayWsTrigger, loadWorkday]);
+
+  const prevAgendaWsTrigger = useRef(agendaWsTrigger);
+  useEffect(() => {
+    if (agendaWsTrigger === undefined || agendaWsTrigger === prevAgendaWsTrigger.current) {
+      return;
+    }
+    prevAgendaWsTrigger.current = agendaWsTrigger;
+    void loadWorkday({ silent: true });
+  }, [agendaWsTrigger, loadWorkday]);
 
   useEffect(() => {
     if (!todayAssignment?.assignmentId) {

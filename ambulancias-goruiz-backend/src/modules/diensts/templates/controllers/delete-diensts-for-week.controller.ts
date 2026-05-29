@@ -1,6 +1,9 @@
 import { RequestHandler } from "express";
 import * as lifecycleService from "../services/lifecycle.service";
-import { requireCompanyForAdmin } from "../../../../utils/requireCompany";
+import {
+  requireCompanyForAdmin,
+  CompanyValidationError,
+} from "../../../../utils/requireCompany";
 import { DeleteWeekConflictError } from "../../utils/dienstWeekReferences";
 
 export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
@@ -27,6 +30,10 @@ export const deleteDienstsForWeek: RequestHandler = async (req, res) => {
         sources: error.sources,
         counts: error.counts,
       });
+      return;
+    }
+    if (error instanceof CompanyValidationError) {
+      res.status(error.statusCode).json({ message: error.message });
       return;
     }
     console.error("Error al eliminar Diensts:", error);

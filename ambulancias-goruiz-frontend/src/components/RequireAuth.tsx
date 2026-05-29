@@ -2,6 +2,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
+import RealtimeSyncMount from "./RealtimeSyncMount";
 
 export default function RequireAuth() {
   const { token, isAuthReady } = useAuth();
@@ -17,5 +18,10 @@ export default function RequireAuth() {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <RealtimeSyncMount />
+      <Outlet />
+    </>
+  );
 }

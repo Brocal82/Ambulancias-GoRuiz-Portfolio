@@ -20,14 +20,18 @@ export function useUnreadMessagesCount({ pollMs = 30000, skip = false }: Options
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
   const hasFetchedSuccessRef = useRef(false);
+  const forbiddenRef = useRef(false);
 
   const fetchCount = useCallback(async () => {
     if (!token || skip) {
+      forbiddenRef.current = false;
       setCount(0);
       setLoading(false);
       hasFetchedSuccessRef.current = false;
       return;
     }
+    if (forbiddenRef.current) return;
+
     try {
       // Solo loading en primera carga; polls/refetches no activan loading si ya hay dato
       setLoading(!hasFetchedSuccessRef.current);
@@ -37,6 +41,10 @@ export function useUnreadMessagesCount({ pollMs = 30000, skip = false }: Options
       hasFetchedSuccessRef.current = true;
       setCount(newCount);
     } catch (e: any) {
+      if (e?.response?.status === 403) {
+        forbiddenRef.current = true;
+        setCount(0);
+      }
       setError(e?.message ?? "Error obteniendo mensajes no leídos");
     } finally {
       setLoading(false);

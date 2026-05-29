@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -23,6 +23,7 @@ type Props = {
   hasVacationModule: boolean;
   hasSickLeavesModule: boolean;
   initialDate?: string;
+  agendaWsTrigger?: number;
 };
 
 type DayScheduleItem = {
@@ -207,7 +208,14 @@ function getEmptyDayStatus(
   return "libre";
 }
 
-export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, hasSickLeavesModule, initialDate }: Props) {
+export function WorkerAgendaScreen({
+  user,
+  scheduleSource,
+  hasVacationModule,
+  hasSickLeavesModule,
+  initialDate,
+  agendaWsTrigger,
+}: Props) {
   const [weekStart, setWeekStart] = useState<Date>(() => {
     if (initialDate) {
       const parsed = new Date(initialDate);
@@ -273,8 +281,11 @@ export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, ha
     return byDate;
   };
 
-  const loadAgenda = async () => {
-    setIsLoading(true);
+  const loadAgenda = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) {
+      setIsLoading(true);
+    }
     setErrorMessage(undefined);
     try {
       if (scheduleSource === "none") {
@@ -360,9 +371,20 @@ export function WorkerAgendaScreen({ user, scheduleSource, hasVacationModule, ha
         setErrorMessage("No se pudo cargar la agenda.");
       }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
+
+  const prevAgendaWsTrigger = useRef(agendaWsTrigger);
+  useEffect(() => {
+    if (agendaWsTrigger === undefined || agendaWsTrigger === prevAgendaWsTrigger.current) {
+      return;
+    }
+    prevAgendaWsTrigger.current = agendaWsTrigger;
+    void loadAgenda({ silent: true });
+  }, [agendaWsTrigger]);
 
   useEffect(() => {
     void loadAgenda();

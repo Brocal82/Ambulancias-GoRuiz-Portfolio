@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { useModules } from "../hooks/useModules";
 import { MODULE_KEYS } from "../constants/modules";
 import { useUnreadMessagesCount } from "../modules/messages/hooks";
@@ -88,7 +89,8 @@ export default function AdminSidebarLayout() {
 
 function AdminSidebarLayoutInner() {
   const [collapsed, setCollapsed] = useState(false);
-  const { hasModule } = useModules();
+  const { role } = useAuth();
+  const { hasModule, enabledModules } = useModules();
   const { counts } = useAdminDashboardCounts();
 
   const summariesCount = counts.summaries;
@@ -98,7 +100,10 @@ function AdminSidebarLayoutInner() {
   const mechanicsCount = counts.mechanics;
   const praemienCount = counts.praemienManual;
   const { count: messagesCount } = useUnreadMessagesCount({
-    skip: !hasModule(MODULE_KEYS.MESSAGES),
+    skip:
+      enabledModules === null ||
+      !hasModule(MODULE_KEYS.MESSAGES) ||
+      role !== "worker",
   });
 
   const totalBadge =
