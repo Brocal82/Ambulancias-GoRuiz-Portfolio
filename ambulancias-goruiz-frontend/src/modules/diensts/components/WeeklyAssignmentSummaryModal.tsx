@@ -392,19 +392,54 @@ function buildUnifiedIssues(
   return rows;
 }
 
+/** Stable id for dismiss/ack within a week (scoped by dienst + issue row). */
+export function issueScopedKey(dienstNumber: number, issueKey: string): string {
+  return `${dienstNumber}:${issueKey}`;
+}
+
+export function countWeekUnacknowledgedIncidents(
+  summaries: WeeklyAssignmentSummaryData[] | undefined,
+  acknowledgedKeys: readonly string[],
+  t: TFunction,
+): number {
+  if (!summaries?.length) return 0;
+  const ack = new Set(acknowledgedKeys);
+  let count = 0;
+  for (const summary of summaries) {
+    for (const row of buildUnifiedIssues(summary, t)) {
+      if (!ack.has(issueScopedKey(summary.dienstNumber, row.key))) count++;
+    }
+  }
+  return count;
+}
+
 interface Props {
   data: WeeklyAssignmentSummaryData;
   onClose: () => void;
+  acknowledgedIssueKeys?: ReadonlySet<string>;
+  onAcknowledgeIssue?: (scopedKey: string) => void;
 }
 
-export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
+export default function WeeklyAssignmentSummaryModal({
+  data,
+  onClose,
+  acknowledgedIssueKeys,
+  onAcknowledgeIssue,
+}: Props) {
   const { t } = useTranslation();
 
   const weekEndISO = addDaysISO(data.weekStartDate, 6);
   const weekRangeLabel = `${formatYYYYMMDDToDDMMYYYY(data.weekStartDate)} al ${formatYYYYMMDDToDDMMYYYY(weekEndISO)}`;
-  const issues = buildUnifiedIssues(data, t);
+  const allIssues = buildUnifiedIssues(data, t);
+  const issues = acknowledgedIssueKeys
+    ? allIssues.filter(
+        (row) =>
+          !acknowledgedIssueKeys.has(issueScopedKey(row.dienstNumber, row.key)),
+      )
+    : allIssues;
 
   const hasIssues = issues.length > 0;
+  const canAcknowledge = Boolean(onAcknowledgeIssue);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -438,7 +473,15 @@ export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
                     <th className="pb-2 pr-4 text-left font-medium whitespace-nowrap">Dienst</th>
                     <th className="pb-2 pr-4 text-left font-medium">Trabajador</th>
                     <th className="pb-2 pr-4 text-left font-medium whitespace-nowrap">Fecha</th>
-                    <th className="pb-2 text-left font-medium">Razón</th>
+                    <th className="pb-2 pr-4 text-left font-medium">Razón</th>
+                    {canAcknowledge && (
+                      <th className="pb-2 text-right font-medium whitespace-nowrap">
+                        {t(
+                          "pages.diensts.adminPage.weeklySummaryCompact.actions",
+                          "Acción",
+                        )}
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -456,12 +499,38 @@ export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
                       <td className="py-2 pr-4 text-slate-700 whitespace-nowrap">
                         {row.dateDisplay}
                       </td>
-                      <td className="py-2 text-slate-500">
+                      <td className="py-2 pr-4 text-slate-500">
                         <span className="inline-flex items-center gap-1">
                           {row.icon && <span aria-hidden>{row.icon}</span>}
                           {row.reasonText}
                         </span>
                       </td>
+                      {canAcknowledge && (
+                        <td className="py-2 text-right">
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                            title={t(
+                              "pages.diensts.adminPage.weeklySummaryCompact.acknowledgeIssue",
+                              "Marcar como vista",
+                            )}
+                            aria-label={t(
+                              "pages.diensts.adminPage.weeklySummaryCompact.acknowledgeIssue",
+                              "Marcar como vista",
+                            )}
+                            onClick={() =>
+                              onAcknowledgeIssue!(
+                                issueScopedKey(row.dienstNumber, row.key),
+                              )
+                            }
+                          >
+                            {t(
+                              "pages.diensts.adminPage.weeklySummaryCompact.acknowledgeIssueShort",
+                              "Vista",
+                            )}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -469,7 +538,17 @@ export default function WeeklyAssignmentSummaryModal({ data, onClose }: Props) {
             </>
           )}
 
+          {!hasIssues && allIssues.length > 0 && (
+              <p className="text-xs text-slate-500">
+                {t(
+                  "pages.diensts.adminPage.weeklySummaryCompact.allAcknowledged",
+                  "Todas las incidencias de este resumen están marcadas como vistas.",
+                )}
+              </p>
+            )}
+
           {!hasIssues &&
+            allIssues.length === 0 &&
             !data.minimumRestWarning &&
             !(data.kind === "team" && data.hints?.driverExpiredButBoth) && (
               <p className="text-xs text-slate-500">
