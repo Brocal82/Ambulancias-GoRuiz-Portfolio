@@ -17,10 +17,13 @@ import {
 } from "../../utils/dienstValidation";
 import { extractValidDatesFromAssignments, mapAssignmentToAssignedDay } from "../../utils/dienstMappers";
 import { entitiesBelongToSameCompany } from "../../../../utils/requireCompany";
-import { sendPushNotification } from "../../../notifications";
+import {
+  sendPushNotification,
+  voidEmitSchedulingMutationRealtime,
+} from "../../../notifications";
 import { companyHasEnabledModule } from "../../../../utils/companyEnabledModules";
 import { MODULE_KEYS } from "../../../companies/constants/modules.constants";
-import { computeShiftBounds, diffMinutes, ZONE } from "../../../../utils/time";
+import { computeShiftBounds, diffMinutes, getWeekMongoDateRange, ZONE } from "../../../../utils/time";
 import { DienstAssignmentError } from "./assignment-errors";
 import type { DndCrossDienstSameWeekBody } from "../schemas/dnd-cross-dienst-same-week.schema";
 
@@ -436,6 +439,9 @@ export async function removeAssignment(
       `Tu asignación del ${date} ha sido eliminada.`,
       { screen: "agenda", date },
     );
+    voidEmitSchedulingMutationRealtime(callerCo, removedIds);
+  } else if (updated) {
+    voidEmitSchedulingMutationRealtime(callerCo, []);
   }
 
   return updated;
@@ -466,14 +472,11 @@ export async function clearPeopleForWeek(
     );
   }
 
-  const start = new Date(weekStartDate);
+  const { start: weekStart, end: weekEnd } = getWeekMongoDateRange(weekStartDate);
 
   const dienst = await Dienst.findOne({
     dienstNumber,
-    weekStartDate: {
-      $gte: start,
-      $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
-    },
+    weekStartDate: { $gte: weekStart, $lte: weekEnd },
     companyId: new mongoose.Types.ObjectId(callerCo),
   });
 
@@ -519,6 +522,7 @@ export async function clearPeopleForWeek(
       { screen: "agenda", date: weekStartDate },
     );
   }
+  voidEmitSchedulingMutationRealtime(callerCo, clearedUserIds);
 
   return {
     message: `Asignaciones (driver/medic/ambulancia) limpiadas para Dienst #${dienstNumber} (${weekStartDate}).`,
@@ -1013,6 +1017,14 @@ export async function updateDienstPartial(
     );
   }
 
+  const agendaWorkerIds = new Set<string>([
+    ...addedUserIds,
+    ...removedUserIds,
+    ...scheduleChangedUserIds,
+    ...ambulanceChangedUserIds,
+  ]);
+  voidEmitSchedulingMutationRealtime(callerCo, agendaWorkerIds);
+
   const populated = await Dienst.findById(dienstId)
     .populate("assignments.driver", "name lastName pscheinExpiry ambulanceRole")
     .populate("assignments.medic", "name lastName pscheinExpiry ambulanceRole")
@@ -1062,7 +1074,7 @@ export async function assignUserToWeek(
     );
   }
 
-  const start = new Date(weekStartDate);
+  const { start: weekStart, end: weekEnd } = getWeekMongoDateRange(weekStartDate);
 
   const user = await User.findById(userId)
     .select("pscheinExpiry pscheinConfirmedAt ambulanceRole companyId")
@@ -1091,16 +1103,15 @@ export async function assignUserToWeek(
 
   const weeklyConf = await findWeeklyConflicts(
     new mongoose.Types.ObjectId(userId),
-    start,
+    weekStart,
     callerCo,
     dienstNumber,
   );
   const conflictDates = new Set(weeklyConf.map((c) => c.date));
 
-  const nextDay = new Date(start.getTime() + 24 * 60 * 60 * 1000);
   const dienst = await Dienst.findOne({
     dienstNumber,
-    weekStartDate: { $gte: start, $lt: nextDay },
+    weekStartDate: { $gte: weekStart, $lte: weekEnd },
     companyId: new mongoose.Types.ObjectId(callerCo),
   });
 
@@ -1284,6 +1295,7 @@ export async function assignUserToWeek(
     `Has sido asignado como ${role} a ${assignedCount} día(s) del Dienst #${dienstNumber}.`,
     { screen: "agenda", date: weekStartDate },
   );
+  voidEmitSchedulingMutationRealtime(callerCo, [userId]);
 
   const partialMinRest = skippedByMinimumRest.length > 0;
   const message = partialMinRest
@@ -1470,13 +1482,10 @@ export async function assignTeamToWeek(
     );
   }
 
-  const start = new Date(weekStartDate);
+  const { start: weekStart, end: weekEnd } = getWeekMongoDateRange(weekStartDate);
   const dienst = await Dienst.findOne({
     dienstNumber,
-    weekStartDate: {
-      $gte: start,
-      $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
-    },
+    weekStartDate: { $gte: weekStart, $lte: weekEnd },
     companyId: new mongoose.Types.ObjectId(callerCo),
   });
 
@@ -1558,8 +1567,8 @@ export async function assignTeamToWeek(
   }
 
   const [driverConf, medicConf] = await Promise.all([
-    findWeeklyConflicts(new mongoose.Types.ObjectId(driverId), start, callerCo, dienstNumber),
-    findWeeklyConflicts(new mongoose.Types.ObjectId(medicId), start, callerCo, dienstNumber),
+    findWeeklyConflicts(new mongoose.Types.ObjectId(driverId), weekStart, callerCo, dienstNumber),
+    findWeeklyConflicts(new mongoose.Types.ObjectId(medicId), weekStart, callerCo, dienstNumber),
   ]);
 
   const driverConflictDates = new Set(
@@ -1888,6 +1897,11 @@ export async function assignTeamToWeek(
     );
   }
 
+  const teamWorkerIds = new Set<string>();
+  if (driverId) teamWorkerIds.add(driverId);
+  if (medicId) teamWorkerIds.add(medicId);
+  voidEmitSchedulingMutationRealtime(callerCo, teamWorkerIds);
+
   const skippedByWeeklyConflict = [...skippedByWeeklyConflictSet].sort();
   const hasPartialRoles =
     daysAssignedDriverOnly.length > 0 || daysAssignedMedicOnly.length > 0;
@@ -1988,6 +2002,7 @@ export async function moveSlotSameWeek(
   }
 
   let restResult: { minimumRestWarning?: MinimumRestWarningPayload } = {};
+  let affectedWorkerIds = new Set<string>();
 
   const session = await mongoose.startSession();
   try {
@@ -2117,6 +2132,9 @@ export async function moveSlotSameWeek(
       const sm = oidStr(sourceAssignment.medic);
       const td = oidStr(targetAssignment.driver);
       const tm = oidStr(targetAssignment.medic);
+      affectedWorkerIds = new Set(
+        [userId, sd, sm, td, tm].filter((id): id is string => Boolean(id)),
+      );
 
       let sourceRow: Record<string, unknown>;
       let targetRow: Record<string, unknown>;
@@ -2198,6 +2216,7 @@ export async function moveSlotSameWeek(
       { screen: "agenda", date: targetDate },
     );
   }
+  voidEmitSchedulingMutationRealtime(callerCo, affectedWorkerIds);
 
   return restResult;
 }
@@ -2243,6 +2262,7 @@ export async function dndCrossDienstSameWeek(
   }
 
   let restResult: { minimumRestWarning?: MinimumRestWarningPayload } = {};
+  let affectedWorkerIds = new Set<string>();
 
   const session = await mongoose.startSession();
   try {
@@ -2466,6 +2486,10 @@ export async function dndCrossDienstSameWeek(
       const sd = oidStr(sourceAssignment.driver);
       const sm = oidStr(sourceAssignment.medic);
 
+      affectedWorkerIds = new Set(
+        [userId, sd, sm, td, tm].filter((id): id is string => Boolean(id)),
+      );
+
       let sourceRow: Record<string, unknown>;
       let targetRow: Record<string, unknown>;
 
@@ -2636,6 +2660,7 @@ export async function dndCrossDienstSameWeek(
       { screen: "agenda", date: targetDate },
     );
   }
+  voidEmitSchedulingMutationRealtime(callerCo, affectedWorkerIds);
 
   return restResult;
 }
@@ -2675,14 +2700,11 @@ export async function assignAmbulanceToWeek(
     );
   }
 
-  const start = new Date(weekStartDate);
+  const { start: weekStart, end: weekEnd } = getWeekMongoDateRange(weekStartDate);
 
   const dienst = await Dienst.findOne({
     dienstNumber,
-    weekStartDate: {
-      $gte: start,
-      $lt: new Date(start.getTime() + 24 * 60 * 60 * 1000),
-    },
+    weekStartDate: { $gte: weekStart, $lte: weekEnd },
     companyId: new mongoose.Types.ObjectId(callerCo),
   });
 
@@ -2753,6 +2775,7 @@ export async function assignAmbulanceToWeek(
       { screen: "agenda", date: weekStartDate },
     );
   }
+  voidEmitSchedulingMutationRealtime(callerCo, weekWorkerIds);
 
   return {
     message: `Ambulancia asignada a Dienst #${dienstNumber} (${weekStartDate}). ${updatedCount} días actualizados.`,

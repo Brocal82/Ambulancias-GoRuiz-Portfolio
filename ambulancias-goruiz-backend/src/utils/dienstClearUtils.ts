@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 import { DateTime } from "luxon";
 import { Dienst } from "../modules/diensts";
 import User from "../modules/users/models/user.model";
+import {
+  voidEmitSchedulingMutationRealtime,
+} from "../modules/notifications";
 
 const ZONE = "Europe/Berlin";
 
@@ -133,6 +136,10 @@ export async function clearUserFromDienstsInRange(params: {
       await d.save();
       diensteTouched += 1;
     }
+  }
+
+  if (assignmentsTouched > 0) {
+    voidEmitSchedulingMutationRealtime(String(userCompanyId), [userIdStr]);
   }
 
   return {

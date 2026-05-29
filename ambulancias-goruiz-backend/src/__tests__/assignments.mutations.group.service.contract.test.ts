@@ -15,9 +15,15 @@ import {
   dndCrossDienstSameWeek,
   assignUserToWeek,
   assignTeamToWeek,
+  assignAmbulanceToWeek,
 } from "../modules/diensts/assignments/services/assignments.service";
 import { DienstAssignmentError } from "../modules/diensts/assignments/services/assignment-errors";
 import { findWeeklyConflicts } from "../modules/diensts/utils/dienstValidation";
+import { getWeekMongoDateRange } from "../utils/time";
+import Company from "../modules/companies/models/company.model";
+import { Ambulance } from "../modules/ambulances";
+import { MODULE_KEYS } from "../modules/companies/constants/modules.constants";
+import * as wsNotify from "../modules/notifications/utils/ws-notify";
 
 async function hashPw() {
   return bcrypt.hash("password123", 8);
@@ -97,6 +103,48 @@ describe("assignments.service mutations group (company contract)", () => {
       expect(out.clearedCount).toBeGreaterThanOrEqual(1);
       expect(out.dienstId).toBe(String(d._id));
       await Dienst.deleteOne({ _id: d._id });
+    });
+
+    it("encuentra Dienst con weekStartDate anclado Berlin (estilo generate-week)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const weekStartISO = "2035-05-05";
+      const { start } = getWeekMongoDateRange(weekStartISO);
+      const d = await Dienst.create({
+        dienstNumber: 93113,
+        weekStartDate: start,
+        weekEndDate: new Date("2035-05-11"),
+        assignments: [
+          {
+            date: "2035-05-05",
+            startTime: "08:00",
+            endTime: "16:00",
+            driver: new mongoose.Types.ObjectId(),
+          },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      const out = await clearPeopleForWeek(
+        { dienstNumber: 93113, weekStartDate: weekStartISO },
+        co,
+      );
+      expect(out.clearedCount).toBeGreaterThanOrEqual(1);
+      expect(out.dienstId).toBe(String(d._id));
+      await Dienst.deleteOne({ _id: d._id });
+    });
+
+    it("no emite websocket cuando dienst_not_found", async () => {
+      const spy = jest
+        .spyOn(wsNotify, "voidEmitSchedulingMutationRealtime")
+        .mockImplementation(() => {});
+      const co = new mongoose.Types.ObjectId().toString();
+      await expect(
+        clearPeopleForWeek(
+          { dienstNumber: 99999, weekStartDate: "2035-05-12" },
+          co,
+        ),
+      ).rejects.toMatchObject({ statusCode: 404, code: "dienst_not_found" });
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
     });
 
     it("no encuentra Dienst de otra empresa (404)", async () => {
@@ -916,6 +964,47 @@ describe("assignments.service mutations group (company contract)", () => {
       await Dienst.deleteOne({ _id: d._id });
     });
 
+    it("encuentra Dienst con weekStartDate anclado Berlin (estilo generate-week)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const weekStartISO = "2035-04-07";
+      const { start } = getWeekMongoDateRange(weekStartISO);
+      const pw = await hashPw();
+      const u = await User.create({
+        name: "Med",
+        lastName: "Berlin",
+        email: `med-berlin-${Date.now()}@assign-user.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "medic",
+      });
+      const d = await Dienst.create({
+        dienstNumber: 93132,
+        weekStartDate: start,
+        weekEndDate: new Date("2035-04-13"),
+        assignments: [
+          { date: "2035-04-07", startTime: "08:00", endTime: "16:00" },
+          { date: "2035-04-08", startTime: "08:00", endTime: "16:00" },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+
+      const out = await assignUserToWeek(
+        {
+          dienstNumber: 93132,
+          weekStartDate: weekStartISO,
+          userId: String(u._id),
+          role: "medic",
+        },
+        co,
+      );
+
+      expect(out.updatedCount).toBeGreaterThan(0);
+      expect(out.dienstId).toBe(String(d._id));
+      await User.deleteOne({ _id: u._id });
+      await Dienst.deleteOne({ _id: d._id });
+    });
+
     it("no encuentra Dienst de otra empresa (404)", async () => {
       const coA = new mongoose.Types.ObjectId().toString();
       const coB = new mongoose.Types.ObjectId().toString();
@@ -1336,6 +1425,60 @@ describe("assignments.service mutations group (company contract)", () => {
       await Dienst.deleteOne({ _id: d._id });
     });
 
+    it("encuentra Dienst con weekStartDate anclado Berlin (estilo generate-week)", async () => {
+      const co = new mongoose.Types.ObjectId().toString();
+      const weekStartISO = "2035-04-21";
+      const { start } = getWeekMongoDateRange(weekStartISO);
+      const pw = await hashPw();
+      const driver = await User.create({
+        name: "D",
+        lastName: "Berlin",
+        email: `drv-berlin-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "driver",
+        pscheinExpiry: "2040-12-31",
+        pscheinConfirmedAt: new Date(),
+      });
+      const medic = await User.create({
+        name: "M",
+        lastName: "Berlin",
+        email: `med-berlin-${Date.now()}@team.test`,
+        password: pw,
+        role: "worker",
+        companyId: new mongoose.Types.ObjectId(co),
+        ambulanceRole: "medic",
+      });
+      const team = await Team.create({
+        driver: driver._id,
+        medic: medic._id,
+        rotationMode: "none",
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      const d = await Dienst.create({
+        dienstNumber: 93142,
+        weekStartDate: start,
+        weekEndDate: new Date("2035-04-27"),
+        assignments: [
+          { date: "2035-04-21", startTime: "08:00", endTime: "16:00" },
+        ],
+        companyId: new mongoose.Types.ObjectId(co),
+      });
+      const out = await assignTeamToWeek(
+        {
+          dienstNumber: 93142,
+          weekStartDate: weekStartISO,
+          teamId: String(team._id),
+        },
+        co,
+      );
+      expect(out.dienstId).toBe(String(d._id));
+      await Team.deleteOne({ _id: team._id });
+      await User.deleteMany({ _id: { $in: [driver._id, medic._id] } });
+      await Dienst.deleteOne({ _id: d._id });
+    });
+
     it("no encuentra Dienst de otra empresa (404)", async () => {
       const coA = new mongoose.Types.ObjectId().toString();
       const coB = new mongoose.Types.ObjectId().toString();
@@ -1745,6 +1888,87 @@ describe("assignments.service mutations group (company contract)", () => {
       expect(out).toEqual([]);
       await Dienst.deleteMany({ dienstNumber: 932002 });
       await User.deleteOne({ _id: u._id });
+    });
+  });
+
+  describe("assignAmbulanceToWeek", () => {
+    it("encuentra Dienst con weekStartDate anclado Berlin (estilo generate-week)", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const co = coOid.toString();
+      await Company.create({
+        _id: coOid,
+        name: `Amb Co ${Date.now()}`,
+        emailDomain: "@example.com",
+        isActive: true,
+        enabledModules: [MODULE_KEYS.SCHEDULING, MODULE_KEYS.AMBULANCES],
+      });
+      const weekStartISO = "2035-05-19";
+      const { start } = getWeekMongoDateRange(weekStartISO);
+      const amb = await Ambulance.create({
+        brand: "Test",
+        modelName: "Box",
+        licensePlate: `PLT-${Date.now()}`,
+        ambulanceNumber: `A-${Date.now()}`,
+        companyId: coOid,
+      });
+      const d = await Dienst.create({
+        dienstNumber: 93150,
+        weekStartDate: start,
+        weekEndDate: new Date("2035-05-25"),
+        assignments: [
+          { date: "2035-05-19", startTime: "08:00", endTime: "16:00" },
+          { date: "2035-05-20", startTime: "08:00", endTime: "16:00" },
+        ],
+        companyId: coOid,
+      });
+
+      const spy = jest.spyOn(wsNotify, "voidEmitSchedulingMutationRealtime");
+
+      const out = await assignAmbulanceToWeek(
+        {
+          dienstNumber: 93150,
+          weekStartDate: weekStartISO,
+          ambulanceId: String(amb._id),
+        },
+        co,
+      );
+
+      expect(out.dienstId).toBe(String(d._id));
+      expect(out.updatedCount).toBeGreaterThan(0);
+      expect(spy).toHaveBeenCalledTimes(1);
+      spy.mockRestore();
+
+      await Ambulance.deleteOne({ _id: amb._id });
+      await Dienst.deleteOne({ _id: d._id });
+      await Company.deleteOne({ _id: coOid });
+    });
+
+    it("no emite websocket cuando dienst_not_found", async () => {
+      const coOid = new mongoose.Types.ObjectId();
+      const co = coOid.toString();
+      await Company.create({
+        _id: coOid,
+        name: `Amb Co 404 ${Date.now()}`,
+        emailDomain: "@example.com",
+        isActive: true,
+        enabledModules: [MODULE_KEYS.SCHEDULING, MODULE_KEYS.AMBULANCES],
+      });
+      const spy = jest
+        .spyOn(wsNotify, "voidEmitSchedulingMutationRealtime")
+        .mockImplementation(() => {});
+      await expect(
+        assignAmbulanceToWeek(
+          {
+            dienstNumber: 99998,
+            weekStartDate: "2035-05-26",
+            ambulanceId: new mongoose.Types.ObjectId().toString(),
+          },
+          co,
+        ),
+      ).rejects.toMatchObject({ statusCode: 404, code: "dienst_not_found" });
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+      await Company.deleteOne({ _id: coOid });
     });
   });
 });

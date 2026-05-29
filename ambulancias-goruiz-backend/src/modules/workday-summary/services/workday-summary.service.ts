@@ -3,7 +3,7 @@ import { Dienst } from "../../diensts";
 import { Trip } from "../../trips";
 import WorkdaySummary from "../models/workday-summary.model";
 import type { IWorkdaySummary } from "../models/workday-summary.model";
-import { sendPushNotification } from "../../notifications";
+import { sendPushNotification, voidEmitWorkdayAdminSideEffects, voidEmitWorkdayWorkerRefresh } from "../../notifications";
 import { calculateEffectivePatients } from "../utils/calculateEffectivePatients";
 import {
   WorkdaySummaryError,
@@ -135,7 +135,7 @@ export async function createWorkdaySummary(
 
   const session = await mongoose.startSession();
   try {
-    return await session.withTransaction(async () => {
+    const result = await session.withTransaction(async () => {
       const created = await WorkdaySummary.create([summaryDoc], { session });
       const newSummary = created[0] as IWorkdaySummary;
       if (tripObjectIds.length > 0) {
@@ -147,6 +147,8 @@ export async function createWorkdaySummary(
       }
       return newSummary;
     });
+    voidEmitWorkdayAdminSideEffects(String(companyOid));
+    return result;
   } catch (err: unknown) {
     if (isMongoDuplicateKeyError(err)) {
       throw new WorkdaySummaryError(
@@ -257,6 +259,7 @@ export async function submitPartialClosure(
         );
       }
     });
+    voidEmitWorkdayAdminSideEffects(String(companyOid));
   } finally {
     await session.endSession();
   }
@@ -414,6 +417,10 @@ export async function markSummaryReviewed(id: string, companyId?: string | null)
       `Tu cierre del ${updated.date} ha sido revisado por el administrador.`,
       { screen: "workday" },
     );
+    const summaryCompanyId = (updated as { companyId?: unknown }).companyId;
+    if (summaryCompanyId) {
+      voidEmitWorkdayWorkerRefresh(recipientIds, String(summaryCompanyId));
+    }
   }
 
   return updated;
