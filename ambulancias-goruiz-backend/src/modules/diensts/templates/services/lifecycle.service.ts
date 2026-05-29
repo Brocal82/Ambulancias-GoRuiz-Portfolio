@@ -407,17 +407,30 @@ export async function generateDienstTemplatesForWeek(
       for (const t of rotatingTeams) teamById.set(String((t as any)._id), t);
 
       const prevAnchorsByDienst = new Map<number, (typeof teams)[0]>();
+      const anchoredTeamIds = new Set<string>();
 
-      for (const prev of prevDiensts) {
+      const prevDienstsSorted = [...prevDiensts].sort(
+        (a, b) => Number((a as any).dienstNumber) - Number((b as any).dienstNumber),
+      );
+
+      for (const prev of prevDienstsSorted) {
         const dn = (prev as any).dienstNumber;
         if (!freeDienstNumbers.includes(dn)) continue;
 
         const weekTeamId = (prev as any).weekTeamId
           ? String((prev as any).weekTeamId)
           : null;
-        if (weekTeamId && teamById.has(weekTeamId)) {
-          prevAnchorsByDienst.set(dn, teamById.get(weekTeamId)!);
+        if (!weekTeamId || !teamById.has(weekTeamId)) continue;
+
+        if (anchoredTeamIds.has(weekTeamId)) {
+          console.warn(
+            `[generate-week] duplicate rotation anchor ignored: team=${weekTeamId} dienst=${dn} company=${companyIdStr}`,
+          );
+          continue;
         }
+
+        prevAnchorsByDienst.set(dn, teamById.get(weekTeamId)!);
+        anchoredTeamIds.add(weekTeamId);
       }
 
       if (prevAnchorsByDienst.size === 0) {
@@ -452,11 +465,15 @@ export async function generateDienstTemplatesForWeek(
       }
 
       const usedTargets = new Set<number>();
+      const rotatedTeamIds = new Set<string>();
 
       for (let i = 0; i < freeCount; i++) {
         const fromDienst = freeDienstNumbers[i];
         const team = prevAnchorsByDienst.get(fromDienst);
         if (!team) continue;
+
+        const teamId = String((team as any)._id);
+        if (rotatedTeamIds.has(teamId)) continue;
 
         let newIndex = (i + 1) % freeCount;
 
@@ -475,6 +492,7 @@ export async function generateDienstTemplatesForWeek(
         const targetDienst = freeDienstNumbers[newIndex];
         dienstToTeam.set(targetDienst, team);
         usedTargets.add(targetDienst);
+        rotatedTeamIds.add(teamId);
       }
     }
   }
