@@ -123,10 +123,10 @@ async function applyManualDailyPartnerApproveSync(params: {
   dateStr: string;
   adminUserId: string;
   finalValue: number;
-}): Promise<void> {
+}): Promise<boolean> {
   const partnerId = String(params.partnerUserId).trim();
   if (!mongoose.Types.ObjectId.isValid(partnerId)) {
-    return;
+    return false;
   }
   const partnerOid = new mongoose.Types.ObjectId(partnerId);
   const adminOid = new mongoose.Types.ObjectId(params.adminUserId);
@@ -166,7 +166,7 @@ async function applyManualDailyPartnerApproveSync(params: {
       `Tu Prämie manual del ${params.dateStr} ha sido aprobada.`,
       { screen: "praemien" },
     );
-    return;
+    return true;
   }
 
   const st = String(existing.status ?? "");
@@ -175,7 +175,7 @@ async function applyManualDailyPartnerApproveSync(params: {
       "[praemien-admin] teammate sync skipped (rejected)",
       JSON.stringify({ partnerId, date: params.dateStr }),
     );
-    return;
+    return false;
   }
 
   if (st === "approved") {
@@ -187,7 +187,7 @@ async function applyManualDailyPartnerApproveSync(params: {
         ? Number(rawFinal)
         : Number(existing.workerSubmittedValue ?? 0);
     if (Math.abs(curFinal - finalVal) < 1e-9) {
-      return;
+      return false;
     }
   }
 
@@ -220,6 +220,33 @@ async function applyManualDailyPartnerApproveSync(params: {
     `Tu Prämie manual del ${params.dateStr} ha sido aprobada.`,
     { screen: "praemien" },
   );
+  return true;
+}
+
+function uniqueWorkerIdsForPraemienRefresh(
+  primaryUserId: string,
+  partnerUserIds: Iterable<string>,
+): string[] {
+  const ids = new Set<string>();
+  const primary = String(primaryUserId).trim();
+  if (primary) ids.add(primary);
+  for (const raw of partnerUserIds) {
+    const id = String(raw).trim();
+    if (id) ids.add(id);
+  }
+  return [...ids];
+}
+
+function emitPraemienRefreshForApproval(params: {
+  companyIdStr: string;
+  primaryUserId: string;
+  syncedPartnerUserIds: string[];
+}): void {
+  voidEmitPraemienWorkerRefresh(
+    uniqueWorkerIdsForPraemienRefresh(params.primaryUserId, params.syncedPartnerUserIds),
+    params.companyIdStr,
+  );
+  voidEmitPraemienAdminSideEffects(params.companyIdStr);
 }
 
 /**
@@ -232,15 +259,15 @@ async function syncTeammateManualDailyToAdminFinal(params: {
   date: string;
   adminUserId: string;
   finalValue: number;
-}): Promise<void> {
+}): Promise<string[]> {
   const gate = await assertManualPraemienDailyApisAllowed(params.companyIdStr);
   if (!gate.allowed) {
-    return;
+    return [];
   }
 
   const dateStr = typeof params.date === "string" ? params.date.trim() : "";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return;
+    return [];
   }
 
   const partnerIds = await findDienstPartnerUserIdsForManualDay({
@@ -249,9 +276,10 @@ async function syncTeammateManualDailyToAdminFinal(params: {
     date: dateStr,
   });
   const finalVal = Math.round(params.finalValue * 100) / 100;
+  const syncedPartnerIds: string[] = [];
 
   for (const partnerId of partnerIds) {
-    await applyManualDailyPartnerApproveSync({
+    const synced = await applyManualDailyPartnerApproveSync({
       companyIdStr: params.companyIdStr,
       companyObjectId: gate.companyObjectId,
       partnerUserId: partnerId,
@@ -259,7 +287,12 @@ async function syncTeammateManualDailyToAdminFinal(params: {
       adminUserId: params.adminUserId,
       finalValue: finalVal,
     });
+    if (synced) {
+      syncedPartnerIds.push(partnerId);
+    }
   }
+
+  return syncedPartnerIds;
 }
 
 export async function adminApproveManualDailyEntry(params: {
@@ -339,8 +372,9 @@ export async function adminApproveManualDailyEntry(params: {
   );
 
   const shouldCascade = params.cascadeTeammate !== false;
+  let syncedPartnerIds: string[] = [];
   if (shouldCascade) {
-    await syncTeammateManualDailyToAdminFinal({
+    syncedPartnerIds = await syncTeammateManualDailyToAdminFinal({
       companyIdStr: params.companyIdStr,
       primaryUserId: params.targetUserId,
       date: params.date,
@@ -350,8 +384,11 @@ export async function adminApproveManualDailyEntry(params: {
   }
 
   if (params.companyIdStr) {
-    voidEmitPraemienWorkerRefresh([params.targetUserId], params.companyIdStr);
-    voidEmitPraemienAdminSideEffects(params.companyIdStr);
+    emitPraemienRefreshForApproval({
+      companyIdStr: params.companyIdStr,
+      primaryUserId: params.targetUserId,
+      syncedPartnerUserIds: syncedPartnerIds,
+    });
   }
 
   return { ok: true, entry: await enrichManualDailyDto(dto) };
@@ -497,7 +534,7 @@ export async function adminCorrectApproveManualDailyEntry(params: {
     adminUserId: params.adminUserId,
   });
 
-  await syncTeammateManualDailyToAdminFinal({
+  const syncedPartnerIds = await syncTeammateManualDailyToAdminFinal({
     companyIdStr: params.companyIdStr,
     primaryUserId: params.targetUserId,
     date: params.date,
@@ -506,8 +543,11 @@ export async function adminCorrectApproveManualDailyEntry(params: {
   });
 
   if (params.companyIdStr) {
-    voidEmitPraemienWorkerRefresh([params.targetUserId], params.companyIdStr);
-    voidEmitPraemienAdminSideEffects(params.companyIdStr);
+    emitPraemienRefreshForApproval({
+      companyIdStr: params.companyIdStr,
+      primaryUserId: params.targetUserId,
+      syncedPartnerUserIds: syncedPartnerIds,
+    });
   }
 
   return { ok: true, entry: await enrichManualDailyDto(dto) };
