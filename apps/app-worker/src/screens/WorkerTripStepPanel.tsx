@@ -19,6 +19,12 @@ import {
 import { ApiError } from "../services/http";
 import { checkTripLogic, type TripDraft } from "../utils/tripValidators";
 import { getCurrentTimeString } from "../utils/tripTime";
+import {
+  clearTripDraftSessionAsync,
+  loadTripDraftSessionAsync,
+  saveTripDraftSessionAsync,
+  type StoredTripDraftSession,
+} from "../utils/workdayTripDraftStorage";
 
 const LONG_PRESS_MS = 1200;
 const ANSCHLUSS_MARKER = "🔗 Anschluss";
@@ -142,6 +148,7 @@ export function WorkerTripStepPanel({
   const [kmFieldFocus, setKmFieldFocus] = useState<null | "2" | "4">(null);
   const [stornoBarOpen, setStornoBarOpen] = useState(false);
   const [stornoCountsTrip, setStornoCountsTrip] = useState<0 | 1>(1);
+  const [draftRestoring, setDraftRestoring] = useState(true);
 
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const roundStepSize = Math.max(
@@ -154,6 +161,8 @@ export function WorkerTripStepPanel({
   const km4Ref = useRef(kmDraft4);
   /** Paso del P1 al activar Anschluss; al cancelar se restaura (comportamiento tipo web). */
   const anschlussResumeStepRef = useRef<1 | 2 | 3 | 4 | 5 | null>(null);
+  const restoringDraftRef = useRef(false);
+  const draftHydratedRef = useRef(false);
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
@@ -192,6 +201,107 @@ export function WorkerTripStepPanel({
   useEffect(() => {
     return () => clearStepHoldTimer();
   }, [clearStepHoldTimer]);
+
+  const clearPersistedDraft = useCallback(() => {
+    void clearTripDraftSessionAsync(assignedDay.assignmentId, assignedDay.date);
+  }, [assignedDay.assignmentId, assignedDay.date]);
+
+  useEffect(() => {
+    let cancelled = false;
+    draftHydratedRef.current = false;
+    restoringDraftRef.current = true;
+    setDraftRestoring(true);
+    void (async () => {
+      const stored = await loadTripDraftSessionAsync(
+        assignedDay.assignmentId,
+        assignedDay.date,
+      );
+      if (cancelled) return;
+      if (stored) {
+        setPhase(stored.phase);
+        setCurrentStep(stored.currentStep);
+        setDraft({
+          ...stored.draft,
+          date: assignedDay.date,
+          assignmentId: assignedDay.assignmentId,
+          driver: assignedDay.driver._id,
+          medic: assignedDay.medic._id,
+        });
+        setKmDraft2(stored.kmDraft2);
+        setKmDraft4(stored.kmDraft4);
+        setPendingPatient1Anschluss(stored.pendingPatient1Anschluss);
+        setAnschlussAwaitingPatient2Step3(stored.anschlussAwaitingPatient2Step3);
+        setAnschlussMinKmStart(stored.anschlussMinKmStart);
+        anschlussResumeStepRef.current = stored.anschlussResumeStep;
+        setStornoBarOpen(false);
+        setStornoCountsTrip(1);
+        setErrorMessage(undefined);
+      } else {
+        setStornoBarOpen(false);
+        setStornoCountsTrip(1);
+        setPhase("meta");
+        setCurrentStep(1);
+        setDraft(emptyDraft(assignedDay));
+        setKmDraft2("");
+        setKmDraft4("");
+        setPendingPatient1Anschluss(null);
+        setAnschlussAwaitingPatient2Step3(false);
+        setAnschlussMinKmStart(undefined);
+        anschlussResumeStepRef.current = null;
+        setErrorMessage(undefined);
+      }
+      restoringDraftRef.current = false;
+      draftHydratedRef.current = true;
+      setDraftRestoring(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    assignedDay.assignmentId,
+    assignedDay.date,
+    assignedDay.driver._id,
+    assignedDay.medic._id,
+  ]);
+
+  useEffect(() => {
+    if (!draftHydratedRef.current || restoringDraftRef.current) return;
+    if (blocked) {
+      clearPersistedDraft();
+      return;
+    }
+    const timer = setTimeout(() => {
+      const session: StoredTripDraftSession = {
+        version: 1,
+        assignmentId: assignedDay.assignmentId,
+        date: assignedDay.date,
+        phase,
+        currentStep,
+        draft,
+        kmDraft2,
+        kmDraft4,
+        pendingPatient1Anschluss,
+        anschlussAwaitingPatient2Step3,
+        ...(anschlussMinKmStart != null ? { anschlussMinKmStart } : {}),
+        anschlussResumeStep: anschlussResumeStepRef.current,
+      };
+      void saveTripDraftSessionAsync(assignedDay.assignmentId, assignedDay.date, session);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [
+    anschlussAwaitingPatient2Step3,
+    anschlussMinKmStart,
+    assignedDay.assignmentId,
+    assignedDay.date,
+    blocked,
+    clearPersistedDraft,
+    currentStep,
+    draft,
+    kmDraft2,
+    kmDraft4,
+    pendingPatient1Anschluss,
+    phase,
+  ]);
 
   useEffect(() => {
     clearStepHoldTimer();
@@ -378,6 +488,7 @@ export function WorkerTripStepPanel({
           await createWorkdayTrip(finalDraft);
           onTripCreated();
           flashSave("✓ Viaje registrado");
+          clearPersistedDraft();
           setDraft(emptyDraft(assignedDay));
           setPhase("meta");
           setCurrentStep(1);
@@ -402,6 +513,7 @@ export function WorkerTripStepPanel({
       anschlussAwaitingPatient2Step3,
       anschlussMinKmStart,
       assignedDay,
+      clearPersistedDraft,
       flashSave,
       onTripCreated,
       pendingPatient1Anschluss,
@@ -549,6 +661,7 @@ export function WorkerTripStepPanel({
       await createWorkdayTrip(payload);
       onTripCreated();
       flashSave("✓ Storno registrado");
+      clearPersistedDraft();
       setStornoBarOpen(false);
       setStornoCountsTrip(1);
       setDraft(emptyDraft(assignedDay));
@@ -573,6 +686,7 @@ export function WorkerTripStepPanel({
     anschlussAwaitingPatient2Step3,
     assignedDay,
     canStartWork,
+    clearPersistedDraft,
     flashSave,
     onTripCreated,
     pendingPatient1Anschluss,
@@ -687,6 +801,7 @@ export function WorkerTripStepPanel({
     setAnschlussMinKmStart(undefined);
     anschlussResumeStepRef.current = null;
     setErrorMessage(undefined);
+    clearPersistedDraft();
   };
 
   const showStornoUi = phase === "steps" && currentStep > 1;
@@ -754,7 +869,12 @@ export function WorkerTripStepPanel({
           <Text style={styles.saveFlashText}>{saveFlash}</Text>
         </View>
       ) : null}
-      {phase === "meta" ? (
+      {draftRestoring ? (
+        <View style={styles.draftRestoreState}>
+          <ActivityIndicator color="#0f766e" size="small" />
+          <Text style={styles.draftRestoreText}>Restaurando viaje en curso…</Text>
+        </View>
+      ) : phase === "meta" ? (
         <View style={[styles.card, styles.panelCard]}>
           <Text style={styles.cardTitle}>
             {anschlussAwaitingPatient2Step3 ? "Paciente 2 (Anschluss)" : "Nuevo viaje"}
@@ -1471,5 +1591,16 @@ const styles = StyleSheet.create({
     color: "#047857",
     fontSize: 14,
     fontWeight: "700",
+  },
+  draftRestoreState: {
+    paddingVertical: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  draftRestoreText: {
+    color: "#64748b",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
