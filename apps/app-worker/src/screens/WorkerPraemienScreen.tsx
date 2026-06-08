@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -120,9 +120,14 @@ function statusLabel(status?: string | null): string {
 type Props = {
   hasPraemienModule: boolean;
   userId: string;
+  praemienWsTrigger?: number;
 };
 
-export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
+export function WorkerPraemienScreen({
+  hasPraemienModule,
+  userId,
+  praemienWsTrigger,
+}: Props) {
   const today = useMemo(() => new Date(), []);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -152,12 +157,16 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
     [effectiveFrom, hasPraemienModule, mode],
   );
 
-  const loadBase = useCallback(async () => {
+  const loadBase = useCallback(async (options?: { silent?: boolean }) => {
     if (!hasPraemienModule) {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
       return;
     }
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
     setErrorMessage(null);
     try {
       const [cfg, monthlySummary, monthlyHistory] = await Promise.all([
@@ -175,9 +184,13 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
         .filter((x): x is string => Boolean(x));
       setAssignedDateKeys(keys);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar Prämie.");
+      if (!options?.silent) {
+        setErrorMessage(error instanceof Error ? error.message : "No se pudo cargar Prämie.");
+      }
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, [hasPraemienModule, userId]);
 
@@ -220,6 +233,18 @@ export function WorkerPraemienScreen({ hasPraemienModule, userId }: Props) {
   useEffect(() => {
     void loadManualMonth();
   }, [loadManualMonth]);
+
+  const prevPraemienWsTrigger = useRef(praemienWsTrigger);
+  useEffect(() => {
+    if (praemienWsTrigger === undefined || praemienWsTrigger === prevPraemienWsTrigger.current) {
+      return;
+    }
+    prevPraemienWsTrigger.current = praemienWsTrigger;
+    void (async () => {
+      await loadBase({ silent: true });
+      await loadManualMonth();
+    })();
+  }, [loadBase, loadManualMonth, praemienWsTrigger]);
 
   useEffect(() => {
     if (!selectedDate) {
