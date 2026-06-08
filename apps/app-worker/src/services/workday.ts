@@ -129,6 +129,7 @@ export type WorkdayClosurePayload = {
   /** Server reloads trip data; only `_id` is used. */
   trips: Array<{ _id: string }>;
   checklistItems: Record<string, boolean>;
+  extraNote?: string;
   o2Level?: number;
 };
 
@@ -136,6 +137,28 @@ export async function submitWorkdayClosure(
   payload: WorkdayClosurePayload,
 ): Promise<WorkdaySummary> {
   return apiRequest<WorkdaySummary>("/workday-summary", {
+    method: "POST",
+    requiresAuth: true,
+    body: JSON.stringify(payload),
+  });
+}
+
+export type WorkdayPartialClosurePayload = {
+  date: string;
+  assignmentId: string;
+  ambulanceId: string;
+  ambulanceNumber: string;
+  initialKm: number;
+  finalKm: number;
+  /** Server reloads trip data; only `_id` is used. */
+  trips: Array<{ _id: string }>;
+  partialClosureReason: string;
+};
+
+export async function submitPartialWorkdayClosure(
+  payload: WorkdayPartialClosurePayload,
+): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>("/workday-summary/partial", {
     method: "POST",
     requiresAuth: true,
     body: JSON.stringify(payload),

@@ -328,6 +328,7 @@ export function WorkerWorkdayScreen({
     );
     const sharedSetupExists = sharedTripsForAssignment.length > 0;
     const sharedKmStart = firstSharedKmStartForAssignment(todayTrips, assignmentId);
+    const hasPartialClosureToday = recentSummaries.some((s) => s.isFinalClosure === false);
     let cancelled = false;
     setAmbulanceHydrated(false);
     (async () => {
@@ -338,6 +339,13 @@ export function WorkerWorkdayScreen({
         ]);
         const sharedSetup = await getWorkdayTripSetup(assignmentId).catch(() => null);
         if (cancelled) return;
+        if (hasPartialClosureToday && !confirmed) {
+          setInitialKmDraft("");
+          setPreambleAmbulanceId(defId);
+          setPreambleAmbulanceNumber(defNum);
+          setVehicleConfirmed(false);
+          return;
+        }
         if (sharedSetup?.initialKm && sharedSetup.initialKm > 0) {
           const sharedKm = String(Math.round(sharedSetup.initialKm));
           const sharedAmbulanceId = sharedSetup.ambulanceId?.trim() || defId;
@@ -383,7 +391,7 @@ export function WorkerWorkdayScreen({
     return () => {
       cancelled = true;
     };
-  }, [todayAssignment?.assignmentId, todayTrips]);
+  }, [recentSummaries, todayAssignment?.assignmentId, todayTrips]);
 
   useEffect(() => {
     if (!hasAmbulancesModule || !todayAssignment?.assignmentId) {

@@ -119,3 +119,26 @@ export async function setVehicleConfirmedAsync(
     }
   }
 }
+
+/** Same reset as web `clearAmbulanceData` after partial closure. */
+export async function clearAmbulanceDataAsync(assignmentId: string): Promise<void> {
+  try {
+    const dir = await ensureCacheDir();
+    const path = dataFilePath(dir, assignmentId);
+    const info = await getInfoAsync(path);
+    if (info.exists) {
+      await deleteAsync(path, { idempotent: true });
+    }
+  } catch {
+    // ignore — local cache is best-effort
+  }
+}
+
+export async function resetAmbulanceSessionAfterPartialClosure(
+  assignmentId: string,
+): Promise<void> {
+  await Promise.all([
+    clearAmbulanceDataAsync(assignmentId),
+    setVehicleConfirmedAsync(assignmentId, false),
+  ]);
+}
