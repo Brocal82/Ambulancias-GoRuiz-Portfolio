@@ -38,6 +38,7 @@ import { AuthUser, CompanyModuleKey, MODULE_KEYS } from "../types/auth";
 import { parseHHMM } from "../utils/tripValidators";
 import { buildClosureTripRefs } from "../utils/closurePayload";
 import { resetAmbulanceSessionAfterPartialClosure } from "../utils/workdayAmbulanceStorage";
+import { clearTripDraftSessionAsync } from "../utils/workdayTripDraftStorage";
 import { resolveTodayAssignment } from "../utils/workdayAssignment";
 
 type Props = {
@@ -475,6 +476,7 @@ export function WorkerWorkdayClosureScreen({
         ...(extraNote.trim() ? { extraNote: extraNote.trim() } : {}),
         ...(o2LevelNum != null && !Number.isNaN(o2LevelNum) ? { o2Level: o2LevelNum } : {}),
       });
+      await clearTripDraftSessionAsync(base.assignmentId, base.date);
       setClosureDone(true);
       setClosureFeedback("Jornada cerrada correctamente.");
       onClosureComplete?.();
@@ -507,7 +509,10 @@ export function WorkerWorkdayClosureScreen({
         ...base,
         partialClosureReason: reasonTrimmed,
       });
-      await resetAmbulanceSessionAfterPartialClosure(base.assignmentId);
+      await Promise.all([
+        resetAmbulanceSessionAfterPartialClosure(base.assignmentId),
+        clearTripDraftSessionAsync(base.assignmentId, base.date),
+      ]);
       setPartialDone(true);
       setClosureFeedback("Cierre parcial enviado. Puedes configurar otra ambulancia y seguir la jornada.");
       await loadTrips();
