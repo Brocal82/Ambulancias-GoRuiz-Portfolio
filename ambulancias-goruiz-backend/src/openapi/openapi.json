@@ -1276,7 +1276,7 @@
     "/api/praemien/monthly-summary": {
       "get": {
         "summary": "Current month Praemien summary",
-        "description": "Requires module `praemien`. Returns live monthly stats for the authenticated user. Admin may pass `?userId=` for same-company workers. Automatic mode: sums **final** workday closures only (`isFinalClosure: true`); `isReviewed` is not a gate. Manual effective mode: approved manual daily entries only.",
+        "description": "Requires module `praemien`. Returns live monthly stats for the authenticated user. Admin may pass `?userId=` for same-company workers. Automatic mode: sums **partial and final** workday closures per calendar day (each closure only contains its tramo's trips); `isReviewed` is not a gate. Manual effective mode: approved manual daily entries only.",
         "tags": ["Praemien"],
         "security": [{ "bearerAuth": [] }],
         "parameters": [
