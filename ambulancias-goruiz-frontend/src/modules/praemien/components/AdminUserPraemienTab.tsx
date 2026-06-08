@@ -1,5 +1,5 @@
 // src/pages/AdminUserPraemienTab.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getMonthlyPraemienSummary } from "../domain/api";
@@ -12,6 +12,7 @@ import { usePraemienDienstDayTints } from "../hooks/usePraemienDienstDayTints";
 import { useAuth } from "../../../hooks/useAuth";
 import { MODULE_KEYS } from "../../../constants/modules";
 import { isPraemienManualEntryPhaseActive } from "../utils/isPraemienManualEntryPhaseActive";
+import { PRAEMIEN_MANUAL_PENDING_CHANGED } from "../utils/praemienManualPendingEvents";
 
 interface Props {
   userId: string;
@@ -59,7 +60,7 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
     });
   }, [role, enabledModules, praemienMode, praemienModeEffectiveFrom]);
 
-  useEffect(() => {
+  const reloadSummary = useCallback(() => {
     if (!token || !userId) {
       setLoading(false);
       return;
@@ -67,7 +68,7 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
     setLoading(true);
     setSummaryError("");
 
-    getMonthlyPraemienSummary(userId)
+    void getMonthlyPraemienSummary(userId)
       .then((data) => {
         setSummaries(data.monthlyData || []);
         setAveragePatients(data.averagePatients ?? 0);
@@ -77,6 +78,17 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
       })
       .finally(() => setLoading(false));
   }, [token, userId, t]);
+
+  useEffect(() => {
+    reloadSummary();
+  }, [reloadSummary]);
+
+  useEffect(() => {
+    const onChanged = () => reloadSummary();
+    window.addEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
+    return () =>
+      window.removeEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
+  }, [reloadSummary]);
 
   if (!manualEffective && loading) {
     return <p className="p-4">{t("pages.praemien.page.loading")}</p>;

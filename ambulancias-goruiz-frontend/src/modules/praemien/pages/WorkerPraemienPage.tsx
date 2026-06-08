@@ -1,5 +1,5 @@
 // src/modules/praemien/pages/WorkerPraemienPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getMonthlyPraemienSummary } from "../domain/api";
@@ -68,7 +68,7 @@ const WorkerPraemienPage = () => {
     praemienModeEffectiveFrom != null &&
     !manualPhaseActive;
 
-  useEffect(() => {
+  const reloadSummary = useCallback(async () => {
     if (!token || !companyPraemienConfigReady) {
       setLoading(false);
       return;
@@ -77,77 +77,50 @@ const WorkerPraemienPage = () => {
     setLoading(true);
     setError("");
 
-    const load = async () => {
-      try {
-        if (manualPhaseActive) {
-          const now = new Date();
-          const entries = await getMyManualDailyEntriesForMonth(
-            now.getFullYear(),
-            now.getMonth() + 1,
-          );
-          const days = entries.map((entry) => ({
-            date: entry.date,
-            totalCountedPatients:
-              entry.status === "approved" && entry.adminFinalValue != null
-                ? entry.adminFinalValue
-                : entry.workerSubmittedValue,
-          }));
-          const avg =
-            days.length > 0
-              ? days.reduce((acc, day) => acc + day.totalCountedPatients, 0) /
-                days.length
-              : 0;
-          setSummaries(days);
-          setMedia(Math.round(avg * 2) / 2);
-          return;
-        }
-
-        const data = await getMonthlyPraemienSummary();
-        setSummaries(data.monthlyData);
-        setMedia(data.averagePatients);
-      } catch {
-        setError(t("pages.praemien.page.error"));
-      } finally {
-        setLoading(false);
+    try {
+      if (manualPhaseActive) {
+        const now = new Date();
+        const entries = await getMyManualDailyEntriesForMonth(
+          now.getFullYear(),
+          now.getMonth() + 1,
+        );
+        const days = entries.map((entry) => ({
+          date: entry.date,
+          totalCountedPatients:
+            entry.status === "approved" && entry.adminFinalValue != null
+              ? entry.adminFinalValue
+              : entry.workerSubmittedValue,
+        }));
+        const avg =
+          days.length > 0
+            ? days.reduce((acc, day) => acc + day.totalCountedPatients, 0) /
+              days.length
+            : 0;
+        setSummaries(days);
+        setMedia(Math.round(avg * 2) / 2);
+        return;
       }
-    };
 
-    void load();
-  }, [token, companyPraemienConfigReady, t, manualPhaseActive]);
+      const data = await getMonthlyPraemienSummary();
+      setSummaries(data.monthlyData);
+      setMedia(data.averagePatients);
+    } catch {
+      setError(t("pages.praemien.page.error"));
+    } finally {
+      setLoading(false);
+    }
+  }, [token, companyPraemienConfigReady, manualPhaseActive, t]);
 
   useEffect(() => {
-    if (!manualPhaseActive) return;
-    const onChanged = () => {
-      setLoading(true);
-      setError("");
-      const now = new Date();
-      void getMyManualDailyEntriesForMonth(
-        now.getFullYear(),
-        now.getMonth() + 1,
-      )
-        .then((entries) => {
-          const days = entries.map((entry) => ({
-            date: entry.date,
-            totalCountedPatients:
-              entry.status === "approved" && entry.adminFinalValue != null
-                ? entry.adminFinalValue
-                : entry.workerSubmittedValue,
-          }));
-          const avg =
-            days.length > 0
-              ? days.reduce((acc, day) => acc + day.totalCountedPatients, 0) /
-                days.length
-              : 0;
-          setSummaries(days);
-          setMedia(Math.round(avg * 2) / 2);
-        })
-        .catch(() => setError(t("pages.praemien.page.error")))
-        .finally(() => setLoading(false));
-    };
+    void reloadSummary();
+  }, [reloadSummary]);
+
+  useEffect(() => {
+    const onChanged = () => void reloadSummary();
     window.addEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
     return () =>
       window.removeEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
-  }, [manualPhaseActive, t]);
+  }, [reloadSummary]);
 
   if (token && !companyPraemienConfigReady) {
     return (

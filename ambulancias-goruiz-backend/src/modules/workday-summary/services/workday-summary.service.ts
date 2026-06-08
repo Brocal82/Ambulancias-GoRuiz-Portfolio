@@ -3,7 +3,7 @@ import { Dienst } from "../../diensts";
 import { Trip } from "../../trips";
 import WorkdaySummary from "../models/workday-summary.model";
 import type { IWorkdaySummary } from "../models/workday-summary.model";
-import { sendPushNotification, voidEmitWorkdayAdminSideEffects, voidEmitWorkdayWorkerRefresh } from "../../notifications";
+import { sendPushNotification, voidEmitWorkdayAdminSideEffects, voidEmitWorkdayWorkerRefresh, voidEmitPraemienWorkerRefresh, collectWorkerIdsFromAssignments } from "../../notifications";
 import { calculateEffectivePatients } from "../utils/calculateEffectivePatients";
 import {
   WorkdaySummaryError,
@@ -148,6 +148,8 @@ export async function createWorkdaySummary(
       return newSummary;
     });
     voidEmitWorkdayAdminSideEffects(String(companyOid));
+    const praemienWorkerIds = collectWorkerIdsFromAssignments([{ driver, medic }]);
+    voidEmitPraemienWorkerRefresh(praemienWorkerIds, String(companyOid));
     return result;
   } catch (err: unknown) {
     if (isMongoDuplicateKeyError(err)) {
