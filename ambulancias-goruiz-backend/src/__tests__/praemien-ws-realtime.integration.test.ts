@@ -234,6 +234,63 @@ describe("P2 praemien ws-realtime", () => {
     workerWs.close();
   });
 
+  it("admin approve cascade emits praemien_changed to synced Dienst partner", async () => {
+    const medic = await createTestWorkerInCompany(
+      new mongoose.Types.ObjectId(companyAId),
+      Date.now() + 991,
+    );
+    const medicId = String(medic._id);
+    const medicToken = issueTestJwt(medicId, "worker", companyAId);
+
+    await WorkdaySummary.updateOne(
+      { assignmentId: assignmentKey },
+      {
+        $set: {
+          driver: new mongoose.Types.ObjectId(workerAId),
+          medic: new mongoose.Types.ObjectId(medicId),
+        },
+      },
+    );
+
+    try {
+      await request(app)
+        .put(`${API}/praemien/manual-daily`)
+        .set("Authorization", `Bearer ${workerAToken}`)
+        .send({ date: manualDateStr, workerSubmittedValue: 7, status: "submitted" })
+        .expect(200);
+
+      const medicWs = await connectWs(port, medicToken);
+      const msgPromise = waitForWsMessage(medicWs);
+
+      await request(app)
+        .post(`${API}/praemien/manual-daily/admin/approve`)
+        .set("Authorization", `Bearer ${adminAToken}`)
+        .send({ userId: workerAId, date: manualDateStr, adminFinalValue: 9 })
+        .expect(200);
+
+      const frame = await msgPromise;
+      expect(frame).toEqual({ event: WS_EVENTS.PRAEMIEN_CHANGED });
+
+      medicWs.close();
+    } finally {
+      await WorkdaySummary.updateOne(
+        { assignmentId: assignmentKey },
+        {
+          $set: {
+            driver: new mongoose.Types.ObjectId(workerAId),
+            medic: new mongoose.Types.ObjectId(workerAId),
+          },
+        },
+      );
+      await PraemienManualDailyEntry.deleteMany({
+        companyId: new mongoose.Types.ObjectId(companyAId),
+        date: manualDateStr,
+        userId: new mongoose.Types.ObjectId(medicId),
+      });
+      await User.deleteOne({ _id: medic._id });
+    }
+  });
+
   it("admin reject emits admin_counts_changed when pending count changes", async () => {
     await request(app)
       .put(`${API}/praemien/manual-daily`)
