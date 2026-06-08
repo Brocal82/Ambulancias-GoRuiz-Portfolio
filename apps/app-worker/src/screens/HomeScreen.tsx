@@ -128,6 +128,7 @@ type Props = {
   user: AuthUser;
   showBottomPreview?: boolean;
   agendaWsTrigger?: number;
+  praemienWsTrigger?: number;
 };
 
 export function HomeScreen({
@@ -155,6 +156,7 @@ export function HomeScreen({
   user,
   showBottomPreview = true,
   agendaWsTrigger,
+  praemienWsTrigger,
 }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -334,6 +336,15 @@ export function HomeScreen({
     prevAgendaWsTrigger.current = agendaWsTrigger;
     void loadDienstAndPraemie();
   }, [agendaWsTrigger, loadDienstAndPraemie]);
+
+  const prevPraemienWsTrigger = useRef(praemienWsTrigger);
+  useEffect(() => {
+    if (praemienWsTrigger === undefined || praemienWsTrigger === prevPraemienWsTrigger.current) {
+      return;
+    }
+    prevPraemienWsTrigger.current = praemienWsTrigger;
+    void loadDienstAndPraemie();
+  }, [loadDienstAndPraemie, praemienWsTrigger]);
 
   const pscheinExpiryDate = user.pscheinExpiry ? new Date(user.pscheinExpiry) : null;
   const displayName = `${user.name ?? ""} ${user.lastName ?? ""}`.trim() || "Usuario";

@@ -106,6 +106,7 @@ export function WorkerTabsShell({
   const [vacationWsTrigger, setVacationWsTrigger] = useState(0);
   const [sickLeaveWsTrigger, setSickLeaveWsTrigger] = useState(0);
   const [appointmentWsTrigger, setAppointmentWsTrigger] = useState(0);
+  const [praemienWsTrigger, setPraemienWsTrigger] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsReconnectDelayRef = useRef(1000);
@@ -150,7 +151,8 @@ export function WorkerTabsShell({
     hasWorkdayModule ||
     hasVacationModule ||
     hasSickLeavesModule ||
-    hasAppointmentsModule;
+    hasAppointmentsModule ||
+    hasPraemienModule;
 
   useEffect(() => {
     if (!hasRealtimeModule) {
@@ -215,6 +217,8 @@ export function WorkerTabsShell({
             setSickLeaveWsTrigger((prev) => prev + 1);
           } else if (msg.event === "appointment_changed" && hasAppointmentsModule) {
             setAppointmentWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "praemien_changed" && hasPraemienModule) {
+            setPraemienWsTrigger((prev) => prev + 1);
           }
         } catch {
           // ignore malformed frames
@@ -263,6 +267,7 @@ export function WorkerTabsShell({
     hasVacationModule,
     hasSickLeavesModule,
     hasAppointmentsModule,
+    hasPraemienModule,
     refreshUnreadMessagesCount,
   ]);
 
@@ -303,6 +308,7 @@ export function WorkerTabsShell({
             hasMessagesModule={hasMessagesModule}
             hasPraemienModule={hasPraemienModule}
             agendaWsTrigger={agendaWsTrigger}
+            praemienWsTrigger={praemienWsTrigger}
             showBottomPreview={false}
           />
         );
@@ -345,7 +351,13 @@ export function WorkerTabsShell({
           />
         );
       case "praemien":
-        return <WorkerPraemienScreen hasPraemienModule={hasPraemienModule} userId={user._id} />;
+        return (
+          <WorkerPraemienScreen
+            hasPraemienModule={hasPraemienModule}
+            userId={user._id}
+            praemienWsTrigger={praemienWsTrigger}
+          />
+        );
       case "messages":
         return hasMessagesModule ? (
           <WorkerMessagesScreen userId={user._id} wsTrigger={wsTrigger} />
@@ -387,6 +399,7 @@ export function WorkerTabsShell({
     hasPraemienModule,
     onLogout,
     onRefreshProfile,
+    praemienWsTrigger,
     scheduleSource,
     user,
     wsTrigger,
