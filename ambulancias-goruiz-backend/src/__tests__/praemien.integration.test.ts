@@ -305,7 +305,7 @@ describe("Praemien hardening — automatic aggregation", () => {
     });
   });
 
-  it("monthly-summary counts only final closures (no partial+final double-count)", async () => {
+  it("monthly-summary sums partial and final closures per calendar day", async () => {
     const WorkdaySummary = mongoose.model("WorkdaySummary");
     const finalRow = await WorkdaySummary.findOne({
       assignmentId: assignmentFinal,
@@ -319,7 +319,8 @@ describe("Praemien hardening — automatic aggregation", () => {
       .expect(200);
 
     expect(res.body.data).toBeDefined();
-    expect(res.body.data.averagePatients).toBe(7);
+    // partial 99 + final 7 on same day (legacy null 3 excluded by companyId filter)
+    expect(res.body.data.averagePatients).toBe(106);
   });
 
   it("automatic aggregation ignores cross-tenant WorkdaySummary rows", async () => {
@@ -329,7 +330,7 @@ describe("Praemien hardening — automatic aggregation", () => {
       .query({ year: HARDEN_YEAR, month: HARDEN_MONTH })
       .expect(200);
 
-    expect(resOwn.body.data?.averagePatients).toBe(7);
+    expect(resOwn.body.data?.averagePatients).toBe(106);
 
     const resOther = await request(app)
       .post(`${API}/praemien/save-monthly`)
@@ -347,6 +348,74 @@ describe("Praemien hardening — automatic aggregation", () => {
       .query({ year: HARDEN_YEAR, month: HARDEN_MONTH })
       .expect(200);
 
-    expect(res.body.data?.averagePatients).toBe(7);
+    expect(res.body.data?.averagePatients).toBe(106);
+  });
+
+  it("same assignment: multiple partials + final sum totalEffectivePatients for the day", async () => {
+    const SAME_TEAM_YEAR = 2031;
+    const SAME_TEAM_MONTH = 7;
+    const assignmentSameTeam = `assign-praem-same-team-${Date.now()}`;
+    const teamDate = `${SAME_TEAM_YEAR}-${String(SAME_TEAM_MONTH).padStart(2, "0")}-10`;
+    const WorkdaySummary = mongoose.model("WorkdaySummary");
+
+    await WorkdaySummary.create([
+      {
+        date: teamDate,
+        assignmentId: assignmentSameTeam,
+        driver: adminId,
+        medic: adminId,
+        ambulanceId,
+        ambulanceNumber: "1",
+        initialKm: 0,
+        totalDienstKm: 5,
+        trips: [minimalTrip],
+        totalEffectivePatients: 4,
+        totalRealTrips: 1,
+        companyId: companyOid,
+        isFinalClosure: false,
+      },
+      {
+        date: teamDate,
+        assignmentId: assignmentSameTeam,
+        driver: adminId,
+        medic: adminId,
+        ambulanceId,
+        ambulanceNumber: "1",
+        initialKm: 0,
+        totalDienstKm: 5,
+        trips: [minimalTrip],
+        totalEffectivePatients: 2,
+        totalRealTrips: 1,
+        companyId: companyOid,
+        isFinalClosure: false,
+      },
+      {
+        date: teamDate,
+        assignmentId: assignmentSameTeam,
+        driver: adminId,
+        medic: adminId,
+        ambulanceId,
+        ambulanceNumber: "1",
+        initialKm: 0,
+        totalDienstKm: 5,
+        trips: [minimalTrip],
+        totalEffectivePatients: 1.5,
+        totalRealTrips: 1,
+        companyId: companyOid,
+        isFinalClosure: true,
+      },
+    ]);
+
+    try {
+      const res = await request(app)
+        .post(`${API}/praemien/save-monthly`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .query({ year: SAME_TEAM_YEAR, month: SAME_TEAM_MONTH })
+        .expect(200);
+
+      expect(res.body.data?.averagePatients).toBe(7.5);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentSameTeam });
+    }
   });
 });

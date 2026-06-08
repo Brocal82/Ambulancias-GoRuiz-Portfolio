@@ -6,12 +6,10 @@ import { MonthlyPraemienSummaryResponse } from "../types/praemien.types";
 import { formatLocalYmd } from "../utils/localCalendarYmd";
 import { getCompanyObjectIdForPraemienUser } from "./resolvePraemienUserCompany";
 import { getEffectiveManualPraemienContextForUser } from "./resolve-effective-manual-praemien.service";
-import { AUTOMATIC_PRAEMIEN_FINAL_CLOSURE_FILTER } from "../utils/legacyWorkdayCompanyFilter";
-
 /**
- * Automatic monthly stats: sum per calendar day from **final** workday closures
- * only (`isFinalClosure: true`). Partial closures are excluded to prevent
- * double-counting when a final exists for the same assignment/day.
+ * Automatic monthly stats: sum per calendar day from **all** workday closures
+ * (partial + final). Each closure stores only its tramo's trips (`sentInSummary`
+ * on prior trips), so summing partials and the final for the same team/day is correct.
  *
  * `isReviewed` is intentionally NOT a gate — admin review is a workday workflow
  * step; workers see live totals before review. See DOMAIN-praemien.md.
@@ -31,7 +29,6 @@ export async function computeMonthlyPraemienStatsForUser(
     },
     $or: [{ driver: objectUserId }, { medic: objectUserId }],
     companyId: companyOid,
-    ...AUTOMATIC_PRAEMIEN_FINAL_CLOSURE_FILTER,
   }).select("date totalEffectivePatients");
 
   if (!summaries.length) {

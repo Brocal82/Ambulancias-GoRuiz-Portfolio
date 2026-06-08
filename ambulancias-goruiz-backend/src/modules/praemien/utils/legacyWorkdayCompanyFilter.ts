@@ -17,7 +17,3 @@ export function legacyAwareWorkdayCompanyFilter(
   };
 }
 
-/** Automatic Praemien aggregates only final workday closures (never partials). */
-export const AUTOMATIC_PRAEMIEN_FINAL_CLOSURE_FILTER = {
-  isFinalClosure: true,
-} as const;
