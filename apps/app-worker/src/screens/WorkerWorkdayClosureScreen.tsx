@@ -27,29 +27,50 @@ import {
   WorkdayTrip,
   WorkdayTripSetup,
   getAssignedDaysForWorker,
+  getMyWorkdaySummaries,
   getWorkdayTripsByDate,
   getWorkdayTripSetup,
+  submitPartialWorkdayClosure,
   submitWorkdayClosure,
 } from "../services/workday";
 import { AmbulanceListItem, getAmbulancesList } from "../services/ambulances";
 import { AuthUser, CompanyModuleKey, MODULE_KEYS } from "../types/auth";
 import { parseHHMM } from "../utils/tripValidators";
 import { buildClosureTripRefs } from "../utils/closurePayload";
+import { resetAmbulanceSessionAfterPartialClosure } from "../utils/workdayAmbulanceStorage";
 import { resolveTodayAssignment } from "../utils/workdayAssignment";
 
 type Props = {
   user: AuthUser;
   enabledModules?: CompanyModuleKey[];
   onClose: () => void;
+  /** Called after a successful partial or final closure (refresh Mi Jornada). */
+  onClosureComplete?: () => void;
 };
 
 type ClosureMenuKey = "inicio" | "checks" | "viajes" | "averias" | "envio";
+type ClosureKind = null | "final" | "partial";
 
 function todayDateKey(): string {
   const now = new Date();
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function toSummaryDateKey(input?: string): string {
+  if (!input) return "";
+  const trimmed = input.trim();
+  const direct = /^(\d{4}-\d{2}-\d{2})$/.exec(trimmed);
+  if (direct) return direct[1] ?? "";
+  const iso = /^(\d{4}-\d{2}-\d{2})T/.exec(trimmed);
+  if (iso) return iso[1] ?? "";
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const y = parsed.getFullYear();
+  const m = String(parsed.getMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
@@ -163,7 +184,12 @@ const VEHICLE_CHECKLIST = [
   { key: "luces", label: "Luces y señales operativas" },
 ] as const;
 
-export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Props) {
+export function WorkerWorkdayClosureScreen({
+  user,
+  enabledModules,
+  onClose,
+  onClosureComplete,
+}: Props) {
   const [activeKey, setActiveKey] = useState<ClosureMenuKey>("inicio");
   const [trips, setTrips] = useState<WorkdayTrip[]>([]);
   const [loadError, setLoadError] = useState<string | undefined>(undefined);
@@ -188,6 +214,11 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
   const [closureSubmitting, setClosureSubmitting] = useState(false);
   const [closureFeedback, setClosureFeedback] = useState<string | undefined>(undefined);
   const [closureDone, setClosureDone] = useState(false);
+  const [partialDone, setPartialDone] = useState(false);
+  const [closureKind, setClosureKind] = useState<ClosureKind>(null);
+  const [partialReason, setPartialReason] = useState("");
+  const [extraNote, setExtraNote] = useState("");
+  const [hasFinalClosureToday, setHasFinalClosureToday] = useState(false);
 
   const hasAmbulancesModule = useMemo(
     () => Boolean(enabledModules?.includes(MODULE_KEYS.AMBULANCES)),
@@ -238,6 +269,24 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
             if (!cancelled) setTripSetup(setup);
           } catch {
             // tripSetup stays null; closure will show warning
+          }
+        }
+        if (assignment?.assignmentId) {
+          try {
+            const summaries = await getMyWorkdaySummaries();
+            if (!cancelled) {
+              const today = todayDateKey();
+              setHasFinalClosureToday(
+                summaries.some(
+                  (s) =>
+                    s.assignmentId === assignment.assignmentId &&
+                    toSummaryDateKey(s.date) === today &&
+                    s.isFinalClosure === true,
+                ),
+              );
+            }
+          } catch {
+            if (!cancelled) setHasFinalClosureToday(false);
           }
         }
       } catch {
@@ -363,40 +412,72 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     }
   }, [finalKm, issuePhotos, issueText, selectedAmbulanceId, selectedAmbulanceNumber, todayAssignment]);
 
-  const submitClosure = useCallback(async () => {
-    if (!todayAssignment) return;
+  const closureEligibleTrips = useMemo(() => {
+    if (!todayAssignment) return [];
+    return trips.filter(
+      (t) =>
+        (!t.assignmentId || t.assignmentId === todayAssignment.assignmentId) &&
+        t.sentInSummary !== true,
+    );
+  }, [todayAssignment, trips]);
+
+  const closureEligibleTripsCounted = useMemo(
+    () => closureEligibleTrips.filter(tripCountsTowardWorkday).length,
+    [closureEligibleTrips],
+  );
+
+  const resolveClosureBase = useCallback(() => {
+    if (!todayAssignment) return null;
     const km = Number(finalKm.trim().replace(",", "."));
     if (!Number.isFinite(km) || km <= 0) {
-      setClosureFeedback("Indica los kilómetros finales en la pestaña Checks.");
-      return;
+      return { error: "Indica los kilómetros finales en la pestaña Checks." as const };
     }
     const ambulanceId = tripSetup?.ambulanceId ?? assignmentAmbulanceId(todayAssignment);
     const ambulanceNumber = tripSetup?.ambulanceNumber ?? assignmentAmbulanceNumber(todayAssignment);
     if (!ambulanceId) {
-      setClosureFeedback("No se pudo determinar la ambulancia. Completa la configuración de jornada.");
-      return;
+      return {
+        error: "No se pudo determinar la ambulancia. Completa la configuración de jornada.",
+      } as const;
     }
     const initialKm = tripSetup?.initialKm ?? 0;
-    const assignmentTrips = trips.filter(
-      (t) => !t.assignmentId || t.assignmentId === todayAssignment.assignmentId,
-    );
+    if (km < initialKm) {
+      return { error: "El km final no puede ser menor que el km inicial de la ambulancia." as const };
+    }
+    if (closureEligibleTrips.length === 0) {
+      return {
+        error: "No hay viajes pendientes de enviar para este tramo de jornada.",
+      } as const;
+    }
+    return {
+      date: todayAssignment.date,
+      assignmentId: todayAssignment.assignmentId,
+      ambulanceId,
+      ambulanceNumber,
+      initialKm,
+      finalKm: km,
+      trips: buildClosureTripRefs(closureEligibleTrips),
+    };
+  }, [closureEligibleTrips, finalKm, todayAssignment, tripSetup]);
+
+  const submitFinalClosure = useCallback(async () => {
+    const base = resolveClosureBase();
+    if (!base || "error" in base) {
+      setClosureFeedback(base?.error ?? "No se pudo preparar el cierre.");
+      return;
+    }
     const o2LevelNum = o2Level.trim() ? Number(o2Level.trim().replace(",", ".")) : undefined;
     setClosureSubmitting(true);
     setClosureFeedback(undefined);
     try {
       await submitWorkdayClosure({
-        date: todayAssignment.date,
-        assignmentId: todayAssignment.assignmentId,
-        ambulanceId,
-        ambulanceNumber,
-        initialKm,
-        finalKm: km,
-        trips: buildClosureTripRefs(assignmentTrips),
+        ...base,
         checklistItems,
+        ...(extraNote.trim() ? { extraNote: extraNote.trim() } : {}),
         ...(o2LevelNum != null && !Number.isNaN(o2LevelNum) ? { o2Level: o2LevelNum } : {}),
       });
       setClosureDone(true);
       setClosureFeedback("Jornada cerrada correctamente.");
+      onClosureComplete?.();
     } catch (e) {
       if (e instanceof ApiError) {
         setClosureFeedback(e.message);
@@ -406,14 +487,41 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     } finally {
       setClosureSubmitting(false);
     }
-  }, [
-    checklistItems,
-    finalKm,
-    o2Level,
-    todayAssignment,
-    tripSetup,
-    trips,
-  ]);
+  }, [checklistItems, extraNote, o2Level, onClosureComplete, resolveClosureBase]);
+
+  const submitPartialClosure = useCallback(async () => {
+    const reasonTrimmed = partialReason.trim();
+    if (!reasonTrimmed) {
+      setClosureFeedback("Indica el motivo del cierre parcial.");
+      return;
+    }
+    const base = resolveClosureBase();
+    if (!base || "error" in base) {
+      setClosureFeedback(base?.error ?? "No se pudo preparar el cierre.");
+      return;
+    }
+    setClosureSubmitting(true);
+    setClosureFeedback(undefined);
+    try {
+      await submitPartialWorkdayClosure({
+        ...base,
+        partialClosureReason: reasonTrimmed,
+      });
+      await resetAmbulanceSessionAfterPartialClosure(base.assignmentId);
+      setPartialDone(true);
+      setClosureFeedback("Cierre parcial enviado. Puedes configurar otra ambulancia y seguir la jornada.");
+      await loadTrips();
+      onClosureComplete?.();
+    } catch (e) {
+      if (e instanceof ApiError) {
+        setClosureFeedback(e.message);
+      } else {
+        setClosureFeedback("No se pudo enviar el cierre parcial.");
+      }
+    } finally {
+      setClosureSubmitting(false);
+    }
+  }, [loadTrips, onClosureComplete, partialReason, resolveClosureBase]);
 
   const assignedAmbulanceData = useMemo(() => {
     if (!todayAssignment) {
@@ -741,18 +849,38 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
         const checksTotal = VEHICLE_CHECKLIST.length;
         const kmNum = Number(finalKm.trim().replace(",", "."));
         const kmValid = Number.isFinite(kmNum) && kmNum > 0;
+        const initialKmNum = tripSetup?.initialKm ?? 0;
+        const kmNotBelowInitial = kmValid && kmNum >= initialKmNum;
+        const canSubmitClosure =
+          kmValid &&
+          kmNotBelowInitial &&
+          closureEligibleTrips.length > 0 &&
+          !hasFinalClosureToday;
+        const submitLocked = closureSubmitting || closureDone || partialDone;
+
         return (
           <View style={styles.placeholderBlock}>
             <Text style={styles.placeholderTitle}>Cierre de jornada</Text>
+            {hasFinalClosureToday ? (
+              <Text style={styles.closureHint}>
+                Ya existe un cierre final para hoy. No puedes enviar otro cierre.
+              </Text>
+            ) : null}
             <View style={styles.issueCard}>
               <View style={styles.closureSummaryRow}>
-                <Text style={styles.closureSummaryLabel}>Viajes registrados</Text>
-                <Text style={styles.closureSummaryValue}>{tripsCounted}</Text>
+                <Text style={styles.closureSummaryLabel}>Viajes pendientes de envío</Text>
+                <Text style={styles.closureSummaryValue}>{closureEligibleTripsCounted}</Text>
               </View>
               <View style={styles.closureSummaryRow}>
                 <Text style={styles.closureSummaryLabel}>Checks completados</Text>
                 <Text style={[styles.closureSummaryValue, checksDone < checksTotal ? styles.closureSummaryWarn : null]}>
                   {checksDone}/{checksTotal}
+                </Text>
+              </View>
+              <View style={styles.closureSummaryRow}>
+                <Text style={styles.closureSummaryLabel}>Km iniciales</Text>
+                <Text style={styles.closureSummaryValue}>
+                  {initialKmNum > 0 ? `${Math.round(initialKmNum)} km` : "—"}
                 </Text>
               </View>
               <View style={styles.closureSummaryRow}>
@@ -773,23 +901,156 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
                 Introduce los km finales en la pestaña Checks antes de cerrar.
               </Text>
             ) : null}
+            {kmValid && !kmNotBelowInitial ? (
+              <Text style={styles.closureHint}>
+                El km final no puede ser menor que el km inicial ({Math.round(initialKmNum)} km).
+              </Text>
+            ) : null}
+            {kmValid && closureEligibleTrips.length === 0 ? (
+              <Text style={styles.closureHint}>
+                No hay viajes pendientes para este tramo. Si ya enviaste un cierre parcial, configura otra
+                ambulancia en Mi Jornada y registra nuevos viajes.
+              </Text>
+            ) : null}
+
+            {closureKind === "partial" ? (
+              <View style={styles.issueCard}>
+                <Text style={styles.inputLabel}>Motivo del cierre parcial *</Text>
+                <TextInput
+                  style={[styles.issueInput, styles.issueTextarea]}
+                  value={partialReason}
+                  onChangeText={setPartialReason}
+                  multiline
+                  placeholder="Ej. Avería del vehículo, cambio de ambulancia..."
+                  placeholderTextColor="#94a3b8"
+                  editable={!submitLocked}
+                />
+              </View>
+            ) : null}
+
+            {closureKind === "final" ? (
+              <View style={styles.issueCard}>
+                <Text style={styles.inputLabel}>Nota adicional (opcional)</Text>
+                <TextInput
+                  style={[styles.issueInput, styles.issueTextarea]}
+                  value={extraNote}
+                  onChangeText={setExtraNote}
+                  multiline
+                  placeholder="Observaciones para el administrador..."
+                  placeholderTextColor="#94a3b8"
+                  editable={!submitLocked}
+                />
+              </View>
+            ) : null}
+
             {closureFeedback ? (
-              <Text style={[styles.issueFeedback, closureDone ? styles.closureSuccess : null]}>
+              <Text
+                style={[
+                  styles.issueFeedback,
+                  closureDone || partialDone ? styles.closureSuccess : null,
+                ]}
+              >
                 {closureFeedback}
               </Text>
             ) : null}
-            <Pressable
-              style={[
-                styles.closureSubmitBtn,
-                (closureSubmitting || closureDone || !kmValid) ? styles.issueSubmitBtnDisabled : null,
-              ]}
-              onPress={() => void submitClosure()}
-              disabled={closureSubmitting || closureDone || !kmValid}
-            >
-              <Text style={styles.issueSubmitBtnText}>
-                {closureDone ? "Jornada cerrada" : closureSubmitting ? "Enviando..." : "Cerrar jornada"}
-              </Text>
-            </Pressable>
+
+            {closureKind === null && !closureDone && !partialDone ? (
+              <View style={styles.closureChoiceStack}>
+                <Pressable
+                  style={[
+                    styles.closureFinalChoiceBtn,
+                    (!canSubmitClosure || submitLocked) ? styles.issueSubmitBtnDisabled : null,
+                  ]}
+                  onPress={() => {
+                    setClosureKind("final");
+                    setClosureFeedback(undefined);
+                  }}
+                  disabled={!canSubmitClosure || submitLocked}
+                >
+                  <Text style={styles.issueSubmitBtnText}>Cierre final del día</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.closurePartialChoiceBtn,
+                    (!canSubmitClosure || submitLocked) ? styles.issueSubmitBtnDisabled : null,
+                  ]}
+                  onPress={() => {
+                    setClosureKind("partial");
+                    setClosureFeedback(undefined);
+                  }}
+                  disabled={!canSubmitClosure || submitLocked}
+                >
+                  <Text style={styles.issueSubmitBtnText}>Cierre parcial</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {closureKind === "final" && !closureDone ? (
+              <View style={styles.closureActionRow}>
+                <Pressable
+                  style={styles.closureBackBtn}
+                  onPress={() => {
+                    setClosureKind(null);
+                    setClosureFeedback(undefined);
+                  }}
+                  disabled={submitLocked}
+                >
+                  <Text style={styles.closureBackBtnText}>Volver</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.closureSubmitBtn,
+                    (!canSubmitClosure || submitLocked) ? styles.issueSubmitBtnDisabled : null,
+                  ]}
+                  onPress={() => void submitFinalClosure()}
+                  disabled={!canSubmitClosure || submitLocked}
+                >
+                  <Text style={styles.issueSubmitBtnText}>
+                    {closureSubmitting ? "Enviando..." : "Confirmar cierre final"}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {closureKind === "partial" && !partialDone ? (
+              <View style={styles.closureActionRow}>
+                <Pressable
+                  style={styles.closureBackBtn}
+                  onPress={() => {
+                    setClosureKind(null);
+                    setPartialReason("");
+                    setClosureFeedback(undefined);
+                  }}
+                  disabled={submitLocked}
+                >
+                  <Text style={styles.closureBackBtnText}>Volver</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.closurePartialSubmitBtn,
+                    (!canSubmitClosure || submitLocked) ? styles.issueSubmitBtnDisabled : null,
+                  ]}
+                  onPress={() => void submitPartialClosure()}
+                  disabled={!canSubmitClosure || submitLocked}
+                >
+                  <Text style={styles.issueSubmitBtnText}>
+                    {closureSubmitting ? "Enviando..." : "Enviar cierre parcial"}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {partialDone ? (
+              <Pressable style={styles.closureSubmitBtn} onPress={onClose}>
+                <Text style={styles.issueSubmitBtnText}>Volver a Mi Jornada</Text>
+              </Pressable>
+            ) : null}
+
+            {closureDone ? (
+              <Pressable style={styles.closureSubmitBtn} onPress={onClose}>
+                <Text style={styles.issueSubmitBtnText}>Volver a Mi Jornada</Text>
+              </Pressable>
+            ) : null}
           </View>
         );
       }
@@ -805,9 +1066,14 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     assignedAmbulanceData.plate,
     checklistItems,
     closureDone,
+    closureEligibleTrips.length,
+    closureEligibleTripsCounted,
     closureFeedback,
+    closureKind,
     closureSubmitting,
+    extraNote,
     finalKm,
+    hasFinalClosureToday,
     issueFeedback,
     issueJustSent,
     issuePhotos,
@@ -817,9 +1083,14 @@ export function WorkerWorkdayClosureScreen({ user, enabledModules, onClose }: Pr
     loadingTrips,
     loadTrips,
     o2Level,
+    onClose,
+    partialDone,
+    partialReason,
     sendIssue,
     sendingIssue,
-    submitClosure,
+    submitFinalClosure,
+    submitPartialClosure,
+    tripSetup?.initialKm,
     trips,
     tripsCounted,
     sentIssuesToday,
@@ -1342,13 +1613,63 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   closureSubmitBtn: {
-    alignSelf: "stretch",
+    flex: 1,
     borderWidth: 1,
     borderColor: "#0e7490",
     backgroundColor: "#0891b2",
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
+  },
+  closureChoiceStack: {
+    gap: 10,
+  },
+  closureFinalChoiceBtn: {
+    alignSelf: "stretch",
+    borderWidth: 1,
+    borderColor: "#15803d",
+    backgroundColor: "#16a34a",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  closurePartialChoiceBtn: {
+    alignSelf: "stretch",
+    borderWidth: 1,
+    borderColor: "#b45309",
+    backgroundColor: "#f59e0b",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  closurePartialSubmitBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#b45309",
+    backgroundColor: "#f59e0b",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  closureActionRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "stretch",
+  },
+  closureBackBtn: {
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closureBackBtnText: {
+    color: "#334155",
+    fontSize: 14,
+    fontWeight: "700",
   },
   issueSuccessBanner: {
     backgroundColor: "#ecfdf5",

@@ -266,7 +266,16 @@ export function WorkerTabsShell({
     refreshUnreadMessagesCount,
   ]);
 
-  const content = useMemo(() => {
+  const nonWorkdayContent = useMemo(() => {
+    if (activeTab === "workday") {
+      return hasWorkdayModule ? null : (
+        <PlaceholderScreen
+          title="Mi Jornada"
+          description="Tu empresa no tiene el modulo Jornada activo."
+        />
+      );
+    }
+
     switch (activeTab) {
       case "home":
         return (
@@ -295,21 +304,6 @@ export function WorkerTabsShell({
             hasPraemienModule={hasPraemienModule}
             agendaWsTrigger={agendaWsTrigger}
             showBottomPreview={false}
-          />
-        );
-      case "workday":
-        return hasWorkdayModule ? (
-          <WorkerWorkdayScreen
-            user={user}
-            enabledModules={enabledModules}
-            onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)}
-            workdayWsTrigger={workdayWsTrigger}
-            agendaWsTrigger={agendaWsTrigger}
-          />
-        ) : (
-          <PlaceholderScreen
-            title="Mi Jornada"
-            description="Tu empresa no tiene el modulo Jornada activo."
           />
         );
       case "agenda":
@@ -398,18 +392,40 @@ export function WorkerTabsShell({
     wsTrigger,
   ]);
 
+  const workdayTabVisible = activeTab === "workday" && hasWorkdayModule;
+
   return (
     <View style={styles.root}>
-      {workdayClosureOpen ? (
-        <WorkerWorkdayClosureScreen
-          user={user}
-          enabledModules={enabledModules}
-          onClose={() => setWorkdayClosureOpen(false)}
-        />
-      ) : (
-        <>
-          <View style={styles.content}>{content}</View>
-          <View style={styles.bottomNav}>
+      <View style={styles.content}>
+        {hasWorkdayModule ? (
+          <View
+            style={[
+              StyleSheet.absoluteFillObject,
+              !workdayTabVisible && styles.workdayKeepAliveHidden,
+            ]}
+            pointerEvents={workdayTabVisible ? "auto" : "none"}
+          >
+            <WorkerWorkdayScreen
+              user={user}
+              enabledModules={enabledModules}
+              onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)}
+              workdayWsTrigger={workdayWsTrigger}
+              agendaWsTrigger={agendaWsTrigger}
+            />
+          </View>
+        ) : null}
+        <View
+          style={[
+            styles.tabContentLayer,
+            workdayTabVisible && styles.tabContentLayerHidden,
+          ]}
+          pointerEvents={workdayTabVisible ? "none" : "auto"}
+        >
+          {nonWorkdayContent}
+        </View>
+      </View>
+      {!workdayClosureOpen ? (
+        <View style={styles.bottomNav}>
         <Pressable onPress={() => setActiveTab("home")} style={styles.tabButton}>
           <Ionicons
             name="home-outline"
@@ -523,9 +539,20 @@ export function WorkerTabsShell({
             Perfil
           </Text>
         </Pressable>
-          </View>
-        </>
-      )}
+        </View>
+      ) : null}
+      {workdayClosureOpen ? (
+        <View style={styles.closureOverlay}>
+          <WorkerWorkdayClosureScreen
+            user={user}
+            enabledModules={enabledModules}
+            onClose={() => setWorkdayClosureOpen(false)}
+            onClosureComplete={() => {
+              setWorkdayWsTrigger((n) => n + 1);
+            }}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -537,6 +564,21 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    position: "relative",
+  },
+  workdayKeepAliveHidden: {
+    opacity: 0,
+  },
+  tabContentLayer: {
+    flex: 1,
+  },
+  tabContentLayerHidden: {
+    opacity: 0,
+  },
+  closureOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    backgroundColor: "#f8fafc",
   },
   bottomNav: {
     flexDirection: "row",
