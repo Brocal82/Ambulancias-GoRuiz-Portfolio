@@ -62,16 +62,44 @@ export type CreateTripPayload = {
   countsForSummary: boolean;
 };
 
+export type WorkdaySummaryTrip = {
+  auftragNumber?: string;
+  patientName?: string;
+  fromAddress?: string;
+  toAddress?: string;
+  timeWarning?: string;
+  timeAtHome?: string;
+  timePickup?: string;
+  timeArrival?: string;
+  timeEnd?: string;
+  kmStart?: number;
+  kmEnd?: number;
+  wasCancelled?: boolean;
+  countsTrip?: 0 | 1;
+  reports?: string;
+};
+
 export type WorkdaySummary = {
   _id: string;
   date: string;
   assignmentId: string;
   isFinalClosure: boolean;
+  ambulanceNumber?: string;
+  initialKm?: number;
+  finalKm?: number;
   totalDienstKm?: number;
   totalRealTrips?: number;
   totalEffectivePatients?: number;
+  partialClosureReason?: string;
+  extraNote?: string;
   isReviewed?: boolean;
   reviewedAt?: string;
+  driver?: string | AssignedDayUser;
+  medic?: string | AssignedDayUser;
+  trips?: WorkdaySummaryTrip[];
+  dienstNumber?: number;
+  startTime?: string;
+  endTime?: string;
 };
 
 export type WorkdayTripSetup = {

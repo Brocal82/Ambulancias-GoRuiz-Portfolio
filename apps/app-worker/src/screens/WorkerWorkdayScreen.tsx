@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ApiError } from "../services/http";
@@ -23,9 +23,10 @@ import {
   saveAmbulanceDataAsync,
   setVehicleConfirmedAsync,
 } from "../utils/workdayAmbulanceStorage";
-import { canStartTripNow } from "../utils/workdayAssignment";
+import { canStartTripNow, filterSummariesForAssignment, msUntilNextLocalMidnight, resolveTodayAssignment, todayDateKey, workdayDataDateKey } from "../utils/workdayAssignment";
 import { WorkerTripStepPanel } from "./WorkerTripStepPanel";
 import { WorkerWorkdayPreamble } from "./WorkerWorkdayPreamble";
+import { WorkerWorkdayClosedSummary } from "../components/WorkerWorkdayClosedSummary";
 
 type AssignedDayFull = AssignedDay & {
   driver: { _id: string };
@@ -179,32 +180,11 @@ type Props = {
   onOpenWorkdayClosure?: () => void;
   workdayWsTrigger?: number;
   agendaWsTrigger?: number;
+  /** Incremented after partial/final closure to force-reset local jornada session. */
+  workdaySessionResetTrigger?: number;
 };
 
 type WorkdayStatus = "no-assignment" | "ready" | "in-progress" | "partial-closed" | "final-closed";
-
-function toDateKey(input?: string): string | null {
-  if (!input) return null;
-  const trimmed = input.trim();
-  const direct = /^(\d{4}-\d{2}-\d{2})$/.exec(trimmed);
-  if (direct) return direct[1] ?? null;
-  const iso = /^(\d{4}-\d{2}-\d{2})T/.exec(trimmed);
-  if (iso) return iso[1] ?? null;
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) return null;
-  const y = parsed.getFullYear();
-  const m = String(parsed.getMonth() + 1).padStart(2, "0");
-  const d = String(parsed.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function todayDateKey(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 /** Viajes que suman al contador de “jornada en curso” (incluye Storno con +1). */
 function tripCountsTowardWorkdayBanner(trip: WorkdayTrip): boolean {
@@ -226,6 +206,7 @@ export function WorkerWorkdayScreen({
   onOpenWorkdayClosure,
   workdayWsTrigger,
   agendaWsTrigger,
+  workdaySessionResetTrigger,
 }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
@@ -244,6 +225,18 @@ export function WorkerWorkdayScreen({
   const [ambulancesLoading, setAmbulancesLoading] = useState(false);
   const [confirmingAmbulance, setConfirmingAmbulance] = useState(false);
 
+  const prevSessionResetTrigger = useRef(workdaySessionResetTrigger);
+  useEffect(() => {
+    if (workdaySessionResetTrigger === undefined) return;
+    if (workdaySessionResetTrigger === prevSessionResetTrigger.current) return;
+    prevSessionResetTrigger.current = workdaySessionResetTrigger;
+    setVehicleConfirmed(false);
+    setInitialKmDraft("");
+    setPreambleAmbulanceId("");
+    setPreambleAmbulanceNumber("");
+    setAmbulanceLocalError(undefined);
+  }, [workdaySessionResetTrigger]);
+
   const hasAmbulancesModule = useMemo(
     () => Boolean(enabledModules?.includes(MODULE_KEYS.AMBULANCES)),
     [enabledModules],
@@ -256,25 +249,21 @@ export function WorkerWorkdayScreen({
     }
     setErrorMessage(undefined);
     try {
-      const today = todayDateKey();
-      const [assignedDays, trips, summaries] = await Promise.all([
-        getAssignedDaysForWorker(user._id),
-        getWorkdayTripsByDate(today),
+      const assignedDays = await getAssignedDaysForWorker(user._id);
+      const assignment = resolveTodayAssignment(assignedDays);
+      const dataDateKey = workdayDataDateKey(assignment) ?? todayDateKey();
+      const [trips, summaries] = await Promise.all([
+        getWorkdayTripsByDate(dataDateKey),
         getMyWorkdaySummaries(),
       ]);
 
-      const assignment = assignedDays.find((item) => toDateKey(item.date) === today) ?? null;
-      const summariesSorted = [...summaries].sort((a, b) => b.date.localeCompare(a.date));
-      const summariesForTodayStatus =
-        assignment == null
-          ? []
-          : summariesSorted.filter(
-              (s) => toDateKey(s.date) === today && s.assignmentId === assignment.assignmentId,
-            );
+      const summariesForAssignment = assignment
+        ? filterSummariesForAssignment(summaries, assignment)
+        : [];
 
       setTodayAssignment(assignment);
       setTodayTrips(trips);
-      setRecentSummaries(summariesForTodayStatus);
+      setRecentSummaries(summariesForAssignment);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
@@ -290,6 +279,30 @@ export function WorkerWorkdayScreen({
 
   useEffect(() => {
     void loadWorkday();
+  }, [loadWorkday]);
+
+  /** Recarga al cambiar el día calendario o al volver a primer plano (turnos nocturnos incluidos). */
+  useEffect(() => {
+    let midnightTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const scheduleMidnightRefresh = () => {
+      midnightTimer = setTimeout(() => {
+        void loadWorkday({ silent: true });
+        scheduleMidnightRefresh();
+      }, msUntilNextLocalMidnight());
+    };
+
+    scheduleMidnightRefresh();
+
+    const appStateSub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return;
+      void loadWorkday({ silent: true });
+    });
+
+    return () => {
+      if (midnightTimer) clearTimeout(midnightTimer);
+      appStateSub.remove();
+    };
   }, [loadWorkday]);
 
   const prevWorkdayWsTrigger = useRef(workdayWsTrigger);
@@ -324,10 +337,13 @@ export function WorkerWorkdayScreen({
     const defId = ambulanceIdForStorage(todayAssignment);
     const defNum = ambulanceNumberForStorage(todayAssignment);
     const sharedTripsForAssignment = todayTrips.filter(
-      (trip) => trip.assignmentId === assignmentId,
+      (trip) => trip.assignmentId === assignmentId && trip.sentInSummary !== true,
     );
     const sharedSetupExists = sharedTripsForAssignment.length > 0;
-    const sharedKmStart = firstSharedKmStartForAssignment(todayTrips, assignmentId);
+        const sharedKmStart = firstSharedKmStartForAssignment(
+          sharedTripsForAssignment,
+          assignmentId,
+        );
     const hasPartialClosureToday = recentSummaries.some((s) => s.isFinalClosure === false);
     let cancelled = false;
     setAmbulanceHydrated(false);
@@ -346,7 +362,7 @@ export function WorkerWorkdayScreen({
           setVehicleConfirmed(false);
           return;
         }
-        if (sharedSetup?.initialKm && sharedSetup.initialKm > 0) {
+        if (!hasPartialClosureToday && sharedSetup?.initialKm && sharedSetup.initialKm > 0) {
           const sharedKm = String(Math.round(sharedSetup.initialKm));
           const sharedAmbulanceId = sharedSetup.ambulanceId?.trim() || defId;
           const sharedAmbulanceNumber = sharedSetup.ambulanceNumber?.trim() || defNum;
@@ -439,6 +455,11 @@ export function WorkerWorkdayScreen({
     vehicleConfirmed,
   ]);
 
+  const pendingTodayTrips = useMemo(
+    () => todayTrips.filter((trip) => trip.sentInSummary !== true),
+    [todayTrips],
+  );
+
   const todayStatus = useMemo<WorkdayStatus>(() => {
     if (!todayAssignment) return "no-assignment";
     const summaryState = summaryStateForAssignment(
@@ -446,10 +467,19 @@ export function WorkerWorkdayScreen({
       todayAssignment.assignmentId,
     );
     if (summaryState === "final-closed") return "final-closed";
-    if (summaryState === "partial-closed") return "partial-closed";
-    if (todayTrips.length > 0) return "in-progress";
+    if (summaryState === "partial-closed") {
+      if (vehicleConfirmed && pendingTodayTrips.length > 0) return "in-progress";
+      if (vehicleConfirmed) return "in-progress";
+      return "partial-closed";
+    }
+    if (pendingTodayTrips.length > 0) return "in-progress";
     return "ready";
-  }, [todayAssignment, todayTrips.length, recentSummaries]);
+  }, [
+    todayAssignment,
+    pendingTodayTrips.length,
+    recentSummaries,
+    vehicleConfirmed,
+  ]);
 
   const tripPanelAssignment = useMemo(
     () => (todayAssignment ? assignmentForTripPanel(todayAssignment) : null),
@@ -457,8 +487,8 @@ export function WorkerWorkdayScreen({
   );
 
   const tripsCountForBanner = useMemo(
-    () => todayTrips.filter(tripCountsTowardWorkdayBanner).length,
-    [todayTrips],
+    () => pendingTodayTrips.filter(tripCountsTowardWorkdayBanner).length,
+    [pendingTodayTrips],
   );
 
   const canStartWork = useMemo(() => {
@@ -467,6 +497,19 @@ export function WorkerWorkdayScreen({
   }, [todayAssignment]);
 
   const tripsBlocked = todayStatus === "final-closed";
+
+  const dayClosureTotals = useMemo(() => {
+    let totalPraemie = 0;
+    let totalRealTrips = 0;
+    for (const summary of recentSummaries) {
+      totalPraemie += summary.totalEffectivePatients ?? 0;
+      totalRealTrips += summary.totalRealTrips ?? 0;
+    }
+    return {
+      totalPraemie: Math.round(totalPraemie * 2) / 2,
+      totalRealTrips,
+    };
+  }, [recentSummaries]);
 
   const vehicleSetupComplete = useMemo(
     () => !todayAssignment || vehicleConfirmed,
@@ -532,7 +575,9 @@ export function WorkerWorkdayScreen({
       case "in-progress":
         return "Jornada en curso";
       case "partial-closed":
-        return "Cierre parcial enviado";
+        return vehicleConfirmed
+          ? "Nuevo tramo · listo para viajes"
+          : "Cierre parcial enviado · configura ambulancia";
       case "final-closed":
         return "Jornada cerrada (final)";
       default:
@@ -583,6 +628,11 @@ export function WorkerWorkdayScreen({
             <Text style={styles.headerSchedule} numberOfLines={1}>
               {todayAssignment.startTime ?? "--:--"} – {todayAssignment.endTime ?? "--:--"}
             </Text>
+            {workdayDataDateKey(todayAssignment) !== todayDateKey() ? (
+              <Text style={styles.headerOvernightHint} numberOfLines={1}>
+                Turno nocturno en curso
+              </Text>
+            ) : null}
           </View>
 
           <View style={[styles.headerCol, styles.headerColCenter]}>
@@ -634,7 +684,7 @@ export function WorkerWorkdayScreen({
   ]);
 
   const showHeaderTripCountChip =
-    !isLoading && !errorMessage && todayAssignment != null;
+    !isLoading && !errorMessage && todayAssignment != null && todayStatus !== "final-closed";
 
   const showPreamble = Boolean(
     !isLoading &&
@@ -801,7 +851,20 @@ export function WorkerWorkdayScreen({
       ) : (
         <View style={styles.mainColumn}>
           <View style={styles.topSection}>
-            {todayAssignment && tripPanelAssignment ? (
+            {todayStatus === "final-closed" && todayAssignment ? (
+              <View style={styles.closedSummaryWrap}>
+                <WorkerWorkdayClosedSummary
+                  date={todayAssignment.date}
+                  dienstNumber={todayAssignment.dienstNumber}
+                  startTime={todayAssignment.startTime}
+                  endTime={todayAssignment.endTime}
+                  driverName={displayWorkerName(todayAssignment.driver)}
+                  medicName={displayWorkerName(todayAssignment.medic)}
+                  totalPraemie={dayClosureTotals.totalPraemie}
+                  totalRealTrips={dayClosureTotals.totalRealTrips}
+                />
+              </View>
+            ) : todayAssignment && tripPanelAssignment ? (
               <View style={styles.tripPanelShell}>
                 <WorkerTripStepPanel
                   assignedDay={tripPanelAssignment}
@@ -820,7 +883,9 @@ export function WorkerWorkdayScreen({
               </View>
             ) : null}
 
-            {todayStatus !== "in-progress" ? (
+            {todayStatus !== "in-progress" &&
+            todayStatus !== "partial-closed" &&
+            todayStatus !== "final-closed" ? (
               <View style={[styles.cardCompact, styles.workdayStatusBelowForm]}>
                 <Text style={styles.statusOneLine}>
                   {todayAssignment
@@ -955,6 +1020,14 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
     alignSelf: "stretch",
   },
+  headerOvernightHint: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#fcd34d",
+    lineHeight: 13,
+    alignSelf: "stretch",
+    marginTop: 2,
+  },
   headerTeamName: {
     fontSize: 11,
     fontWeight: "600",
@@ -1047,6 +1120,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 18,
     gap: 8,
+  },
+  closedSummaryWrap: {
+    flex: 1,
+    justifyContent: "center",
+    paddingVertical: 12,
   },
   tripPanelShell: {
     flex: 1,

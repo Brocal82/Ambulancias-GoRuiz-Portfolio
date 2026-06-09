@@ -20,6 +20,7 @@ export type ReportIssuePayload = {
 export type MechanicsIssueReport = {
   _id: string;
   date: string;
+  assignmentId?: string;
   ambulanceNumber?: string;
   finalKm?: number;
   issueText: string;

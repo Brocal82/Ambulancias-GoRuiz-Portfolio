@@ -32,6 +32,7 @@ import {
   getWorkdayTripSetup,
   submitPartialWorkdayClosure,
   submitWorkdayClosure,
+  type WorkdaySummary,
 } from "../services/workday";
 import { AmbulanceListItem, getAmbulancesList } from "../services/ambulances";
 import { AuthUser, CompanyModuleKey, MODULE_KEYS } from "../types/auth";
@@ -39,7 +40,8 @@ import { parseHHMM } from "../utils/tripValidators";
 import { buildClosureTripRefs } from "../utils/closurePayload";
 import { resetAmbulanceSessionAfterPartialClosure } from "../utils/workdayAmbulanceStorage";
 import { clearTripDraftSessionAsync } from "../utils/workdayTripDraftStorage";
-import { resolveTodayAssignment } from "../utils/workdayAssignment";
+import { resolveTodayAssignment, todayDateKey, filterSummariesForAssignment, workdayDataDateKey } from "../utils/workdayAssignment";
+import { WorkerPartialSummariesPanel } from "../components/WorkerPartialSummariesPanel";
 
 type Props = {
   user: AuthUser;
@@ -47,33 +49,12 @@ type Props = {
   onClose: () => void;
   /** Called after a successful partial or final closure (refresh Mi Jornada). */
   onClosureComplete?: () => void;
+  /** Called after final closure: close overlay and show Mi Jornada summary. */
+  onFinalClosureComplete?: () => void;
 };
 
 type ClosureMenuKey = "inicio" | "checks" | "viajes" | "averias" | "envio";
 type ClosureKind = null | "final" | "partial";
-
-function todayDateKey(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function toSummaryDateKey(input?: string): string {
-  if (!input) return "";
-  const trimmed = input.trim();
-  const direct = /^(\d{4}-\d{2}-\d{2})$/.exec(trimmed);
-  if (direct) return direct[1] ?? "";
-  const iso = /^(\d{4}-\d{2}-\d{2})T/.exec(trimmed);
-  if (iso) return iso[1] ?? "";
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) return "";
-  const y = parsed.getFullYear();
-  const m = String(parsed.getMonth() + 1).padStart(2, "0");
-  const d = String(parsed.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 function tripCountsTowardWorkday(trip: WorkdayTrip): boolean {
   return trip.countsTrip !== 0;
@@ -190,6 +171,7 @@ export function WorkerWorkdayClosureScreen({
   enabledModules,
   onClose,
   onClosureComplete,
+  onFinalClosureComplete,
 }: Props) {
   const [activeKey, setActiveKey] = useState<ClosureMenuKey>("inicio");
   const [trips, setTrips] = useState<WorkdayTrip[]>([]);
@@ -220,17 +202,36 @@ export function WorkerWorkdayClosureScreen({
   const [partialReason, setPartialReason] = useState("");
   const [extraNote, setExtraNote] = useState("");
   const [hasFinalClosureToday, setHasFinalClosureToday] = useState(false);
+  const [partialSummariesToday, setPartialSummariesToday] = useState<WorkdaySummary[]>([]);
 
   const hasAmbulancesModule = useMemo(
     () => Boolean(enabledModules?.includes(MODULE_KEYS.AMBULANCES)),
     [enabledModules],
   );
 
-  const loadTrips = useCallback(async () => {
+  const loadPartialSummaries = useCallback(async (assignment: AssignedDay | null) => {
+    if (!assignment) {
+      setPartialSummariesToday([]);
+      return;
+    }
+    try {
+      const summaries = await getMyWorkdaySummaries();
+      setPartialSummariesToday(
+        filterSummariesForAssignment(summaries, assignment).filter(
+          (summary) => summary.isFinalClosure === false,
+        ),
+      );
+    } catch {
+      setPartialSummariesToday([]);
+    }
+  }, []);
+
+  const loadTrips = useCallback(async (assignment: AssignedDay | null) => {
     setLoadingTrips(true);
     setLoadError(undefined);
     try {
-      const list = await getWorkdayTripsByDate(todayDateKey());
+      const dateKey = workdayDataDateKey(assignment) ?? todayDateKey();
+      const list = await getWorkdayTripsByDate(dateKey);
       setTrips(list);
     } catch (e) {
       if (e instanceof ApiError) {
@@ -244,8 +245,8 @@ export function WorkerWorkdayClosureScreen({
   }, []);
 
   useEffect(() => {
-    void loadTrips();
-  }, [loadTrips]);
+    void loadTrips(todayAssignment);
+  }, [loadTrips, todayAssignment]);
 
   useEffect(() => {
     let cancelled = false;
@@ -276,18 +277,19 @@ export function WorkerWorkdayClosureScreen({
           try {
             const summaries = await getMyWorkdaySummaries();
             if (!cancelled) {
-              const today = todayDateKey();
+              const forAssignment = filterSummariesForAssignment(summaries, assignment);
               setHasFinalClosureToday(
-                summaries.some(
-                  (s) =>
-                    s.assignmentId === assignment.assignmentId &&
-                    toSummaryDateKey(s.date) === today &&
-                    s.isFinalClosure === true,
-                ),
+                forAssignment.some((summary) => summary.isFinalClosure === true),
+              );
+              setPartialSummariesToday(
+                forAssignment.filter((summary) => summary.isFinalClosure === false),
               );
             }
           } catch {
-            if (!cancelled) setHasFinalClosureToday(false);
+            if (!cancelled) {
+              setHasFinalClosureToday(false);
+              setPartialSummariesToday([]);
+            }
           }
         }
       } catch {
@@ -476,10 +478,12 @@ export function WorkerWorkdayClosureScreen({
         ...(extraNote.trim() ? { extraNote: extraNote.trim() } : {}),
         ...(o2LevelNum != null && !Number.isNaN(o2LevelNum) ? { o2Level: o2LevelNum } : {}),
       });
-      await clearTripDraftSessionAsync(base.assignmentId, base.date);
-      setClosureDone(true);
-      setClosureFeedback("Jornada cerrada correctamente.");
+      await Promise.all([
+        clearTripDraftSessionAsync(base.assignmentId, base.date),
+        resetAmbulanceSessionAfterPartialClosure(base.assignmentId),
+      ]);
       onClosureComplete?.();
+      onFinalClosureComplete?.();
     } catch (e) {
       if (e instanceof ApiError) {
         setClosureFeedback(e.message);
@@ -489,7 +493,7 @@ export function WorkerWorkdayClosureScreen({
     } finally {
       setClosureSubmitting(false);
     }
-  }, [checklistItems, extraNote, o2Level, onClosureComplete, resolveClosureBase]);
+  }, [checklistItems, extraNote, o2Level, onClosureComplete, onFinalClosureComplete, resolveClosureBase]);
 
   const submitPartialClosure = useCallback(async () => {
     const reasonTrimmed = partialReason.trim();
@@ -515,7 +519,10 @@ export function WorkerWorkdayClosureScreen({
       ]);
       setPartialDone(true);
       setClosureFeedback("Cierre parcial enviado. Puedes configurar otra ambulancia y seguir la jornada.");
-      await loadTrips();
+      await Promise.all([
+        loadTrips(todayAssignment),
+        loadPartialSummaries(todayAssignment),
+      ]);
       onClosureComplete?.();
     } catch (e) {
       if (e instanceof ApiError) {
@@ -526,7 +533,7 @@ export function WorkerWorkdayClosureScreen({
     } finally {
       setClosureSubmitting(false);
     }
-  }, [loadTrips, onClosureComplete, partialReason, resolveClosureBase]);
+  }, [loadPartialSummaries, loadTrips, onClosureComplete, partialReason, resolveClosureBase, todayAssignment]);
 
   const assignedAmbulanceData = useMemo(() => {
     if (!todayAssignment) {
@@ -553,13 +560,21 @@ export function WorkerWorkdayClosureScreen({
         return (
           <View style={styles.placeholderBlock}>
             <Text style={styles.placeholderTitle}>Resumen del dia</Text>
+            {partialSummariesToday.length > 0 && todayAssignment ? (
+              <WorkerPartialSummariesPanel
+                summaries={partialSummariesToday}
+                driverLabel={userLabel(todayAssignment.driver)}
+                medicLabel={userLabel(todayAssignment.medic)}
+                issuesToday={sentIssuesToday}
+              />
+            ) : null}
             <Text style={styles.placeholderText}>
-              Aqui podras revisar el cierre del dia: valores de O2, kilometros finales de ambulancia,
-              averias y envio del reporte al administrador.
+              Tramo actual: revisa checks, viajes pendientes, averias y envio del reporte al
+              administrador.
             </Text>
             <View style={styles.statPill}>
-              <Text style={styles.statPillLabel}>Viajes registrados (hoy)</Text>
-              <Text style={styles.statPillValue}>{tripsCounted}</Text>
+              <Text style={styles.statPillLabel}>Viajes pendientes (tramo actual)</Text>
+              <Text style={styles.statPillValue}>{closureEligibleTripsCounted}</Text>
             </View>
             {issueJustSent ? (
               <View style={styles.issueSuccessBanner}>
@@ -650,7 +665,7 @@ export function WorkerWorkdayClosureScreen({
           return (
             <View style={styles.placeholderBlock}>
               <Text style={styles.errorInline}>{loadError}</Text>
-              <Pressable style={styles.retryMini} onPress={() => void loadTrips()}>
+              <Pressable style={styles.retryMini} onPress={() => void loadTrips(todayAssignment)}>
                 <Text style={styles.retryMiniText}>Reintentar</Text>
               </Pressable>
             </View>
@@ -1091,6 +1106,7 @@ export function WorkerWorkdayClosureScreen({
     onClose,
     partialDone,
     partialReason,
+    partialSummariesToday,
     sendIssue,
     sendingIssue,
     submitFinalClosure,
