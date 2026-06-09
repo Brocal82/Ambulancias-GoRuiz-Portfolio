@@ -1,4 +1,4 @@
-import type { AssignedDay } from "../services/workday";
+import type { AssignedDay, WorkdaySummary } from "../services/workday";
 
 export function canStartTripNow(startTime: string | undefined, dienstDate: string): boolean {
   if (!startTime) return false;
@@ -9,13 +9,15 @@ export function canStartTripNow(startTime: string | undefined, dienstDate: strin
   return Date.now() >= start.getTime();
 }
 
-function crossesMidnight(start: string, end: string): boolean {
+export function crossesMidnight(start: string, end: string): boolean {
   const [sh] = start.split(":").map(Number);
   const [eh] = end.split(":").map(Number);
   return eh < sh;
 }
 
-function isNowWithinDienst(dienst: Pick<AssignedDay, "date" | "startTime" | "endTime">): boolean {
+export function isNowWithinDienst(
+  dienst: Pick<AssignedDay, "date" | "startTime" | "endTime">,
+): boolean {
   const d = dienst.date;
   const st = dienst.startTime ?? "00:00";
   const et = dienst.endTime ?? "23:59";
@@ -32,7 +34,7 @@ function isNowWithinDienst(dienst: Pick<AssignedDay, "date" | "startTime" | "end
   return now >= start && now <= end;
 }
 
-function toDateKey(input?: string): string | null {
+export function toDateKey(input?: string): string | null {
   if (!input) return null;
   const trimmed = input.trim();
   const direct = /^(\d{4}-\d{2}-\d{2})$/.exec(trimmed);
@@ -53,6 +55,40 @@ export function todayDateKey(): string {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+export function msUntilNextLocalMidnight(): number {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  return Math.max(1000, next.getTime() - now.getTime());
+}
+
+/** Fecha de datos de jornada (viajes, cierres): siempre la del Dienst, no la del reloj. */
+export function workdayDataDateKey(
+  assignment: Pick<AssignedDay, "date"> | null | undefined,
+): string | null {
+  if (!assignment) return null;
+  return toDateKey(assignment.date);
+}
+
+export function filterSummariesForAssignment(
+  summaries: WorkdaySummary[],
+  assignment: Pick<AssignedDay, "assignmentId" | "date">,
+): WorkdaySummary[] {
+  const dateKey = workdayDataDateKey(assignment);
+  if (!dateKey) return [];
+  return summaries.filter(
+    (summary) =>
+      summary.assignmentId === assignment.assignmentId &&
+      toDateKey(String(summary.date)) === dateKey,
+  );
+}
+
+/** Identifica la sesión activa de jornada (assignment + fecha Dienst). */
+export function workdaySessionFingerprint(assignment: AssignedDay | null): string {
+  if (!assignment) return `none|${todayDateKey()}`;
+  const dateKey = workdayDataDateKey(assignment) ?? todayDateKey();
+  return `${assignment.assignmentId}|${dateKey}`;
 }
 
 export function resolveTodayAssignment(days: AssignedDay[]): AssignedDay | null {
