@@ -103,6 +103,7 @@ export function WorkerTabsShell({
   const [wsTrigger, setWsTrigger] = useState(0);
   const [agendaWsTrigger, setAgendaWsTrigger] = useState(0);
   const [workdayWsTrigger, setWorkdayWsTrigger] = useState(0);
+  const [workdaySessionResetTrigger, setWorkdaySessionResetTrigger] = useState(0);
   const [vacationWsTrigger, setVacationWsTrigger] = useState(0);
   const [sickLeaveWsTrigger, setSickLeaveWsTrigger] = useState(0);
   const [appointmentWsTrigger, setAppointmentWsTrigger] = useState(0);
@@ -424,6 +425,7 @@ export function WorkerTabsShell({
               onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)}
               workdayWsTrigger={workdayWsTrigger}
               agendaWsTrigger={agendaWsTrigger}
+              workdaySessionResetTrigger={workdaySessionResetTrigger}
             />
           </View>
         ) : null}
@@ -562,6 +564,13 @@ export function WorkerTabsShell({
             onClose={() => setWorkdayClosureOpen(false)}
             onClosureComplete={() => {
               setWorkdayWsTrigger((n) => n + 1);
+              setWorkdaySessionResetTrigger((n) => n + 1);
+            }}
+            onFinalClosureComplete={() => {
+              setWorkdayClosureOpen(false);
+              setActiveTab("workday");
+              setWorkdayWsTrigger((n) => n + 1);
+              setWorkdaySessionResetTrigger((n) => n + 1);
             }}
           />
         </View>
