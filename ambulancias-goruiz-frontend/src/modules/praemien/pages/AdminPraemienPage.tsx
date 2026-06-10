@@ -29,6 +29,7 @@ export default function AdminPraemienPage() {
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
   const [rejectPanelKey, setRejectPanelKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   const initialLoadDoneRef = useRef(false);
 
@@ -61,6 +62,11 @@ export default function AdminPraemienPage() {
     setRectifyInput((prev) => { const n = { ...prev }; delete n[k]; return n; });
     setRejectReason((prev) => { const n = { ...prev }; delete n[k]; return n; });
     setRejectPanelKey((prev) => (prev === k ? null : prev));
+    setExpandedKey((prev) => (prev === k ? null : prev));
+  };
+
+  const toggleExpanded = (k: string) => {
+    setExpandedKey((prev) => (prev === k ? null : k));
   };
 
   const handleApprove = async (row: AdminManualPraemiePendingListEntry) => {
@@ -130,6 +136,9 @@ export default function AdminPraemienPage() {
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">
             {t("pages.adminUsers.titlePraemiePendingQueue")}
           </h1>
+          <p className="mt-1 text-xs text-slate-600">
+            {t("pages.praemien.adminManual.queueExpandHint")}
+          </p>
         </div>
 
         <div className="min-w-0 rounded-2xl bg-white shadow-md ring-1 ring-slate-200 overflow-hidden">
@@ -170,6 +179,9 @@ export default function AdminPraemienPage() {
                       onApprove={() => void handleApprove(row)}
                       busy={busyKey === k}
                       onReopen={() => {}}
+                      expandable
+                      expanded={expandedKey === k}
+                      onToggleExpand={() => toggleExpanded(k)}
                     />
                   );
                 })}

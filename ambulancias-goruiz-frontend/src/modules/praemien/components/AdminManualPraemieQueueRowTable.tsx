@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import { fmtDDMM } from "../../../utils/timeUtils";
 import type { AdminManualPraemieQueueRowData } from "../domain/manualDailyApi";
+import { AdminManualPraemieDayWorkdayReports } from "./AdminManualPraemieDayWorkdayReports";
 import {
   fmtPraemieEmployeeNoDisplay,
   PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS,
@@ -57,6 +58,10 @@ export interface AdminManualPraemieQueueRowBodyProps {
   onApprove: () => void;
   busy: boolean;
   onReopen: () => void;
+  /** Cola pendiente: clic en la fila despliega reportes de jornada. */
+  expandable?: boolean;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export function AdminManualPraemieQueueRowBody({
@@ -72,8 +77,29 @@ export function AdminManualPraemieQueueRowBody({
   onApprove,
   busy,
   onReopen,
+  expandable = false,
+  expanded = false,
+  onToggleExpand,
 }: AdminManualPraemieQueueRowBodyProps) {
   const { t } = useTranslation();
+
+  const stopRowToggle = (event: MouseEvent | KeyboardEvent) => {
+    event.stopPropagation();
+  };
+
+  const handleRowClick = () => {
+    if (expandable && onToggleExpand) {
+      onToggleExpand();
+    }
+  };
+
+  const handleRowKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!expandable || !onToggleExpand) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onToggleExpand();
+    }
+  };
 
   const horario =
     row.startTime && row.endTime
@@ -103,8 +129,24 @@ export function AdminManualPraemieQueueRowBody({
     approved && row.adminFinalValue != null ? String(row.adminFinalValue) : null;
 
   return (
-    <div className={PRAEMIE_QUEUE_bodyRow}>
+    <>
+    <div
+      className={`${PRAEMIE_QUEUE_bodyRow} ${
+        expandable ? "cursor-pointer select-none" : ""
+      } ${expanded ? "bg-orange-50/90 ring-1 ring-inset ring-orange-300 hover:bg-orange-50" : ""}`}
+      role={expandable ? "button" : undefined}
+      tabIndex={expandable ? 0 : undefined}
+      aria-expanded={expandable ? expanded : undefined}
+      aria-label={expandable ? t("pages.praemien.adminManual.toggleWorkdayReportsAria") : undefined}
+      onClick={expandable ? handleRowClick : undefined}
+      onKeyDown={expandable ? handleRowKeyDown : undefined}
+    >
       <div className="min-w-0 text-center text-slate-900">
+        {expandable ? (
+          <span className="mr-1 inline-block text-[10px] text-orange-700" aria-hidden>
+            {expanded ? "▾" : "▸"}
+          </span>
+        ) : null}
         <div className="line-clamp-2 break-words font-medium leading-tight">
           {equipoNamesDisplay}
         </div>
@@ -145,7 +187,11 @@ export function AdminManualPraemieQueueRowBody({
       <div className="min-w-0 text-center tabular-nums text-slate-800">
         {row.workerSubmittedValue}
       </div>
-      <div className="min-w-0 text-center">
+      <div
+        className="min-w-0 text-center"
+        onClick={expandable ? stopRowToggle : undefined}
+        onKeyDown={expandable ? stopRowToggle : undefined}
+      >
         {actionable ? (
           <input
             type="number"
@@ -168,7 +214,11 @@ export function AdminManualPraemieQueueRowBody({
           <span className="text-slate-400">—</span>
         )}
       </div>
-      <div className="min-w-0 w-full justify-self-stretch">
+      <div
+        className="min-w-0 w-full justify-self-stretch"
+        onClick={expandable ? stopRowToggle : undefined}
+        onKeyDown={expandable ? stopRowToggle : undefined}
+      >
         <div className="flex min-w-0 w-full flex-col items-stretch justify-center gap-1">
           <div className="flex min-h-[2.75rem] w-full min-w-0 items-center justify-center">
             {actionable && showRejectPanel ? (
@@ -247,6 +297,12 @@ export function AdminManualPraemieQueueRowBody({
         </div>
       </div>
     </div>
+    {expandable && expanded ? (
+      <div className="border-b border-slate-200 bg-slate-50/80 px-3 py-3 sm:px-4">
+        <AdminManualPraemieDayWorkdayReports userId={row.userId} date={row.date} />
+      </div>
+    ) : null}
+    </>
   );
 }
 

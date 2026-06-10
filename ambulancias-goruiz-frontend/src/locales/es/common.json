@@ -1100,6 +1100,12 @@
                 "invalidCorrect": "Introduce un número entre 0 y 10000 (se permiten decimales, p. ej. 1,5).",
                 "draftHint": "Esta fila sigue en borrador. El trabajador debe enviarla antes de que puedas aprobar, rechazar o corregir.",
                 "rejectedQueueHint": "Rechazada. El trabajador debe corregir y volver a enviar.",
+                "workdayReportsTitle": "Reportes de jornada del Dienst",
+                "workdayReportsLoading": "Cargando reportes de jornada…",
+                "workdayReportsLoadError": "No se pudieron cargar los reportes de jornada.",
+                "workdayReportsEmpty": "No hay reportes de jornada para este Dienst.",
+                "toggleWorkdayReportsAria": "Mostrar u ocultar reportes de jornada",
+                "queueExpandHint": "Pulsa la fila para ver los reportes de jornada y confirmar la Prämie.",
                 "th": {
                     "date": "Fecha",
                     "original": "Original",

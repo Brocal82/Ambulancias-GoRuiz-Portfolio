@@ -163,6 +163,9 @@ const AdminUsersPage = () => {
   const [rejectPanelRowKey, setRejectPanelRowKey] = useState<string | null>(
     null,
   );
+  const [expandedPraemieRowKey, setExpandedPraemieRowKey] = useState<string | null>(
+    null,
+  );
   const praemieListInitialLoadDoneRef = useRef(false);
 
   // ✅ Helper UI para vacaciones (usa vacationFlags, t y fmtDDMM centralizado)
@@ -433,6 +436,11 @@ const AdminUsersPage = () => {
       return next;
     });
     setRejectPanelRowKey((prev) => (prev === k ? null : prev));
+    setExpandedPraemieRowKey((prev) => (prev === k ? null : prev));
+  };
+
+  const togglePraemieRowExpanded = (k: string) => {
+    setExpandedPraemieRowKey((prev) => (prev === k ? null : k));
   };
 
   const handlePraemieListApproveAsWorker = async (
@@ -554,6 +562,9 @@ const AdminUsersPage = () => {
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">
             {t("pages.adminUsers.titlePraemiePendingQueue")}
           </h1>
+          <p className="mt-1 text-xs text-slate-600">
+            {t("pages.praemien.adminManual.queueExpandHint")}
+          </p>
         </div>
 
         <div className="min-w-0 rounded-2xl bg-white shadow-md ring-1 ring-slate-200 overflow-hidden">
@@ -596,6 +607,9 @@ const AdminUsersPage = () => {
                       onApprove={() => void handlePraemieListApproveAsWorker(row)}
                       busy={praemieListBusyKey === k}
                       onReopen={() => {}}
+                      expandable
+                      expanded={expandedPraemieRowKey === k}
+                      onToggleExpand={() => togglePraemieRowExpanded(k)}
                     />
                   );
                 })}
