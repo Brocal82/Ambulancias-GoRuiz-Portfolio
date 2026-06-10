@@ -8,7 +8,6 @@ import {
   getAdminManualPraemiePendingEntries,
   pendingListEntryToQueueRowData,
   postAdminManualDailyApprove,
-  postAdminManualDailyReject,
   type AdminManualPraemiePendingListEntry,
 } from "../domain/manualDailyApi";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
@@ -26,8 +25,6 @@ export default function AdminPraemienPage() {
   const [rows, setRows] = useState<AdminManualPraemiePendingListEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [rectifyInput, setRectifyInput] = useState<Record<string, string>>({});
-  const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
-  const [rejectPanelKey, setRejectPanelKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
@@ -60,8 +57,6 @@ export default function AdminPraemienPage() {
 
   const clearDrafts = (k: string) => {
     setRectifyInput((prev) => { const n = { ...prev }; delete n[k]; return n; });
-    setRejectReason((prev) => { const n = { ...prev }; delete n[k]; return n; });
-    setRejectPanelKey((prev) => (prev === k ? null : prev));
     setExpandedKey((prev) => (prev === k ? null : prev));
   };
 
@@ -93,37 +88,6 @@ export default function AdminPraemienPage() {
       await load();
     } catch {
       toastT.error(["pages.adminUsers.praemiePendingListApproveError"]);
-    } finally {
-      setBusyKey(null);
-    }
-  };
-
-  const handleToggleReject = (row: AdminManualPraemiePendingListEntry) => {
-    const k = rowKey(row);
-    setRejectPanelKey((prev) => (prev === k ? null : k));
-  };
-
-  const handleCancelReject = (row: AdminManualPraemiePendingListEntry) => {
-    const k = rowKey(row);
-    setRejectPanelKey(null);
-    setRejectReason((prev) => { const n = { ...prev }; delete n[k]; return n; });
-  };
-
-  const handleConfirmReject = async (row: AdminManualPraemiePendingListEntry) => {
-    const k = rowKey(row);
-    setBusyKey(k);
-    try {
-      await postAdminManualDailyReject({
-        userId: row.userId,
-        date: row.date,
-        reason: rejectReason[k] ?? "",
-      });
-      toastT.success(["pages.adminUsers.praemiePendingListRejectSuccess"]);
-      dispatchPraemienManualPendingChanged();
-      clearDrafts(k);
-      await load();
-    } catch {
-      toastT.error(["pages.adminUsers.praemiePendingListRejectError"]);
     } finally {
       setBusyKey(null);
     }
@@ -168,14 +132,6 @@ export default function AdminPraemienPage() {
                       onRectifyChange={(value) =>
                         setRectifyInput((prev) => ({ ...prev, [k]: value }))
                       }
-                      rejectReason={rejectReason[k] ?? ""}
-                      onRejectReasonChange={(value) =>
-                        setRejectReason((prev) => ({ ...prev, [k]: value }))
-                      }
-                      showRejectPanel={rejectPanelKey === k}
-                      onToggleReject={() => void handleToggleReject(row)}
-                      onCancelReject={() => handleCancelReject(row)}
-                      onConfirmReject={() => void handleConfirmReject(row)}
                       onApprove={() => void handleApprove(row)}
                       busy={busyKey === k}
                       onReopen={() => {}}

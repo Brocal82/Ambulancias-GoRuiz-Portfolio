@@ -9,7 +9,6 @@ import {
   PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS,
   PRAEMIE_QUEUE_bodyRow,
   PRAEMIE_QUEUE_btnApproveVacationStyle,
-  PRAEMIE_QUEUE_btnRejectVacationStyle,
   PRAEMIE_QUEUE_headerRow,
 } from "./praemieManualQueueTableStyles";
 
@@ -49,12 +48,6 @@ export interface AdminManualPraemieQueueRowBodyProps {
   row: AdminManualPraemieQueueRowData;
   rectifyInput: string;
   onRectifyChange: (value: string) => void;
-  rejectReason: string;
-  onRejectReasonChange: (value: string) => void;
-  showRejectPanel: boolean;
-  onToggleReject: () => void;
-  onCancelReject: () => void;
-  onConfirmReject: () => void;
   onApprove: () => void;
   busy: boolean;
   onReopen: () => void;
@@ -68,12 +61,6 @@ export function AdminManualPraemieQueueRowBody({
   row,
   rectifyInput,
   onRectifyChange,
-  rejectReason,
-  onRejectReasonChange,
-  showRejectPanel,
-  onToggleReject,
-  onCancelReject,
-  onConfirmReject,
   onApprove,
   busy,
   onReopen,
@@ -221,31 +208,7 @@ export function AdminManualPraemieQueueRowBody({
       >
         <div className="flex min-w-0 w-full flex-col items-stretch justify-center gap-1">
           <div className="flex min-h-[2.75rem] w-full min-w-0 items-center justify-center">
-            {actionable && showRejectPanel ? (
-              <textarea
-                value={rejectReason}
-                onChange={(e) => onRejectReasonChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    e.stopPropagation();
-                    onCancelReject();
-                    return;
-                  }
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    onConfirmReject();
-                  }
-                }}
-                disabled={busy}
-                placeholder={t("pages.adminUsers.praemieListRejectTextareaPlaceholder")}
-                maxLength={2000}
-                autoFocus
-                rows={2}
-                title={t("pages.adminUsers.praemieListRejectTextareaTitle")}
-                aria-label={t("pages.praemien.adminManual.rejectReasonLabel")}
-                className="box-border h-[2.75rem] w-full min-w-0 resize-none overflow-y-auto rounded-md border border-rose-300 bg-white px-2 py-1 text-xs leading-snug text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50"
-              />
-            ) : actionable ? (
+            {actionable ? (
               <div className="flex w-full min-w-0 flex-wrap items-center justify-center gap-1.5">
                 <button
                   type="button"
@@ -255,21 +218,11 @@ export function AdminManualPraemieQueueRowBody({
                   title={
                     row.equipoBothSlotsPending
                       ? `${t("pages.praemien.adminManual.approve")} — ${t("pages.adminUsers.praemieListApproveAlsoTeammate")}`
-                      : t("pages.praemien.adminManual.approve")
+                      : t("pages.adminUsers.praemieListRectifyHint")
                   }
                   aria-label={t("pages.praemien.adminManual.approve")}
                 >
                   ✅
-                </button>
-                <button
-                  type="button"
-                  onClick={onToggleReject}
-                  disabled={busy}
-                  className={`shrink-0 ${PRAEMIE_QUEUE_btnRejectVacationStyle}`}
-                  title={t("pages.praemien.adminManual.reject")}
-                  aria-label={t("pages.praemien.adminManual.reject")}
-                >
-                  ❌
                 </button>
               </div>
             ) : approved ? (
