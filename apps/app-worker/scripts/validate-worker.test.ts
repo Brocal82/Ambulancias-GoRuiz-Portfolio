@@ -15,6 +15,14 @@ import {
   isVerifiedPublicImageFilename,
   shouldUseAuthenticatedFileRoute,
 } from "../src/utils/secureFileRouting.js";
+import {
+  crossesMidnight,
+  filterSummariesForAssignment,
+  isNowWithinDienst,
+  resolveTodayAssignment,
+  todayDateKey,
+  workdayDataDateKey,
+} from "../src/utils/workdayAssignment.js";
 
 test("normalizeApiBaseUrl appends /api when missing", () => {
   assert.equal(normalizeApiBaseUrl("https://api.example.com"), "https://api.example.com/api");
@@ -106,4 +114,81 @@ test("unread badge counts messages not read by current user", () => {
     "user-a",
   );
   assert.equal(total, 1);
+});
+
+test("crossesMidnight detects shifts ending before start hour", () => {
+  assert.equal(crossesMidnight("22:00", "06:00"), true);
+  assert.equal(crossesMidnight("06:00", "14:00"), false);
+});
+
+test("workdayDataDateKey always uses Dienst date", () => {
+  assert.equal(
+    workdayDataDateKey({ date: "2026-05-28" }),
+    "2026-05-28",
+  );
+  assert.equal(workdayDataDateKey(null), null);
+});
+
+test("filterSummariesForAssignment scopes by assignment and Dienst date", () => {
+  const assignment = {
+    assignmentId: "a1",
+    date: "2026-05-28",
+  };
+  const summaries = [
+    { _id: "s1", date: "2026-05-28", assignmentId: "a1", isFinalClosure: false },
+    { _id: "s2", date: "2026-05-29", assignmentId: "a1", isFinalClosure: false },
+    { _id: "s3", date: "2026-05-28", assignmentId: "other", isFinalClosure: false },
+  ];
+  const filtered = filterSummariesForAssignment(summaries, assignment);
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0]?._id, "s1");
+});
+
+test("resolveTodayAssignment keeps yesterday overnight dienst after midnight", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date(2026, 4, 29, 1, 30, 0, 0) });
+  try {
+    const days = [
+      {
+        dienstId: "d1",
+        assignmentId: "night-28",
+        date: "2026-05-28",
+        startTime: "22:00",
+        endTime: "06:00",
+      },
+    ];
+    const resolved = resolveTodayAssignment(days);
+    assert.equal(resolved?.assignmentId, "night-28");
+    assert.equal(workdayDataDateKey(resolved), "2026-05-28");
+    assert.notEqual(todayDateKey(), "2026-05-28");
+  } finally {
+    t.mock.timers.reset();
+  }
+});
+
+test("resolveTodayAssignment drops overnight dienst after shift ends", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date(2026, 4, 29, 7, 0, 0, 0) });
+  try {
+    const days = [
+      {
+        dienstId: "d1",
+        assignmentId: "night-28",
+        date: "2026-05-28",
+        startTime: "22:00",
+        endTime: "06:00",
+      },
+    ];
+    assert.equal(resolveTodayAssignment(days), null);
+  } finally {
+    t.mock.timers.reset();
+  }
+});
+
+test("isNowWithinDienst respects overnight window", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date(2026, 4, 29, 2, 0, 0, 0) });
+  try {
+    const dienst = { date: "2026-05-28", startTime: "22:00", endTime: "06:00" };
+    assert.equal(isNowWithinDienst(dienst), true);
+  } finally {
+    t.mock.timers.reset();
+  }
 });
