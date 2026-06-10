@@ -1,4 +1,5 @@
 import axios from "../../../api/axios";
+import type { WorkdaySummary } from "../../workday/domain/types/workdaySummary";
 
 export type PraemienManualDailyStatus =
   | "draft"
@@ -170,6 +171,17 @@ export function pendingListEntryToQueueRowData(
     adminFinalValue: null,
     rejectionReason: null,
   });
+}
+
+export async function getAdminManualPraemieDayWorkdaySummaries(
+  userId: string,
+  date: string,
+): Promise<WorkdaySummary[]> {
+  const res = await axios.get<{ summaries: WorkdaySummary[] }>(
+    "/praemien/manual-daily/admin/day-workday-summaries",
+    { params: { userId, date } },
+  );
+  return Array.isArray(res.data?.summaries) ? res.data.summaries : [];
 }
 
 export async function getAdminManualPraemieDayQueueRow(

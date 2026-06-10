@@ -1,38 +1,8 @@
 // src/components/workday/AdminSummaryGroupModal.tsx
 import React from "react";
 import type { WorkdaySummary } from "../domain";
-import type { AssignedDayFull } from "../../../modules/diensts";
-import ReviewSummary from "./ReviewSummary";
 import { useTranslation } from "react-i18next";
-import StatusBadge from "../../../components/common/StatusBadge";
-import { useModules } from "../../../hooks/useModules";
-import { MODULE_KEYS } from "../../../constants/modules";
-
-/**
- * Mapeo de WorkdaySummary (lo que recibe el admin)
- * a AssignedDayFull (lo que espera ReviewSummary).
- */
-function mapSummaryToAssignedDay(summary: WorkdaySummary): AssignedDayFull {
-    const s: any = summary;
-
-    return {
-        assignmentId: summary.assignmentId,
-        dienstId: s.dienstId || summary.assignmentId,
-        dienstNumber: s.dienstNumber ?? 0,
-        date: summary.date,
-        startTime: summary.startTime || "",
-        endTime: summary.endTime || "",
-        ambulanceId: s.ambulanceId,
-        driver:
-            typeof s.driver === "object" && s.driver !== null
-                ? s.driver
-                : { name: "", lastName: s.driver as string, _id: "" },
-        medic:
-            typeof s.medic === "object" && s.medic !== null
-                ? s.medic
-                : { name: "", lastName: s.medic as string, _id: "" },
-    };
-}
+import AdminWorkdaySummaryGroupContent from "./AdminWorkdaySummaryGroupContent";
 
 interface AdminSummaryGroupModalProps {
     /** Controla si el modal está visible */
@@ -57,22 +27,11 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
     summaries,
 }) => {
     const { t } = useTranslation();
-    const { hasModule } = useModules();
-    const praemienModuleEnabled = hasModule(MODULE_KEYS.PRAEMIEN);
 
     if (!isOpen) return null;
     if (!summaries || summaries.length === 0) return null;
 
-    // Ordenamos: primero parciales, luego final
-    const sorted = [...summaries].sort((a, b) => {
-        const aIsPartial = !a.isFinalClosure;
-        const bIsPartial = !b.isFinalClosure;
-        if (aIsPartial === bIsPartial) return 0;
-        return aIsPartial ? -1 : 1;
-    });
-
-    // Tomamos datos comunes del grupo (mismo día, mismo dienst)
-    const first = sorted[0] as any;
+    const first = summaries[0] as WorkdaySummary;
     const dienstNumber = first.dienstNumber ?? "-";
 
     return (
@@ -100,88 +59,7 @@ const AdminSummaryGroupModal: React.FC<AdminSummaryGroupModalProps> = ({
                     </button>
                 </div>
 
-                {/* Lista de resúmenes del grupo */}
-                <div className="space-y-6">
-                    {sorted.map((summary) => {
-                        const s: any = summary;
-                        const assignedDay = mapSummaryToAssignedDay(summary);
-                        const reviewedAt = s.reviewedAt as string | undefined;
-
-                        const label = summary.isFinalClosure
-                            ? t("pages.summaries.admin.detail.badge.final", "Final")
-                            : t("pages.summaries.admin.detail.badge.partial", "Parcial");
-
-                        const note =
-                            s.extraNote ||
-                            s.partialClosureReason ||
-                            t("pages.summaries.admin.detail.noNote", "Sin nota adicional");
-
-                        const ambulanceNumber =
-                            s.ambulanceNumber ??
-                            t(
-                                "pages.workday.common.unknownAmbulance",
-                                "Ambulancia desconocida",
-                            );
-
-                        const initialKm = summary.initialKm;
-                        const finalKm = summary.finalKm ?? summary.initialKm;
-
-                        return (
-                            <div
-                                key={
-                                    s._id ??
-                                    `${summary.assignmentId}-${summary.isFinalClosure ? "final" : "partial"}`
-                                }
-                                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3"
-                            >
-                                {/* Encabezado de cada bloque (parcial / final) */}
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <StatusBadge
-                                            label={label}
-                                            tone={summary.isFinalClosure ? "emerald" : "amber"}
-                                            className="text-[11px] font-semibold px-2.5 py-0.5"
-                                        />
-
-
-                                        {praemienModuleEnabled &&
-                                            s.totalEffectivePatients != null && (
-                                            <span className="text-[11px] text-slate-700">
-                                                {t(
-                                                    "pages.summaries.admin.detail.effectivePatients",
-                                                    "Viajes Prämie: {{count}}",
-                                                    { count: s.totalEffectivePatients },
-                                                )}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {reviewedAt && (
-                                        <div className="text-[11px] text-slate-500">
-                                            {new Date(reviewedAt).toLocaleString()}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Nota / motivo de este resumen */}
-                                <p className="text-[12px] text-slate-700 italic">{note}</p>
-
-                                {/* Tabla con viajes y km usando ReviewSummary */}
-                                <ReviewSummary
-                                    assignedDay={assignedDay}
-                                    ambulanceNumber={ambulanceNumber}
-                                    initialKm={initialKm}
-                                    finalKm={finalKm}
-                                    trips={[...summary.trips].sort((a, b) =>
-                                        a.timeWarning.localeCompare(b.timeWarning),
-                                    )}
-                                    dense
-                                    showPraemieColumn={praemienModuleEnabled}
-                                />
-                            </div>
-                        );
-                    })}
-                </div>
+                <AdminWorkdaySummaryGroupContent summaries={summaries} />
             </div>
         </div>
     );

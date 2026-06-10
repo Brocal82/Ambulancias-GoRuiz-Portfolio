@@ -19,6 +19,7 @@ import {
 } from "../utils/praemienManualPendingEvents";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
 import MonthlyMiniCalendar, { type ViewMonth } from "./MonthlyMiniCalendar";
+import { AdminManualPraemieDayWorkdayReports } from "./AdminManualPraemieDayWorkdayReports";
 import {
   AdminManualPraemieQueueColumnHeaders,
   AdminManualPraemieQueueRowBody,
@@ -381,6 +382,13 @@ const AdminManualPraemienReviewPanel = ({
           ) : (
             <p className="text-xs text-slate-500">{t("pages.praemien.adminManual.loadError")}</p>
           )}
+          {selected &&
+          (selected.status === "submitted" || selected.status === "reopened") ? (
+            <AdminManualPraemieDayWorkdayReports
+              userId={userId}
+              date={selected.date}
+            />
+          ) : null}
         </div>
       )}
     </div>

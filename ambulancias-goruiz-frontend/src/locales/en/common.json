@@ -1100,6 +1100,12 @@
                 "invalidCorrect": "Enter a number between 0 and 10000 (decimals allowed, e.g. 1.5).",
                 "draftHint": "This row is still a draft. The worker must submit it before you can approve, reject, or correct it.",
                 "rejectedQueueHint": "Rejected. The worker must fix and resubmit.",
+                "workdayReportsTitle": "Workday reports for this Dienst",
+                "workdayReportsLoading": "Loading workday reports…",
+                "workdayReportsLoadError": "Could not load workday reports.",
+                "workdayReportsEmpty": "No workday reports for this Dienst.",
+                "toggleWorkdayReportsAria": "Show or hide workday reports",
+                "queueExpandHint": "Click a row to view workday reports and confirm Prämie.",
                 "th": {
                     "date": "Date",
                     "original": "Original",

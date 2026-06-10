@@ -7,6 +7,7 @@ import {
 import { saveMonthlyPraemie } from "./historyApi";
 import {
   getMyManualDailyEntriesForMonth,
+  getAdminManualPraemieDayWorkdaySummaries,
   postAdminManualDailyApprove,
   postAdminManualDailyReject,
   postAdminManualDailyReopen,
@@ -81,6 +82,15 @@ describe("praemien domain api", () => {
     expect(api.get).toHaveBeenCalledWith("/praemien/manual-daily/month", {
       params: { year: 2026, month: 5 },
     });
+  });
+
+  it("admin day workday summaries usa GET manual-daily/admin/day-workday-summaries", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { summaries: [] } });
+    await getAdminManualPraemieDayWorkdaySummaries("u1", "2026-05-01");
+    expect(api.get).toHaveBeenCalledWith(
+      "/praemien/manual-daily/admin/day-workday-summaries",
+      { params: { userId: "u1", date: "2026-05-01" } },
+    );
   });
 
   it("admin review transitions usan POST manual-daily/admin/*", async () => {
