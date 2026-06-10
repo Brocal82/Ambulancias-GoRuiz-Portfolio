@@ -6,7 +6,6 @@ import {
   getAdminManualDailyMonth,
   getAdminManualPraemieDayQueueRow,
   postAdminManualDailyApprove,
-  postAdminManualDailyReject,
   postAdminManualDailyReopen,
   type AdminManualPraemieQueueRowData,
   type ManualDailyEntryDto,
@@ -55,9 +54,7 @@ const AdminManualPraemienReviewPanel = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<ManualDailyEntryDto | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
   const [correctVal, setCorrectVal] = useState("");
-  const [showRejectPanel, setShowRejectPanel] = useState(false);
   const [busy, setBusy] = useState(false);
   const [queueRow, setQueueRow] = useState<AdminManualPraemieQueueRowData | null>(
     null,
@@ -162,15 +159,11 @@ const AdminManualPraemienReviewPanel = ({
 
   useEffect(() => {
     if (!selected) {
-      setRejectReason("");
       setCorrectVal("");
-      setShowRejectPanel(false);
       void refreshQueueRow(null);
       return;
     }
-    setRejectReason("");
     setCorrectVal("");
-    setShowRejectPanel(false);
     void refreshQueueRow(selected.date);
   }, [selected?.date, refreshQueueRow]);
 
@@ -234,9 +227,7 @@ const AdminManualPraemienReviewPanel = ({
         if (!prev) return null;
         return data.find((r) => r.date === prev.date) ?? null;
       });
-      setRejectReason("");
       setCorrectVal("");
-      setShowRejectPanel(false);
       if (selDate) {
         await refreshQueueRow(selDate);
       }
@@ -335,20 +326,6 @@ const AdminManualPraemienReviewPanel = ({
                 row={queueRow}
                 rectifyInput={correctVal}
                 onRectifyChange={setCorrectVal}
-                rejectReason={rejectReason}
-                onRejectReasonChange={setRejectReason}
-                showRejectPanel={showRejectPanel}
-                onToggleReject={() => setShowRejectPanel((p) => !p)}
-                onCancelReject={() => setShowRejectPanel(false)}
-                onConfirmReject={() =>
-                  void run(async () => {
-                    await postAdminManualDailyReject({
-                      userId,
-                      date: selected.date,
-                      reason: rejectReason,
-                    });
-                  })
-                }
                 onApprove={() => {
                   let extra: { adminFinalValue?: number } = {};
                   const raw = correctVal.trim();
