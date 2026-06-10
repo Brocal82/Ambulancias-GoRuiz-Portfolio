@@ -7,7 +7,7 @@ export const PRAEMIE_MANUAL_DAY_DETAIL_SHELL_CLASS =
   "min-w-0 w-full overflow-hidden rounded-2xl bg-white text-xs shadow-md ring-1 ring-orange-400";
 
 export const PRAEMIE_QUEUE_COLS =
-  "grid w-full min-w-0 justify-items-center [grid-template-columns:minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2 gap-y-0 sm:gap-x-3";
+  "grid w-full min-w-0 justify-items-center [grid-template-columns:minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2 gap-y-0 sm:gap-x-3";
 
 const PRAEMIE_QUEUE_cellPad = "px-1.5 sm:px-2";
 

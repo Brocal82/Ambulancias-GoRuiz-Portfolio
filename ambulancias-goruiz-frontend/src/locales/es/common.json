@@ -1105,6 +1105,10 @@
                 "workdayReportsLoadError": "No se pudieron cargar los reportes de jornada.",
                 "workdayReportsEmpty": "No hay reportes de jornada para este Dienst.",
                 "toggleWorkdayReportsAria": "Mostrar u ocultar reportes de jornada",
+                "workdayReportsTotalPraemieHint": "Total según reportes de jornada (parcial + final). Referencia para confirmar.",
+                "finalValueRequired": "Introduce el valor final a confirmar antes de aprobar.",
+                "finalValueRequiredInline": "Introduce valor",
+                "finalValueOverridePlaceholder": "Corregir",
                 "queueExpandHint": "Pulsa la fila para ver los reportes. ✅ acepta el valor enviado; indica «Valor final» para corregir y aprobar.",
                 "th": {
                     "date": "Fecha",
@@ -1772,7 +1776,16 @@
                     "observations": "📝 Observaciones:",
                     "deletedUser": "Usuario eliminado",
                     "noName": "Sin nombre",
-                    "totalKm": "Total: {{km}} km"
+                    "totalKm": "Total: {{km}} km",
+                    "header": {
+                        "date": "Fecha",
+                        "schedule": "Horario",
+                        "team": "Equipo",
+                        "ambulance": "Ambulancia",
+                        "km": "Km",
+                        "totalKm": "Km totales",
+                        "totalPraemie": "Total Prämie"
+                    }
                 },
                 "table": {
                     "auftrag": "Auftrag",
@@ -1816,6 +1829,16 @@
                     "end": "Final:",
                     "final": "✅ Final",
                     "partial": "Parcial"
+                },
+                "detail": {
+                    "title": "Detalles del Dienst",
+                    "subtitle": "Dienst #{{dienst}}",
+                    "badge": {
+                        "final": "Final",
+                        "partial": "Parcial"
+                    },
+                    "effectivePatients_one": "{{count}} paciente efectivo",
+                    "effectivePatients_other": "{{count}} pacientes efectivos"
                 }
             }
         },

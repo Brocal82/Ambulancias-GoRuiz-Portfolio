@@ -27,6 +27,7 @@ export default function AdminPraemienPage() {
   const [rectifyInput, setRectifyInput] = useState<Record<string, string>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [finalValueErrors, setFinalValueErrors] = useState<Record<string, boolean>>({});
 
   const initialLoadDoneRef = useRef(false);
 
@@ -57,6 +58,7 @@ export default function AdminPraemienPage() {
 
   const clearDrafts = (k: string) => {
     setRectifyInput((prev) => { const n = { ...prev }; delete n[k]; return n; });
+    setFinalValueErrors((prev) => { const n = { ...prev }; delete n[k]; return n; });
     setExpandedKey((prev) => (prev === k ? null : prev));
   };
 
@@ -67,18 +69,20 @@ export default function AdminPraemienPage() {
   const handleApprove = async (row: AdminManualPraemiePendingListEntry) => {
     const k = rowKey(row);
     const rawRectify = (rectifyInput[k] ?? "").trim();
+    if (rawRectify === "") {
+      setFinalValueErrors((prev) => ({ ...prev, [k]: true }));
+      return;
+    }
     let body: Parameters<typeof postAdminManualDailyApprove>[0] = {
       userId: row.userId,
       date: row.date,
     };
-    if (rawRectify !== "") {
-      const parsed = parseManualPraemieClientValue(rawRectify);
-      if (!parsed.ok) {
-        toastT.error(t("pages.praemien.adminManual.invalidCorrect"));
-        return;
-      }
-      body = { ...body, adminFinalValue: parsed.value };
+    const parsed = parseManualPraemieClientValue(rawRectify);
+    if (!parsed.ok) {
+      toastT.error(t("pages.praemien.adminManual.invalidCorrect"));
+      return;
     }
+    body = { ...body, adminFinalValue: parsed.value };
     setBusyKey(k);
     try {
       await postAdminManualDailyApprove(body);
@@ -129,11 +133,18 @@ export default function AdminPraemienPage() {
                       key={k}
                       row={pendingListEntryToQueueRowData(row)}
                       rectifyInput={rectifyInput[k] ?? ""}
-                      onRectifyChange={(value) =>
-                        setRectifyInput((prev) => ({ ...prev, [k]: value }))
-                      }
+                      onRectifyChange={(value) => {
+                        setRectifyInput((prev) => ({ ...prev, [k]: value }));
+                        setFinalValueErrors((prev) => {
+                          if (!prev[k]) return prev;
+                          const next = { ...prev };
+                          delete next[k];
+                          return next;
+                        });
+                      }}
                       onApprove={() => void handleApprove(row)}
                       busy={busyKey === k}
+                      finalValueError={Boolean(finalValueErrors[k])}
                       onReopen={() => {}}
                       expandable
                       expanded={expandedKey === k}

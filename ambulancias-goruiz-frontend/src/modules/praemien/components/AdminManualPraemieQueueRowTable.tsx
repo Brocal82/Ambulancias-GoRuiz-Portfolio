@@ -16,12 +16,6 @@ export function AdminManualPraemieQueueColumnHeaders() {
   const { t } = useTranslation();
   return (
     <div className={PRAEMIE_QUEUE_headerRow}>
-      <div className="min-w-0 break-words text-center">
-        {t("pages.adminUsers.praemieListColEquipo")}
-      </div>
-      <div className="min-w-0 break-words text-center">
-        {t("pages.adminUsers.praemieListColEmployeeNumber")}
-      </div>
       <div className="min-w-0 whitespace-nowrap text-center">
         {t("pages.adminUsers.praemieListColDate")}
       </div>
@@ -30,6 +24,12 @@ export function AdminManualPraemieQueueColumnHeaders() {
       </div>
       <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColSchedule")}
+      </div>
+      <div className="min-w-0 break-words text-center">
+        {t("pages.adminUsers.praemieListColEquipo")}
+      </div>
+      <div className="min-w-0 break-words text-center">
+        {t("pages.adminUsers.praemieListColEmployeeNumber")}
       </div>
       <div className="min-w-0 break-words text-center">
         {t("pages.adminUsers.praemieListColManualValue")}
@@ -51,6 +51,8 @@ export interface AdminManualPraemieQueueRowBodyProps {
   onApprove: () => void;
   busy: boolean;
   onReopen: () => void;
+  /** Resaltar input cuando falta valor final explícito al aprobar. */
+  finalValueError?: boolean;
   /** Cola pendiente: clic en la fila despliega reportes de jornada. */
   expandable?: boolean;
   expanded?: boolean;
@@ -64,6 +66,7 @@ export function AdminManualPraemieQueueRowBody({
   onApprove,
   busy,
   onReopen,
+  finalValueError = false,
   expandable = false,
   expanded = false,
   onToggleExpand,
@@ -115,6 +118,16 @@ export function AdminManualPraemieQueueRowBody({
   const finalDisplay =
     approved && row.adminFinalValue != null ? String(row.adminFinalValue) : null;
 
+  const finalInputPlaceholder =
+    row.workdayReportsTotalPraemie != null
+      ? String(row.workdayReportsTotalPraemie)
+      : String(row.workerSubmittedValue);
+
+  const finalInputPlaceholderClass =
+    row.workdayReportsTotalPraemie != null
+      ? "placeholder:text-rose-400/80"
+      : "placeholder:text-slate-400";
+
   return (
     <>
     <div
@@ -128,12 +141,26 @@ export function AdminManualPraemieQueueRowBody({
       onClick={expandable ? handleRowClick : undefined}
       onKeyDown={expandable ? handleRowKeyDown : undefined}
     >
-      <div className="min-w-0 text-center text-slate-900">
+      <div className="relative w-full min-w-0 justify-self-stretch text-slate-800">
         {expandable ? (
-          <span className="mr-1 inline-block text-[10px] text-orange-700" aria-hidden>
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 text-[11px] leading-none text-orange-700"
+            aria-hidden
+          >
             {expanded ? "▾" : "▸"}
           </span>
         ) : null}
+        <span className="block whitespace-nowrap text-center">
+          {fmtDDMM(row.date)}
+        </span>
+      </div>
+      <div className="min-w-0 text-center tabular-nums text-slate-800">
+        {row.dienstNumber != null ? row.dienstNumber : "—"}
+      </div>
+      <div className="min-w-0 break-words text-center leading-tight text-slate-800">
+        {horario}
+      </div>
+      <div className="min-w-0 text-center text-slate-900">
         <div className="line-clamp-2 break-words font-medium leading-tight">
           {equipoNamesDisplay}
         </div>
@@ -162,15 +189,6 @@ export function AdminManualPraemieQueueRowBody({
             : "—"}
         </span>
       </div>
-      <div className="min-w-0 whitespace-nowrap text-center text-slate-800">
-        {fmtDDMM(row.date)}
-      </div>
-      <div className="min-w-0 text-center tabular-nums text-slate-800">
-        {row.dienstNumber != null ? row.dienstNumber : "—"}
-      </div>
-      <div className="min-w-0 break-words text-center leading-tight text-slate-800">
-        {horario}
-      </div>
       <div className="min-w-0 text-center tabular-nums text-slate-800">
         {row.workerSubmittedValue}
       </div>
@@ -180,19 +198,41 @@ export function AdminManualPraemieQueueRowBody({
         onKeyDown={expandable ? stopRowToggle : undefined}
       >
         {actionable ? (
-          <input
-            type="number"
-            min={0}
-            max={10_000}
-            step="any"
-            className="mx-auto box-border block h-7 w-[4.25rem] max-w-full rounded border border-slate-300 bg-white px-1 text-center text-xs tabular-nums"
-            value={rectifyInput}
-            onChange={(e) => onRectifyChange(e.target.value)}
-            disabled={busy}
-            placeholder={String(row.workerSubmittedValue)}
-            title={t("pages.adminUsers.praemieListRectifyHint")}
-            aria-label={t("pages.adminUsers.praemieListColFinalValue")}
-          />
+          <div className="mx-auto flex w-[4.25rem] max-w-full flex-col items-center gap-0.5">
+            <input
+              type="number"
+              min={0}
+              max={10_000}
+              step="any"
+              className={`box-border block h-7 w-full rounded bg-white px-1 text-center text-xs tabular-nums ${
+                finalValueError
+                  ? "border border-rose-500"
+                  : "border border-slate-300"
+              } ${finalInputPlaceholderClass}`}
+              value={rectifyInput}
+              onChange={(e) => onRectifyChange(e.target.value)}
+              disabled={busy}
+              placeholder={finalInputPlaceholder}
+              aria-invalid={finalValueError || undefined}
+              aria-describedby={
+                finalValueError ? "manual-praemie-final-value-hint" : undefined
+              }
+              title={
+                row.workdayReportsTotalPraemie != null
+                  ? t("pages.praemien.adminManual.workdayReportsTotalPraemieHint")
+                  : t("pages.adminUsers.praemieListRectifyHint")
+              }
+              aria-label={t("pages.adminUsers.praemieListColFinalValue")}
+            />
+            {finalValueError ? (
+              <p
+                id="manual-praemie-final-value-hint"
+                className="w-full text-center text-[9px] leading-tight text-rose-600"
+              >
+                {t("pages.praemien.adminManual.finalValueRequiredInline")}
+              </p>
+            ) : null}
+          </div>
         ) : approved ? (
           <span className="tabular-nums text-slate-800">
             {finalDisplay ?? "—"}

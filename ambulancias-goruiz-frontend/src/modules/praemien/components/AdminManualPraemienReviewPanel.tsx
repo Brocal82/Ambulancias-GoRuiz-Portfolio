@@ -55,6 +55,7 @@ const AdminManualPraemienReviewPanel = ({
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<ManualDailyEntryDto | null>(null);
   const [correctVal, setCorrectVal] = useState("");
+  const [finalValueError, setFinalValueError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [queueRow, setQueueRow] = useState<AdminManualPraemieQueueRowData | null>(
     null,
@@ -160,10 +161,12 @@ const AdminManualPraemienReviewPanel = ({
   useEffect(() => {
     if (!selected) {
       setCorrectVal("");
+      setFinalValueError(false);
       void refreshQueueRow(null);
       return;
     }
     setCorrectVal("");
+    setFinalValueError(false);
     void refreshQueueRow(selected.date);
   }, [selected?.date, refreshQueueRow]);
 
@@ -325,23 +328,27 @@ const AdminManualPraemienReviewPanel = ({
               <AdminManualPraemieQueueRowBody
                 row={queueRow}
                 rectifyInput={correctVal}
-                onRectifyChange={setCorrectVal}
+                onRectifyChange={(value) => {
+                  setCorrectVal(value);
+                  setFinalValueError(false);
+                }}
+                finalValueError={finalValueError}
                 onApprove={() => {
-                  let extra: { adminFinalValue?: number } = {};
                   const raw = correctVal.trim();
-                  if (raw !== "") {
-                    const parsed = parseManualPraemieClientValue(correctVal);
-                    if (!parsed.ok) {
-                      setError(t("pages.praemien.adminManual.invalidCorrect"));
-                      return;
-                    }
-                    extra = { adminFinalValue: parsed.value };
+                  if (raw === "") {
+                    setFinalValueError(true);
+                    return;
+                  }
+                  const parsed = parseManualPraemieClientValue(correctVal);
+                  if (!parsed.ok) {
+                    setError(t("pages.praemien.adminManual.invalidCorrect"));
+                    return;
                   }
                   void run(async () => {
                     await postAdminManualDailyApprove({
                       userId,
                       date: selected.date,
-                      ...extra,
+                      adminFinalValue: parsed.value,
                     });
                   });
                 }}
