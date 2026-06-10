@@ -13,6 +13,7 @@ import {
 import {
   adminGetManualDailyMonth,
   adminGetManualPraemieDayQueueRowHandler,
+  adminGetManualPraemieDayWorkdaySummariesHandler,
   adminGetManualPraemiePendingByUser,
   adminGetManualPraemiePendingCount,
   adminGetManualPraemiePendingEntries,
@@ -106,6 +107,13 @@ router.get(
   requireModule(MODULE_KEYS.PRAEMIEN),
   authorizeRole("admin"),
   adminGetManualDailyMonth,
+);
+router.get(
+  "/manual-daily/admin/day-workday-summaries",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  adminGetManualPraemieDayWorkdaySummariesHandler,
 );
 router.get(
   "/manual-daily/admin/day-queue-row",

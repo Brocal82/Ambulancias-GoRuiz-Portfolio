@@ -9,6 +9,7 @@ import {
   adminApproveManualDailyEntry,
   adminCorrectApproveManualDailyEntry,
   adminGetManualPraemieDayQueueRow,
+  adminGetManualPraemieDayWorkdaySummaries,
   adminListManualDailyEntriesForMonth,
   adminRejectManualDailyEntry,
   adminReopenManualDailyEntry,
@@ -118,6 +119,41 @@ export const adminGetManualPraemieDayQueueRowHandler = async (
     res.status(200).json(result.row);
   } catch (error) {
     console.error("Error en adminGetManualPraemieDayQueueRowHandler:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+export const adminGetManualPraemieDayWorkdaySummariesHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const gate = await assertAdminSameCompanyAsTarget(
+      req,
+      req.query.userId as string | undefined,
+    );
+    if (!gate.ok) {
+      res.status(gate.statusCode).json({ message: gate.message });
+      return;
+    }
+
+    const date =
+      typeof req.query.date === "string" ? req.query.date.trim() : "";
+
+    const result = await adminGetManualPraemieDayWorkdaySummaries({
+      companyIdStr: gate.companyId,
+      targetUserId: gate.targetUserId,
+      date,
+    });
+
+    if (!result.ok) {
+      res.status(result.statusCode).json({ message: result.message });
+      return;
+    }
+
+    res.status(200).json({ summaries: result.summaries });
+  } catch (error) {
+    console.error("Error en adminGetManualPraemieDayWorkdaySummariesHandler:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };

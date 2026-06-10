@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import User from "../../users/models/user.model";
+import Dienst from "../../diensts/models/dienst.model";
 import WorkdaySummary from "../../workday-summary/models/workday-summary.model";
 import PraemienManualDailyEntry from "../models/praemien-manual-daily-entry.model";
 import type { PraemienManualDailyStatus } from "../models/praemien-manual-daily-entry.model";
@@ -1062,4 +1063,110 @@ export async function adminGetManualPraemieDayQueueRow(params: {
   };
 
   return { ok: true, row };
+}
+
+function enrichWorkdaySummariesForAdmin(
+  summaries: Record<string, unknown>[],
+  diensts: {
+    _id?: unknown;
+    dienstNumber?: number;
+    assignments?: { _id?: unknown; startTime?: string; endTime?: string }[];
+  }[],
+): Record<string, unknown>[] {
+  return summaries.map((raw) => {
+    const s = raw as {
+      assignmentId?: unknown;
+      dienstNumber?: number;
+      startTime?: string | null;
+      endTime?: string | null;
+    };
+    const assignmentIdStr =
+      s.assignmentId != null ? String(s.assignmentId) : "";
+    const dienst = diensts.find((d) =>
+      (d.assignments ?? []).some(
+        (a) => a._id && String(a._id) === assignmentIdStr,
+      ),
+    );
+    const assignment = dienst?.assignments?.find(
+      (a) => a._id && String(a._id) === assignmentIdStr,
+    );
+    return {
+      ...raw,
+      dienstId: dienst?._id ?? null,
+      dienstNumber: s.dienstNumber ?? dienst?.dienstNumber ?? null,
+      startTime: s.startTime ?? assignment?.startTime ?? null,
+      endTime: s.endTime ?? assignment?.endTime ?? null,
+    };
+  });
+}
+
+/** Reportes de jornada (parciales + final) del Dienst vinculado a una petición manual. */
+export async function adminGetManualPraemieDayWorkdaySummaries(params: {
+  companyIdStr: string | undefined;
+  targetUserId: string;
+  date: string;
+}): Promise<
+  | { ok: true; summaries: Record<string, unknown>[] }
+  | { ok: false; statusCode: number; message: string }
+> {
+  const gate = await assertManualPraemienDailyApisAllowed(params.companyIdStr);
+  if (!gate.allowed) {
+    return { ok: false, statusCode: gate.statusCode, message: gate.message };
+  }
+
+  const dateStr = typeof params.date === "string" ? params.date.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return { ok: false, statusCode: 400, message: "Fecha inválida (use YYYY-MM-DD)." };
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(params.targetUserId)) {
+    return { ok: false, statusCode: 400, message: "userId inválido." };
+  }
+
+  const userOid = new mongoose.Types.ObjectId(params.targetUserId);
+  const co = gate.companyObjectId;
+
+  const anchors = await WorkdaySummary.find({
+    $and: [
+      { date: dateStr },
+      legacyAwareWorkdayCompanyFilter(co),
+      { $or: [{ driver: userOid }, { medic: userOid }] },
+    ],
+  })
+    .select("assignmentId isFinalClosure")
+    .lean();
+
+  if (anchors.length === 0) {
+    return { ok: true, summaries: [] };
+  }
+
+  const finalAnchor = anchors.find((row) => row.isFinalClosure === true);
+  const assignmentId = String((finalAnchor ?? anchors[0]).assignmentId ?? "");
+  if (!assignmentId) {
+    return { ok: true, summaries: [] };
+  }
+
+  const summaries = await WorkdaySummary.find({
+    $and: [
+      { date: dateStr },
+      { assignmentId },
+      legacyAwareWorkdayCompanyFilter(co),
+    ],
+  })
+    .sort({ isFinalClosure: 1, createdAt: 1 })
+    .populate("driver", "name lastName")
+    .populate("medic", "name lastName")
+    .lean();
+
+  const diensts = await Dienst.find({ companyId: co }).lean();
+  const enriched = enrichWorkdaySummariesForAdmin(
+    summaries as Record<string, unknown>[],
+    diensts as {
+      _id?: unknown;
+      dienstNumber?: number;
+      assignments?: { _id?: unknown; startTime?: string; endTime?: string }[];
+    }[],
+  );
+
+  return { ok: true, summaries: enriched };
 }
