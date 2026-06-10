@@ -685,6 +685,8 @@ export type PendingManualPraemieListEntry = {
   equipoMedicEmployeeNumber: string | null;
   /** Conductor y médico con entrada pendiente el mismo día (un ✅ puede cerrar ambas). */
   equipoBothSlotsPending: boolean;
+  /** Suma de totalEffectivePatients en reportes parcial + final del Dienst. */
+  workdayReportsTotalPraemie: number | null;
 };
 
 function pickWorkdayForUserDate(
@@ -727,6 +729,144 @@ function pickWorkdayForUserDate(
     }
   }
   return null;
+}
+
+function resolveAssignmentIdForUserDayAnchors(
+  anchors: { assignmentId?: unknown; isFinalClosure?: boolean }[],
+): string {
+  const finalAnchor = anchors.find((row) => row.isFinalClosure === true);
+  return String((finalAnchor ?? anchors[0])?.assignmentId ?? "");
+}
+
+function roundPraemieTotal(value: number): number {
+  return Math.round(value * 2) / 2;
+}
+
+/** Suma totalEffectivePatients de reportes parcial + final del Dienst del día. */
+async function computeWorkdayReportsTotalPraemieForUserDay(
+  companyObjectId: mongoose.Types.ObjectId,
+  userId: string,
+  dateStr: string,
+): Promise<number | null> {
+  const userOid = new mongoose.Types.ObjectId(userId);
+  const anchors = await WorkdaySummary.find({
+    $and: [
+      { date: dateStr },
+      legacyAwareWorkdayCompanyFilter(companyObjectId),
+      { $or: [{ driver: userOid }, { medic: userOid }] },
+    ],
+  })
+    .select("assignmentId isFinalClosure")
+    .lean();
+
+  if (anchors.length === 0) return null;
+
+  const assignmentId = resolveAssignmentIdForUserDayAnchors(
+    anchors as { assignmentId?: unknown; isFinalClosure?: boolean }[],
+  );
+  if (!assignmentId) return null;
+
+  const summaries = await WorkdaySummary.find({
+    $and: [
+      { date: dateStr },
+      { assignmentId },
+      legacyAwareWorkdayCompanyFilter(companyObjectId),
+    ],
+  })
+    .select("totalEffectivePatients")
+    .lean();
+
+  let sum = 0;
+  for (const s of summaries) {
+    const v = Number(s.totalEffectivePatients ?? 0);
+    if (Number.isFinite(v)) sum += v;
+  }
+
+  return roundPraemieTotal(sum);
+}
+
+async function buildWorkdayReportsTotalPraemieLookup(
+  companyObjectId: mongoose.Types.ObjectId,
+  userIds: mongoose.Types.ObjectId[],
+  dates: string[],
+): Promise<Map<string, number | null>> {
+  const out = new Map<string, number | null>();
+  if (dates.length === 0 || userIds.length === 0) return out;
+
+  const allAnchors = await WorkdaySummary.find({
+    $and: [
+      { date: { $in: dates } },
+      legacyAwareWorkdayCompanyFilter(companyObjectId),
+      { $or: [{ driver: { $in: userIds } }, { medic: { $in: userIds } }] },
+    ],
+  })
+    .select("date assignmentId isFinalClosure driver medic")
+    .lean();
+
+  const assignmentByUserDate = new Map<string, string>();
+  const anchorsByUserDate = new Map<string, typeof allAnchors>();
+
+  for (const anchor of allAnchors) {
+    const dateStr = String(anchor.date);
+    const driverId = anchor.driver != null ? String(anchor.driver) : "";
+    const medicId = anchor.medic != null ? String(anchor.medic) : "";
+    for (const uid of [driverId, medicId]) {
+      if (!uid) continue;
+      const key = `${uid}|${dateStr}`;
+      const list = anchorsByUserDate.get(key) ?? [];
+      list.push(anchor);
+      anchorsByUserDate.set(key, list);
+    }
+  }
+
+  for (const [key, anchors] of anchorsByUserDate) {
+    assignmentByUserDate.set(
+      key,
+      resolveAssignmentIdForUserDayAnchors(
+        anchors as { assignmentId?: unknown; isFinalClosure?: boolean }[],
+      ),
+    );
+  }
+
+  const assignmentIds = [
+    ...new Set(
+      [...assignmentByUserDate.values()].filter((id) => id && id !== ""),
+    ),
+  ];
+  if (assignmentIds.length === 0) return out;
+
+  const allSummaries = await WorkdaySummary.find({
+    $and: [
+      { date: { $in: dates } },
+      { assignmentId: { $in: assignmentIds } },
+      legacyAwareWorkdayCompanyFilter(companyObjectId),
+    ],
+  })
+    .select("date assignmentId totalEffectivePatients")
+    .lean();
+
+  const sumByAssignmentDate = new Map<string, number>();
+  for (const summary of allSummaries) {
+    const key = `${String(summary.assignmentId)}|${String(summary.date)}`;
+    const v = Number(summary.totalEffectivePatients ?? 0);
+    if (!Number.isFinite(v)) continue;
+    sumByAssignmentDate.set(key, (sumByAssignmentDate.get(key) ?? 0) + v);
+  }
+
+  for (const [userDateKey, assignmentId] of assignmentByUserDate) {
+    if (!assignmentId) {
+      out.set(userDateKey, null);
+      continue;
+    }
+    const dateStr = userDateKey.split("|")[1] ?? "";
+    const sum = sumByAssignmentDate.get(`${assignmentId}|${dateStr}`);
+    out.set(
+      userDateKey,
+      sum != null && Number.isFinite(sum) ? roundPraemieTotal(sum) : null,
+    );
+  }
+
+  return out;
 }
 
 /**
@@ -820,6 +960,12 @@ export async function listPendingManualPraemieEntriesEnriched(
     entries.map((e) => `${String(e.userId)}|${String(e.date)}`),
   );
 
+  const praemieLookup = await buildWorkdayReportsTotalPraemieLookup(
+    co,
+    userOidList,
+    uniqueDates,
+  );
+
   const out: PendingManualPraemieListEntry[] = [];
   for (const e of entries) {
     const uid = String(e.userId);
@@ -869,6 +1015,8 @@ export async function listPendingManualPraemieEntriesEnriched(
       equipoMedicLastName: mu?.lastName ?? "",
       equipoMedicEmployeeNumber: mu?.employeeNumber ?? null,
       equipoBothSlotsPending,
+      workdayReportsTotalPraemie:
+        praemieLookup.get(`${uid}|${dateStr}`) ?? null,
     });
   }
   return out;
@@ -897,6 +1045,7 @@ export type AdminManualPraemieDayQueueRow = {
   manualStatus: PraemienManualDailyStatus;
   adminFinalValue: number | null;
   rejectionReason: string | null;
+  workdayReportsTotalPraemie: number | null;
 };
 
 export async function adminGetManualPraemieDayQueueRow(params: {
@@ -1038,6 +1187,9 @@ export async function adminGetManualPraemieDayQueueRow(params: {
       ? null
       : String(rejRaw).trim() || null;
 
+  const workdayReportsTotalPraemie =
+    await computeWorkdayReportsTotalPraemieForUserDay(co, uid, dateStr);
+
   const row: AdminManualPraemieDayQueueRow = {
     userId: uid,
     name: u.name,
@@ -1060,6 +1212,7 @@ export async function adminGetManualPraemieDayQueueRow(params: {
     manualStatus,
     adminFinalValue,
     rejectionReason,
+    workdayReportsTotalPraemie,
   };
 
   return { ok: true, row };
