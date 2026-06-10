@@ -366,6 +366,95 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
     }
   });
 
+  it("Dienst: al enviar el conductor, el médico recibe fila submitted sin haber enviado", async () => {
+    const now = new Date();
+    const ref = new Date(now.getFullYear(), now.getMonth() - 1, 16);
+    const y = ref.getFullYear();
+    const m = ref.getMonth() + 1;
+    const dateStr = `${y}-${pad(m)}-16`;
+    const assignmentKey = `ws-teammate-submit-${Date.now()}`;
+    const ambulanceOid = new mongoose.Types.ObjectId();
+
+    await Company.updateOne(
+      { _id: companyId },
+      {
+        $set: {
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: { year: y, month: m },
+        },
+      },
+    );
+
+    const medic = await createTestWorkerInCompany(companyId, Date.now() + 30411);
+    const medicId = String(medic._id);
+    const medicLogin = await request(app)
+      .post(`${API}/users/login`)
+      .send({ email: medic.email, password: "password123" });
+    expect(medicLogin.body.token).toBeDefined();
+    const medicToken = medicLogin.body.token as string;
+
+    const minimalTrip = {
+      auftragNumber: "TS2",
+      patientName: "P",
+      fromAddress: "A",
+      toAddress: "B",
+      timeWarning: "08:00",
+      wasCancelled: false,
+      countsTrip: 1 as const,
+    };
+
+    await WorkdaySummary.create({
+      date: dateStr,
+      assignmentId: assignmentKey,
+      driver: new mongoose.Types.ObjectId(workerId),
+      medic: new mongoose.Types.ObjectId(medicId),
+      ambulanceId: ambulanceOid,
+      ambulanceNumber: "TS-99",
+      initialKm: 0,
+      totalDienstKm: 1,
+      trips: [minimalTrip],
+      totalEffectivePatients: 1,
+      totalRealTrips: 1,
+      companyId,
+      isFinalClosure: true,
+    });
+
+    try {
+      await request(app)
+        .put(`${API}/praemien/manual-daily`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({ date: dateStr, workerSubmittedValue: 5, status: "submitted" })
+        .expect(200);
+
+      const medicMonth = await request(app)
+        .get(`${API}/praemien/manual-daily/month?year=${y}&month=${m}`)
+        .set("Authorization", `Bearer ${medicToken}`)
+        .expect(200);
+
+      const medicRow = medicMonth.body.find(
+        (x: { date: string }) => x.date === dateStr,
+      );
+      expect(medicRow).toBeDefined();
+      expect(medicRow.status).toBe("submitted");
+      expect(medicRow.workerSubmittedValue).toBe(5);
+
+      const pending = await request(app)
+        .get(`${API}/praemien/manual-daily/admin/pending-entries`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+
+      const medicPending = (pending.body.items as { userId: string; date: string; workerSubmittedValue: number }[]).find(
+        (x) => x.userId === medicId && x.date === dateStr,
+      );
+      expect(medicPending).toBeDefined();
+      expect(medicPending!.workerSubmittedValue).toBe(5);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({ companyId, date: dateStr });
+      await User.deleteOne({ _id: medic._id });
+    }
+  });
+
   it("Dienst: al aprobar al conductor con valor rectificado, el médico recibe la misma fila aprobada", async () => {
     const now = new Date();
     /** Mes calendario anterior: siempre ≤ hoy y sin colisión con otros casos del fichero. */

@@ -1105,6 +1105,10 @@
                 "workdayReportsLoadError": "Could not load workday reports.",
                 "workdayReportsEmpty": "No workday reports for this Dienst.",
                 "toggleWorkdayReportsAria": "Show or hide workday reports",
+                "workdayReportsTotalPraemieHint": "Total from workday reports (partial + final). Reference for confirmation.",
+                "finalValueRequired": "Enter the final value to confirm before approving.",
+                "finalValueRequiredInline": "Enter value",
+                "finalValueOverridePlaceholder": "Override",
                 "queueExpandHint": "Click a row to view workday reports. ✅ accepts the submitted value; enter a final value to correct and approve.",
                 "th": {
                     "date": "Date",
@@ -1772,7 +1776,16 @@
                     "observations": "📝 Notes:",
                     "deletedUser": "User deleted",
                     "noName": "No name",
-                    "totalKm": "Total: {{km}} km"
+                    "totalKm": "Total: {{km}} km",
+                    "header": {
+                        "date": "Date",
+                        "schedule": "Schedule",
+                        "team": "Team",
+                        "ambulance": "Ambulance",
+                        "km": "Km",
+                        "totalKm": "Total km",
+                        "totalPraemie": "Total bonus"
+                    }
                 },
                 "table": {
                     "auftrag": "Auftrag",
@@ -1816,6 +1829,16 @@
                     "end": "End:",
                     "final": "✅ Final",
                     "partial": "Partial"
+                },
+                "detail": {
+                    "title": "Dienst details",
+                    "subtitle": "Dienst #{{dienst}}",
+                    "badge": {
+                        "final": "Final",
+                        "partial": "Partial"
+                    },
+                    "effectivePatients_one": "{{count}} effective patient",
+                    "effectivePatients_other": "{{count}} effective patients"
                 }
             }
         },

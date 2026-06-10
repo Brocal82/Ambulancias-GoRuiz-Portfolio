@@ -8,6 +8,22 @@ import type { AssignedDayFull } from "../../../modules/diensts";
 import type { WorkdaySummary } from "../domain";
 import ReviewSummary from "./ReviewSummary";
 
+function resolveSummarySubmittedAt(
+  summary: WorkdaySummary & { createdAt?: string },
+): Date | null {
+  if (summary.createdAt) {
+    const created = new Date(summary.createdAt);
+    if (!Number.isNaN(created.getTime())) return created;
+  }
+
+  const id = summary._id;
+  if (id && /^[a-f0-9]{24}$/i.test(id)) {
+    return new Date(parseInt(id.slice(0, 8), 16) * 1000);
+  }
+
+  return null;
+}
+
 function mapSummaryToAssignedDay(summary: WorkdaySummary): AssignedDayFull {
   const s = summary as WorkdaySummary & {
     dienstId?: string;
@@ -62,18 +78,18 @@ export default function AdminWorkdaySummaryGroupContent({
   return (
     <div className={compact ? "space-y-3" : "space-y-6"}>
       {sorted.map((summary) => {
-        const s = summary as WorkdaySummary & { reviewedAt?: string };
         const assignedDay = mapSummaryToAssignedDay(summary);
-        const reviewedAt = s.reviewedAt;
+        const submittedAt = resolveSummarySubmittedAt(summary);
 
         const label = summary.isFinalClosure
-          ? t("pages.summaries.admin.detail.badge.final", "Final")
-          : t("pages.summaries.admin.detail.badge.partial", "Parcial");
+          ? t("pages.summaries.admin.detail.badge.final")
+          : t("pages.summaries.admin.detail.badge.partial");
 
-        const note =
+        const noteText = (
           summary.extraNote ||
           summary.partialClosureReason ||
-          t("pages.summaries.admin.detail.noNote", "Sin nota adicional");
+          ""
+        ).trim();
 
         const ambulanceNumber =
           summary.ambulanceNumber ??
@@ -92,30 +108,31 @@ export default function AdminWorkdaySummaryGroupContent({
               compact ? "p-3" : "p-4"
             }`}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm">
-                <StatusBadge
-                  label={label}
-                  tone={summary.isFinalClosure ? "emerald" : "amber"}
-                  className="text-[11px] font-semibold px-2.5 py-0.5"
-                />
-                {praemienModuleEnabled && summary.totalEffectivePatients != null ? (
-                  <span className="text-[11px] text-slate-700">
-                    {t("pages.summaries.admin.detail.effectivePatients", {
-                      count: summary.totalEffectivePatients,
-                    })}
-                  </span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                {submittedAt ? (
+                  <time
+                    dateTime={submittedAt.toISOString()}
+                    className="block text-[11px] text-slate-500"
+                  >
+                    {submittedAt.toLocaleString()}
+                  </time>
                 ) : null}
               </div>
-              {reviewedAt ? (
-                <div className="text-[11px] text-slate-500">
-                  {new Date(reviewedAt).toLocaleString()}
-                </div>
-              ) : null}
+              <StatusBadge
+                label={label}
+                tone={summary.isFinalClosure ? "emerald" : "amber"}
+                className="shrink-0 text-[11px] font-semibold px-2.5 py-0.5"
+              />
             </div>
 
-            <p className="text-[12px] text-slate-700 italic">{note}</p>
+            {noteText ? (
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] leading-snug text-slate-700">
+                {noteText}
+              </div>
+            ) : null}
 
+            <div className="w-full min-w-0">
             <ReviewSummary
               assignedDay={assignedDay}
               ambulanceNumber={ambulanceNumber}
@@ -126,7 +143,11 @@ export default function AdminWorkdaySummaryGroupContent({
               )}
               dense
               showPraemieColumn={praemienModuleEnabled}
+              totalEffectivePatients={
+                praemienModuleEnabled ? summary.totalEffectivePatients : null
+              }
             />
+            </div>
           </div>
         );
       })}

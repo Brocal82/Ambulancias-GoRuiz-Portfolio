@@ -63,8 +63,8 @@ export async function findDienstPartnerUserIdsForManualDay(params: {
 }
 
 /**
- * Cuando un trabajador envía (submitted), alinea al compañero de Dienst el mismo día
- * si ya tiene fila manual y no está aprobada ni rechazada.
+ * Cuando un trabajador envía (submitted), alinea al compañero de Dienst el mismo día:
+ * crea fila submitted si no existe, o actualiza si no está aprobada/rechazada/reabierta.
  */
 export async function syncDienstPartnersManualDailySubmitted(params: {
   companyObjectId: mongoose.Types.ObjectId;
@@ -89,7 +89,20 @@ export async function syncDienstPartnersManualDailySubmitted(params: {
       userId: partnerOid,
       date: params.dateStr,
     }).lean();
-    if (!existing) continue;
+
+    if (!existing) {
+      await PraemienManualDailyEntry.create({
+        companyId: co,
+        userId: partnerOid,
+        date: params.dateStr,
+        originalWorkerValue: val,
+        workerSubmittedValue: val,
+        workerSubmittedAt: now,
+        status: "submitted",
+      });
+      continue;
+    }
+
     const st = String(existing.status ?? "");
     if (st === "approved" || st === "rejected" || st === "reopened") continue;
 

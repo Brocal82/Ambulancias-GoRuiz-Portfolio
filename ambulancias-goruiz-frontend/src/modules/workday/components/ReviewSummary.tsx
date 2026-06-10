@@ -30,6 +30,8 @@ interface Props {
     dense?: boolean; // activa modo compacto (menos alto)
     /** When false, hides prämie multiplier column (Phase 2 workday gating). */
     showPraemieColumn?: boolean;
+    /** When set with showPraemieColumn, adds Total Prämie column in header. */
+    totalEffectivePatients?: number | null;
 }
 
 const ReviewSummary: React.FC<Props> = ({
@@ -41,6 +43,7 @@ const ReviewSummary: React.FC<Props> = ({
     hideHeader = false,
     dense = false,
     showPraemieColumn = true,
+    totalEffectivePatients = null,
 }) => {
     const { t } = useTranslation();
     const tableColSpan = showPraemieColumn ? 13 : 12;
@@ -54,6 +57,8 @@ const ReviewSummary: React.FC<Props> = ({
         })();
 
     const totalKmDiff = Math.max(0, finalKm - initialKm);
+    const showTotalPraemieHeader =
+        showPraemieColumn && totalEffectivePatients != null;
 
     const formatPerson = (p: any): string => {
         if (!p) return t("pages.workday.reviewSummary.labels.deletedUser");
@@ -64,80 +69,118 @@ const ReviewSummary: React.FC<Props> = ({
         return full || t("pages.workday.reviewSummary.labels.deletedUser");
     };
 
+    const headerColCount = showTotalPraemieHeader ? 7 : 6;
+
     // 🔧 Clases condicionales para modo compacto
     const tableText = dense ? "text-[11px]" : "text-xs";
     const headCell = dense ? "px-1 py-1" : "px-2 py-2";
     const cell = dense ? "px-1 py-1" : "px-2 py-2";
     const zebraLight = dense ? "bg-slate-50/70" : "bg-slate-50/50";
     const zebraAlt = dense ? "bg-white" : "bg-white";
-    const wrapContainer = dense
-        ? "overflow-x-auto overflow-y-auto rounded-xl ring-1 ring-slate-200 bg-white max-h-64"
-        : "overflow-x-auto rounded-xl ring-1 ring-slate-200 bg-white";
+    const cardShell =
+        "w-full rounded-xl ring-1 ring-slate-200 bg-white overflow-hidden";
+    const tableScroll = dense
+        ? "w-full overflow-x-auto overflow-y-auto max-h-64"
+        : "w-full overflow-x-auto";
 
     return (
-        <div className={dense ? "space-y-3" : "space-y-4"}>
-            {/* -------- CABECERA -------- */}
-            {!hideHeader && (
-                <div
-                    className={[
-                        "rounded-lg ring-1 ring-slate-200 bg-white",
-                        dense ? "p-2" : "p-3",
-                    ].join(" ")}
-                >
+        <div className={`w-full min-w-0 ${dense ? "space-y-3" : "space-y-4"}`}>
+            <div className={cardShell}>
+                {!hideHeader && (
                     <div
                         className={[
-                            "grid grid-cols-1 md:grid-cols-2",
-                            dense ? "gap-2 text-[12px]" : "gap-2 text-sm",
+                            "w-full border-b border-slate-200 bg-slate-50/70",
+                            dense ? "px-2 py-2" : "px-3 py-3",
                         ].join(" ")}
                     >
-                        {/* Izquierda: fecha + horas + equipo compacto */}
-                        <div className={dense ? "space-y-0" : "space-y-0.5"}>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-slate-800">
-                                <span className="font-semibold">
-                                    📅 {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
-                                </span>
-                                <span className="text-slate-600">
-                                    ⏰ {assignedDay.startTime} – {assignedDay.endTime}
-                                </span>
-                            </div>
-
-                            <div className="mt-1 grid grid-cols-1 gap-0 text-slate-700">
-                                <div className="truncate">
-                                    {formatPerson(assignedDay.driver)}
-                                </div>
-                                <div className="truncate">
-                                    {formatPerson(assignedDay.medic)}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Derecha: ambulancia + km en una línea más compacta */}
                         <div
                             className={[
-                                "md:text-right",
-                                dense ? "space-y-0" : "space-y-0.5",
+                                "grid w-full text-center",
+                                headerColCount === 7 ? "grid-cols-7" : "grid-cols-6",
+                                dense
+                                    ? "gap-x-1 gap-y-1 text-[11px]"
+                                    : "gap-x-2 gap-y-1 text-sm",
                             ].join(" ")}
                         >
-                            <div className="flex flex-wrap items-center justify-start gap-x-3 gap-y-0.5 md:justify-end">
-                                <span className="font-semibold">🚑 {ambulanceNumber}</span>
-                                <span className="text-slate-600">
-                                    🔢 {initialKm} → {finalKm}
-                                </span>
-                                <span className="font-semibold">
-                                    🧮{" "}
+                            <div className="min-w-0 px-0.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                    {t("pages.workday.reviewSummary.labels.header.date")}
+                                </div>
+                                <div className="font-semibold text-slate-800">
+                                    {formatYYYYMMDDToDDMMYYYY(assignedDay.date)}
+                                </div>
+                            </div>
+
+                            <div className="min-w-0 px-0.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                    {t("pages.workday.reviewSummary.labels.header.schedule")}
+                                </div>
+                                <div className="text-slate-700">
+                                    {assignedDay.startTime} – {assignedDay.endTime}
+                                </div>
+                            </div>
+
+                            <div className="min-w-0 px-0.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                    {t("pages.workday.reviewSummary.labels.header.team")}
+                                </div>
+                                <div className="space-y-0 text-slate-700">
+                                    <div className="truncate">
+                                        {formatPerson(assignedDay.driver)}
+                                    </div>
+                                    <div className="truncate">
+                                        {formatPerson(assignedDay.medic)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="min-w-0 px-0.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                    {t("pages.workday.reviewSummary.labels.header.ambulance")}
+                                </div>
+                                <div className="font-semibold text-slate-800 truncate">
+                                    {ambulanceNumber}
+                                </div>
+                            </div>
+
+                            <div className="min-w-0 px-0.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                    {t("pages.workday.reviewSummary.labels.header.km")}
+                                </div>
+                                <div className="text-slate-700">
+                                    {initialKm} → {finalKm}
+                                </div>
+                            </div>
+
+                            <div className="min-w-0 px-0.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                    {t("pages.workday.reviewSummary.labels.header.totalKm")}
+                                </div>
+                                <div className="font-semibold text-slate-800">
                                     {t("pages.workday.reviewSummary.labels.totalKm", {
                                         km: totalKmDiff,
                                     })}
-                                </span>
+                                </div>
                             </div>
+
+                            {showTotalPraemieHeader ? (
+                                <div className="min-w-0 px-0.5">
+                                    <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                        {t(
+                                            "pages.workday.reviewSummary.labels.header.totalPraemie",
+                                        )}
+                                    </div>
+                                    <div className="font-semibold text-emerald-700">
+                                        {totalEffectivePatients}
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* -------- TABLA -------- */}
-            <div className={wrapContainer}>
-                <table className={`w-full table-auto ${tableText}`}>
+                <div className={tableScroll}>
+                    <table className={`w-full table-auto ${tableText}`}>
                     <thead
                         className={`${APP_NAV_MATCH_TABLE_THEAD} uppercase tracking-wide text-slate-200`}
                     >
@@ -281,6 +324,7 @@ const ReviewSummary: React.FC<Props> = ({
                         })}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     );

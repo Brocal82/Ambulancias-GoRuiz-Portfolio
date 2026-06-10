@@ -1100,6 +1100,10 @@
                 "invalidCorrect": "Bitte eine Zahl zwischen 0 und 10000 eingeben (Dezimalzahlen erlaubt, z. B. 1,5).",
                 "draftHint": "Diese Zeile ist noch ein Entwurf. Der Mitarbeiter muss sie senden, bevor Sie genehmigen oder korrigieren können.",
                 "rejectedQueueHint": "Abgelehnt. Der Mitarbeiter muss korrigieren und erneut senden.",
+                "workdayReportsTotalPraemieHint": "Summe aus Tagesabschlussberichten (Teil + Final). Referenz zur Bestätigung.",
+                "finalValueRequired": "Bitte den zu bestätigenden Endwert eingeben, bevor Sie genehmigen.",
+                "finalValueRequiredInline": "Wert eingeben",
+                "finalValueOverridePlaceholder": "Korrigieren",
                 "th": {
                     "date": "Datum",
                     "original": "Original",
@@ -1766,7 +1770,16 @@
                     "observations": "📝 Anmerkungen:",
                     "deletedUser": "Benutzer gelöscht",
                     "noName": "Ohne Name",
-                    "totalKm": "Summe: {{km}} km"
+                    "totalKm": "Summe: {{km}} km",
+                    "header": {
+                        "date": "Datum",
+                        "schedule": "Zeit",
+                        "team": "Team",
+                        "ambulance": "Krankenwagen",
+                        "km": "Km",
+                        "totalKm": "Gesamt-km",
+                        "totalPraemie": "Prämie gesamt"
+                    }
                 },
                 "table": {
                     "auftrag": "Auftrag",
@@ -1810,6 +1823,16 @@
                     "end": "Ende:",
                     "final": "✅ Final",
                     "partial": "Teilabschluss"
+                },
+                "detail": {
+                    "title": "Dienst-Details",
+                    "subtitle": "Dienst #{{dienst}}",
+                    "badge": {
+                        "final": "Final",
+                        "partial": "Teilabschluss"
+                    },
+                    "effectivePatients_one": "{{count}} effektiver Patient",
+                    "effectivePatients_other": "{{count}} effektive Patienten"
                 }
             }
         },

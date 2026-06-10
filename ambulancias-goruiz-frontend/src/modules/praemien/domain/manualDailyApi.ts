@@ -124,6 +124,8 @@ export type AdminManualPraemiePendingListEntry = {
   equipoMedicLastName: string;
   equipoMedicEmployeeNumber: string | null;
   equipoBothSlotsPending: boolean;
+  /** Suma totalEffectivePatients de reportes parcial + final del Dienst. */
+  workdayReportsTotalPraemie: number | null;
 };
 
 /** Misma forma que `GET .../day-queue-row` y filas enriquecidas del listado (UI unificada). */
@@ -134,6 +136,7 @@ export type AdminManualPraemieQueueRowData = Omit<
   manualStatus: PraemienManualDailyStatusForAdmin;
   adminFinalValue: number | null;
   rejectionReason: string | null;
+  workdayReportsTotalPraemie: number | null;
 };
 
 function normalizeQueueRowData(
@@ -158,6 +161,11 @@ function normalizeQueueRowData(
       r.rejectionReason != null && String(r.rejectionReason).trim() !== ""
         ? String(r.rejectionReason).trim()
         : null,
+    workdayReportsTotalPraemie:
+      r.workdayReportsTotalPraemie != null &&
+      Number.isFinite(Number(r.workdayReportsTotalPraemie))
+        ? Number(r.workdayReportsTotalPraemie)
+        : null,
   };
 }
 
@@ -170,6 +178,7 @@ export function pendingListEntryToQueueRowData(
     manualStatus: status,
     adminFinalValue: null,
     rejectionReason: null,
+    workdayReportsTotalPraemie: r.workdayReportsTotalPraemie ?? null,
   });
 }
 
