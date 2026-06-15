@@ -15,6 +15,7 @@ import WorkdaySummary from "../modules/workday-summary/models/workday-summary.mo
 import {
   createTestAdminWithCompany,
   createTestWorkerInCompany,
+  issueTestJwt,
 } from "./test-helpers";
 
 const API = "/api";
@@ -740,5 +741,169 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       .expect(200);
 
     expect(String(res.body.message)).toMatch(/manual|aprobadas/i);
+  });
+
+  it("pending-entries incluye workdayReportsTotalPraemie = parcial + final del Dienst", async () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    await Company.updateOne(
+      { _id: companyId },
+      {
+        $set: {
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: { year: y, month: m },
+        },
+      },
+    );
+
+    const dateStr = daysAgoDateKey(6);
+    const assignmentKey = `ws-praemie-total-${Date.now()}`;
+    const minimalTrip = {
+      auftragNumber: "WT",
+      patientName: "P",
+      fromAddress: "A",
+      toAddress: "B",
+      timeWarning: "08:00",
+      wasCancelled: false,
+      countsTrip: 1 as const,
+    };
+
+    await WorkdaySummary.create({
+      date: dateStr,
+      assignmentId: assignmentKey,
+      driver: new mongoose.Types.ObjectId(workerId),
+      medic: new mongoose.Types.ObjectId(workerId),
+      ambulanceId: new mongoose.Types.ObjectId(),
+      ambulanceNumber: "99",
+      initialKm: 0,
+      totalDienstKm: 1,
+      trips: [minimalTrip],
+      totalEffectivePatients: 2,
+      totalRealTrips: 1,
+      companyId,
+      isFinalClosure: false,
+      partialClosureReason: "test",
+    });
+
+    await WorkdaySummary.create({
+      date: dateStr,
+      assignmentId: assignmentKey,
+      driver: new mongoose.Types.ObjectId(workerId),
+      medic: new mongoose.Types.ObjectId(workerId),
+      ambulanceId: new mongoose.Types.ObjectId(),
+      ambulanceNumber: "99",
+      initialKm: 0,
+      totalDienstKm: 1,
+      trips: [minimalTrip],
+      totalEffectivePatients: 5,
+      totalRealTrips: 1,
+      companyId,
+      isFinalClosure: true,
+    });
+
+    try {
+      await request(app)
+        .put(`${API}/praemien/manual-daily`)
+        .set("Authorization", `Bearer ${workerToken}`)
+        .send({ date: dateStr, workerSubmittedValue: 3, status: "submitted" })
+        .expect(200);
+
+      const pending = await request(app)
+        .get(`${API}/praemien/manual-daily/admin/pending-entries`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+
+      const row = (
+        pending.body.items as {
+          userId: string;
+          date: string;
+          workdayReportsTotalPraemie: number;
+        }[]
+      ).find((x) => x.userId === workerId && x.date === dateStr);
+      expect(row).toBeDefined();
+      expect(row!.workdayReportsTotalPraemie).toBe(7);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({ companyId, date: dateStr });
+    }
+  });
+
+  it("admin approve cross-company devuelve 403", async () => {
+    const other = await createTestAdminWithCompany();
+    const otherCompanyId = other.company._id as mongoose.Types.ObjectId;
+    const otherWorker = await createTestWorkerInCompany(otherCompanyId);
+    const otherWorkerId = String(otherWorker._id);
+    const otherWorkerToken = issueTestJwt(
+      otherWorkerId,
+      "worker",
+      String(otherCompanyId),
+    );
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    await Company.updateOne(
+      { _id: otherCompanyId },
+      {
+        $set: {
+          praemienMode: "manual",
+          praemienModeEffectiveFrom: { year: y, month: m },
+        },
+      },
+    );
+
+    const dateStr = daysAgoDateKey(7);
+    const assignmentKey = `ws-cross-co-${Date.now()}`;
+    const minimalTrip = {
+      auftragNumber: "XC",
+      patientName: "P",
+      fromAddress: "A",
+      toAddress: "B",
+      timeWarning: "08:00",
+      wasCancelled: false,
+      countsTrip: 1 as const,
+    };
+
+    await WorkdaySummary.create({
+      date: dateStr,
+      assignmentId: assignmentKey,
+      driver: otherWorker._id,
+      medic: otherWorker._id,
+      ambulanceId: new mongoose.Types.ObjectId(),
+      ambulanceNumber: "XX",
+      initialKm: 0,
+      totalDienstKm: 1,
+      trips: [minimalTrip],
+      totalEffectivePatients: 4,
+      totalRealTrips: 1,
+      companyId: otherCompanyId,
+      isFinalClosure: true,
+    });
+
+    try {
+      await request(app)
+        .put(`${API}/praemien/manual-daily`)
+        .set("Authorization", `Bearer ${otherWorkerToken}`)
+        .send({ date: dateStr, workerSubmittedValue: 4, status: "submitted" })
+        .expect(200);
+
+      const res = await request(app)
+        .post(`${API}/praemien/manual-daily/admin/approve`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ userId: otherWorkerId, date: dateStr, adminFinalValue: 4 })
+        .expect(403);
+
+      expect(res.body.message).toMatch(/permiso|empresa/i);
+    } finally {
+      await WorkdaySummary.deleteMany({ assignmentId: assignmentKey });
+      await PraemienManualDailyEntry.deleteMany({
+        companyId: otherCompanyId,
+        date: dateStr,
+      });
+      await User.deleteOne({ _id: otherWorker._id });
+      await User.deleteOne({ _id: other.adminId });
+      await Company.deleteOne({ _id: otherCompanyId });
+    }
   });
 });

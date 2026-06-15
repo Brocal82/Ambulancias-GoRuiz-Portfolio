@@ -29,7 +29,7 @@ Los snapshots con `snapshotSource: "manual"` **no** pueden sobrescribirse con `P
 
 Entrada manual diaria cuando la empresa está en modo manual efectivo.
 
-Campos relevantes: `companyId` (required), `userId`, `date`, `workerSubmittedValue`, `adminFinalValue`, `status` (`draft` | `submitted` | `approved` | `rejected` | `reopened`).
+Campos relevantes: `companyId` (required), `userId`, `date`, `workerSubmittedValue`, `adminFinalValue`, `status` (`draft` | `submitted` | `approved` | `rejected` | `reopened`), `submittedViaDienstPartnerSync` (opcional, `true` si el envío fue automático al sincronizar con el compañero de Dienst).
 
 Índice único: `{ companyId, userId, date }`.
 
@@ -61,6 +61,19 @@ Campos relevantes: `companyId` (required), `userId`, `date`, `workerSubmittedVal
 - **Live view:** `GET /monthly-summary` usa solo filas **aprobadas** del mes actual.
 - **Historial:** meses ≥ effective manual usan snapshots `MonthlyPraemie` con `snapshotSource: "manual"` (`ensureManualMonthCloseSnapshot`).
 
+**Sync equipo Dienst (conductor ↔ médico):**
+
+| Momento | Comportamiento |
+|---------|----------------|
+| Trabajador envía (`submitted`) | Crea o actualiza la fila del compañero con el mismo valor; marca `submittedViaDienstPartnerSync: true` en la fila del compañero. |
+| Admin aprueba (`cascadeTeammate`, defecto `true`) | Aprueba al compañero pendiente con el mismo `adminFinalValue`. Respuesta: `{ entry, syncedTeammateUserIds }`. |
+
+**Cola admin enriquecida:** `workdayReportsTotalPraemie` = suma de `totalEffectivePatients` de reportes **parcial + final** del mismo Dienst/día (referencia para confirmar; no sustituye el valor manual). Redondeo a múltiplos de 0,5.
+
+**Política UI admin (producto):** el valor final debe introducirse explícitamente antes de aprobar. El backend aún acepta approve sin `adminFinalValue` (usa valor del trabajador); la web exige escribir el campo.
+
+**Rechazo:** la API `POST .../reject` sigue activa; la UI admin de cola ya no muestra rechazo (solo aprobar/corregir o reabrir desde ficha).
+
 ---
 
 ## Endpoints principales (implementados)
@@ -73,10 +86,22 @@ Campos relevantes: `companyId` (required), `userId`, `date`, `workerSubmittedVal
 | `PUT` | `/api/praemien/manual-daily` | worker | Upsert entrada manual diaria. |
 | `GET` | `/api/praemien/manual-daily/month` | worker | Entradas del mes (`year`, `month` requeridos). |
 | `GET` | `/api/praemien/manual-daily/final-closure-dates` | worker | Días con cierre final workday en el mes. |
-| `GET` | `/api/praemien/manual-daily/admin/pending-*` | admin | Cola pendiente. |
-| `POST` | `/api/praemien/manual-daily/admin/approve` | admin | Aprobar (opcional cascade compañero Dienst). |
-| `POST` | `/api/praemien/manual-daily/admin/reject` | admin | Rechazar. |
+| `GET` | `/api/praemien/manual-daily/admin/pending-entries` | admin | Cola pendiente enriquecida (incl. `workdayReportsTotalPraemie`). |
+| `GET` | `/api/praemien/manual-daily/admin/day-workday-summaries` | admin | Reportes parcial/final del Dienst para un día. |
+| `GET` | `/api/praemien/manual-daily/admin/day-queue-row` | admin | Fila de cola para cualquier estado del día. |
+| `POST` | `/api/praemien/manual-daily/admin/approve` | admin | Aprobar; body opcional `cascadeTeammate`; respuesta `{ entry, syncedTeammateUserIds }`. |
+| `POST` | `/api/praemien/manual-daily/admin/reject` | admin | Rechazar (API; sin UI en cola global). |
 | `POST` | `/api/praemien/manual-daily/admin/reopen` | admin | Reabrir. |
+
+Todas las rutas admin de `manual-daily` validan que el `userId` objetivo pertenezca a la misma empresa que el admin (`403` cross-tenant).
+
+---
+
+## Tiempo real
+
+Tras mutaciones exitosas (envío manual, approve/reject/reopen/correct, `save-monthly`, cierre final workday), el backend emite WebSocket `praemien_changed` (module-gated `PRAEMIEN`) y `admin_counts_changed` cuando aplica.
+
+Frontend web: `praemien_changed` → evento local `praemien-manual-pending-changed` → refresco de cola, badge pendientes, calendarios worker/admin.
 
 ---
 
@@ -91,6 +116,7 @@ Praemien calcula **promedio de pacientes efectivos** y nivel de prima (`premieLe
 - Agregación automática: `companyId` estricto vía `getCompanyObjectIdForPraemienUser`.
 - Helpers manuales workday: `legacyAwareWorkdayCompanyFilter` — `{ companyId: co } OR { companyId: null }` **siempre** combinado con filtro `driver`/`medic` = userId objetivo (ver `POLICY-multi-tenant-legacy-companyId.md`).
 - `PraemienManualDailyEntry.companyId` es obligatorio.
+- Escrituras admin (`approve`, `reject`, `reopen`, …): `assertAdminSameCompanyAsTarget` → `403` si el trabajador es de otra empresa.
 
 ---
 
@@ -98,7 +124,8 @@ Praemien calcula **promedio de pacientes efectivos** y nivel de prima (`premieLe
 
 - `src/modules/praemien/domain/api.ts` — summary/history
 - `src/modules/praemien/domain/manualDailyApi.ts` — manual daily + admin review
-- `src/modules/praemien/domain/historyApi.ts` — legacy save helper
+- `src/modules/praemien/hooks/useAdminManualPraemieQueue.ts` — estado compartido cola admin
+- `src/modules/praemien/components/AdminManualPraemieQueuePanel.tsx` — cola pendientes (`/admin/praemien` y filtro usuarios)
 - Etiquetas UI: **pacientes efectivos** (conteo ponderado), no “viajes” crudos.
 - `calculateEffectivePatients` redondea a múltiplos de 0.5 (paridad con backend workday-summary).
 
@@ -106,4 +133,4 @@ Praemien calcula **promedio de pacientes efectivos** y nivel de prima (`premieLe
 
 ## OpenAPI
 
-Rutas documentadas en `src/openapi/openapi.json` bajo tag `Praemien`.
+Rutas legacy bajo tag `Praemien` en `src/openapi/openapi.json`. Las rutas `manual-daily/*` pueden no estar todas documentadas en OpenAPI; ver tabla de endpoints arriba.
