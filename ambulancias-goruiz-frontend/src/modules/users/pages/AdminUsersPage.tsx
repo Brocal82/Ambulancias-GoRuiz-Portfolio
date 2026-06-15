@@ -20,23 +20,9 @@ import {
 } from "../../sick/domain";
 import { fmtDDMM } from "../../../utils/timeUtils";
 import { MODULE_KEYS } from "../../../constants/modules";
-import {
-  AdminManualPraemieQueueColumnHeaders,
-  AdminManualPraemieQueueRowBody,
-} from "../../praemien/components/AdminManualPraemieQueueRowTable";
-import {
-  getAdminManualPraemiePendingByUser,
-  getAdminManualPraemiePendingEntries,
-  pendingListEntryToQueueRowData,
-  postAdminManualDailyApprove,
-  type AdminManualPraemiePendingListEntry,
-} from "../../praemien/domain/manualDailyApi";
-import { parseManualPraemieClientValue } from "../../praemien/utils/parseManualPraemieClientValue";
-import { showManualApproveSuccessToast } from "../../praemien/utils/showManualApproveSuccessToast";
-import {
-  PRAEMIEN_MANUAL_PENDING_CHANGED,
-  dispatchPraemienManualPendingChanged,
-} from "../../praemien/utils/praemienManualPendingEvents";
+import { AdminManualPraemieQueuePanel } from "../../praemien/components/AdminManualPraemieQueuePanel";
+import { getAdminManualPraemiePendingByUser } from "../../praemien/domain/manualDailyApi";
+import { PRAEMIEN_MANUAL_PENDING_CHANGED } from "../../praemien/utils/praemienManualPendingEvents";
 import {
   APP_NAV_MATCH_TABLE_THEAD,
 } from "../../../components/ui/appTableHeader";
@@ -145,24 +131,6 @@ const AdminUsersPage = () => {
     Map<string, number>
   >(() => new Map());
   const [praemiePendingLoading, setPraemiePendingLoading] = useState(false);
-  const [praemiePendingListRows, setPraemiePendingListRows] = useState<
-    AdminManualPraemiePendingListEntry[]
-  >([]);
-  const [praemiePendingListLoading, setPraemiePendingListLoading] =
-    useState(false);
-  const [praemieListBusyKey, setPraemieListBusyKey] = useState<string | null>(
-    null,
-  );
-  const [rectifyInputByRowKey, setRectifyInputByRowKey] = useState<
-    Record<string, string>
-  >({});
-  const [finalValueErrorsByRowKey, setFinalValueErrorsByRowKey] = useState<
-    Record<string, boolean>
-  >({});
-  const [expandedPraemieRowKey, setExpandedPraemieRowKey] = useState<string | null>(
-    null,
-  );
-  const praemieListInitialLoadDoneRef = useRef(false);
 
   // ✅ Helper UI para vacaciones (usa vacationFlags, t y fmtDDMM centralizado)
   const getVacationUI = (userId: string) => {
@@ -232,56 +200,17 @@ const AdminUsersPage = () => {
     }
   }, [token, praemienModuleEnabled, onlyPraemieManualPending]);
 
-  const loadPraemiePendingList = useCallback(async () => {
-    if (!onlyPraemieManualPending) return;
-    if (!token || !praemienModuleEnabled) {
-      setPraemiePendingListRows([]);
-      setPraemiePendingListLoading(false);
-      praemieListInitialLoadDoneRef.current = false;
-      return;
-    }
-    const showBlocking = !praemieListInitialLoadDoneRef.current;
-    if (showBlocking) {
-      setPraemiePendingListLoading(true);
-    }
-    try {
-      const data = await getAdminManualPraemiePendingEntries();
-      setPraemiePendingListRows(data);
-    } catch (e) {
-      console.error("Error al cargar cola de Prämie manual (admin):", e);
-      setPraemiePendingListRows([]);
-      toastT.error(["pages.adminUsers.praemiePendingListLoadError"]);
-    } finally {
-      praemieListInitialLoadDoneRef.current = true;
-      setPraemiePendingListLoading(false);
-    }
-  }, [token, praemienModuleEnabled, onlyPraemieManualPending]);
-
   useEffect(() => {
     void loadPraemiePendingMap();
   }, [loadPraemiePendingMap]);
 
   useEffect(() => {
-    if (onlyPraemieManualPending) {
-      void loadPraemiePendingList();
-    } else {
-      setPraemiePendingListRows([]);
-      praemieListInitialLoadDoneRef.current = false;
-    }
-  }, [loadPraemiePendingList, onlyPraemieManualPending]);
-
-  useEffect(() => {
-    const onChanged = () => {
-      if (onlyPraemieManualPending) {
-        void loadPraemiePendingList();
-      } else {
-        void loadPraemiePendingMap();
-      }
-    };
+    if (onlyPraemieManualPending) return;
+    const onChanged = () => void loadPraemiePendingMap();
     window.addEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
     return () =>
       window.removeEventListener(PRAEMIEN_MANUAL_PENDING_CHANGED, onChanged);
-  }, [loadPraemiePendingMap, loadPraemiePendingList, onlyPraemieManualPending]);
+  }, [loadPraemiePendingMap, onlyPraemieManualPending]);
 
   // Cargar flags de vacaciones para la semana actual (Berlin) — con includeFullSpan:true para tooltips FULL
   useEffect(() => {
@@ -417,69 +346,7 @@ const AdminUsersPage = () => {
     }
   };
 
-  const rowPraemieKey = (r: { userId: string; date: string }) =>
-    `${r.userId}|${r.date}`;
-
-  const clearPraemieRowDrafts = (k: string) => {
-    setRectifyInputByRowKey((prev) => {
-      const next = { ...prev };
-      delete next[k];
-      return next;
-    });
-    setFinalValueErrorsByRowKey((prev) => {
-      const next = { ...prev };
-      delete next[k];
-      return next;
-    });
-    setExpandedPraemieRowKey((prev) => (prev === k ? null : prev));
-  };
-
-  const togglePraemieRowExpanded = (k: string) => {
-    setExpandedPraemieRowKey((prev) => (prev === k ? null : k));
-  };
-
-  const handlePraemieListApproveAsWorker = async (
-    row: AdminManualPraemiePendingListEntry,
-  ) => {
-    const k = rowPraemieKey(row);
-    const rawRectify = (rectifyInputByRowKey[k] ?? "").trim();
-    if (rawRectify === "") {
-      setFinalValueErrorsByRowKey((prev) => ({ ...prev, [k]: true }));
-      return;
-    }
-    let approveBody: Parameters<typeof postAdminManualDailyApprove>[0] = {
-      userId: row.userId,
-      date: row.date,
-    };
-    const parsed = parseManualPraemieClientValue(rawRectify);
-    if (!parsed.ok) {
-      toastT.error(t("pages.praemien.adminManual.invalidCorrect"));
-      return;
-    }
-    approveBody = { ...approveBody, adminFinalValue: parsed.value };
-    setPraemieListBusyKey(k);
-    try {
-      const result = await postAdminManualDailyApprove(approveBody);
-      showManualApproveSuccessToast(
-        t,
-        pendingListEntryToQueueRowData(row),
-        result.syncedTeammateUserIds,
-      );
-      dispatchPraemienManualPendingChanged();
-      clearPraemieRowDrafts(k);
-      await loadPraemiePendingList();
-    } catch (e) {
-      console.error(e);
-      toastT.error(["pages.adminUsers.praemiePendingListApproveError"]);
-    } finally {
-      setPraemieListBusyKey(null);
-    }
-  };
-
-  const filteredUsers =
-    onlyPraemieManualPending && praemienModuleEnabled
-      ? []
-      : users.filter((user) => {
+  const filteredUsers = users.filter((user) => {
     const fullName = `${user.name} ${user.lastName}`.toLowerCase();
     const matchesName = fullName.includes(searchTerm.toLowerCase());
     const matchesRole =
@@ -516,69 +383,7 @@ const AdminUsersPage = () => {
   const isPraemieQueueView = onlyPraemieManualPending && praemienModuleEnabled;
 
   if (isPraemieQueueView) {
-    return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
-        <div className="mb-4">
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-            {t("pages.adminUsers.titlePraemiePendingQueue")}
-          </h1>
-          <p className="mt-1 text-xs text-slate-600">
-            {t("pages.praemien.adminManual.queueExpandHint")}
-          </p>
-        </div>
-
-        <div className="min-w-0 rounded-2xl bg-white shadow-md ring-1 ring-slate-200 overflow-hidden">
-          {praemiePendingListLoading && praemiePendingListRows.length === 0 ? (
-            <p className="p-6 text-sm text-slate-600">
-              {t("pages.adminUsers.praemiePendingBannerLoading")}
-            </p>
-          ) : praemiePendingListRows.length === 0 ? (
-            <p className="p-6 text-sm text-slate-600">
-              {t("pages.adminUsers.praemiePendingListEmpty")}
-            </p>
-          ) : (
-            <div className="min-w-0">
-              <div
-                className="w-full min-w-0 text-xs"
-                role="region"
-                aria-label={t("pages.adminUsers.titlePraemiePendingQueue")}
-              >
-                <AdminManualPraemieQueueColumnHeaders />
-                {praemiePendingListRows.map((row) => {
-                  const k = rowPraemieKey(row);
-                  const qRow = pendingListEntryToQueueRowData(row);
-                  return (
-                    <AdminManualPraemieQueueRowBody
-                      key={k}
-                      row={qRow}
-                      rectifyInput={rectifyInputByRowKey[k] ?? ""}
-                      onRectifyChange={(value) => {
-                        setRectifyInputByRowKey((prev) => ({ ...prev, [k]: value }));
-                        setFinalValueErrorsByRowKey((prev) => {
-                          if (!prev[k]) return prev;
-                          const next = { ...prev };
-                          delete next[k];
-                          return next;
-                        });
-                      }}
-                      onApprove={() => void handlePraemieListApproveAsWorker(row)}
-                      busy={praemieListBusyKey === k}
-                      finalValueError={Boolean(finalValueErrorsByRowKey[k])}
-                      onReopen={() => {}}
-                      expandable
-                      expanded={expandedPraemieRowKey === k}
-                      onToggleExpand={() => togglePraemieRowExpanded(k)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+    return <AdminManualPraemieQueuePanel enabled />;
   }
 
   return (
