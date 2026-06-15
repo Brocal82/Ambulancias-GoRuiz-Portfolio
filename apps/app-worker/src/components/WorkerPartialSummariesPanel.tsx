@@ -23,6 +23,7 @@ type Props = {
   driverLabel: string;
   medicLabel: string;
   issuesToday?: MechanicsIssueReport[];
+  showPraemieUi?: boolean;
 };
 
 function workerName(field: string | AssignedDayUser | undefined): string {
@@ -60,12 +61,14 @@ function PartialSummaryDetailModal({
   medicLabel,
   issue,
   onClose,
+  showPraemieUi = true,
 }: {
   summary: WorkdaySummary;
   driverLabel: string;
   medicLabel: string;
   issue?: MechanicsIssueReport;
   onClose: () => void;
+  showPraemieUi?: boolean;
 }) {
   const detailDriver = workerName(summary.driver) || driverLabel;
   const detailMedic = workerName(summary.medic) || medicLabel;
@@ -119,9 +122,11 @@ function PartialSummaryDetailModal({
                 <Text style={styles.modalTripsCount}>
                   {realTrips} viaje{realTrips === 1 ? "" : "s"}
                 </Text>
-                <Text style={styles.modalPraemieTotal}>
-                  {formatPraemieValue(praemieTotal)} Prämie
-                </Text>
+                {showPraemieUi ? (
+                  <Text style={styles.modalPraemieTotal}>
+                    {formatPraemieValue(praemieTotal)} Prämie
+                  </Text>
+                ) : null}
               </View>
             </View>
 
@@ -144,7 +149,9 @@ function PartialSummaryDetailModal({
                   <Text style={[styles.tripHeadCell, styles.tripColAuf]}>Auftrag</Text>
                   <Text style={[styles.tripHeadCell, styles.tripColPat]}>Paciente</Text>
                   <Text style={[styles.tripHeadCell, styles.tripColKm]}>Km</Text>
-                  <Text style={[styles.tripHeadCell, styles.tripColPr]}>Prämie</Text>
+                  {showPraemieUi ? (
+                    <Text style={[styles.tripHeadCell, styles.tripColPr]}>Prämie</Text>
+                  ) : null}
                 </View>
 
                 {trips.map((trip, idx) => {
@@ -178,18 +185,20 @@ function PartialSummaryDetailModal({
                       <Text style={[styles.tripCell, styles.tripColKm, styles.tripCellMetric]}>
                         {km}
                       </Text>
-                      <Text
-                        style={[
-                          styles.tripCell,
-                          styles.tripColPr,
-                          styles.tripCellMetric,
-                          styles.tripCellPraemie,
-                          stornoNoCount ? styles.tripCellMuted : null,
-                          isStorno && !stornoNoCount ? styles.tripCellStornoOk : null,
-                        ]}
-                      >
-                        {formatPraemieValue(praemie)}
-                      </Text>
+                      {showPraemieUi ? (
+                        <Text
+                          style={[
+                            styles.tripCell,
+                            styles.tripColPr,
+                            styles.tripCellMetric,
+                            styles.tripCellPraemie,
+                            stornoNoCount ? styles.tripCellMuted : null,
+                            isStorno && !stornoNoCount ? styles.tripCellStornoOk : null,
+                          ]}
+                        >
+                          {formatPraemieValue(praemie)}
+                        </Text>
+                      ) : null}
                     </View>
                   );
                 })}
@@ -207,6 +216,7 @@ export function WorkerPartialSummariesPanel({
   driverLabel,
   medicLabel,
   issuesToday = [],
+  showPraemieUi = true,
 }: Props) {
   const [detailSummary, setDetailSummary] = useState<WorkdaySummary | null>(null);
 
@@ -279,6 +289,7 @@ export function WorkerPartialSummariesPanel({
           medicLabel={medicLabel}
           issue={detailIssue}
           onClose={() => setDetailSummary(null)}
+          showPraemieUi={showPraemieUi}
         />
       ) : null}
     </>

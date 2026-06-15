@@ -37,6 +37,7 @@ export type ManualDailyEntryDto = {
   reopenedAt: string | null;
   reopenedBy: string | null;
   reopenNote: string | null;
+  submittedViaDienstPartnerSync?: boolean;
 };
 
 export async function getMonthlyPraemienSummary(): Promise<MonthlyPraemienSummaryResponse> {

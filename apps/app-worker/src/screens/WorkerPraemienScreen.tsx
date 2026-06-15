@@ -275,6 +275,12 @@ export function WorkerPraemienScreen({
     [partialTripsByDate, selectedDate],
   );
 
+  const canEditSelectedDay = Boolean(
+    selectedDate &&
+      closureSet.has(selectedDate) &&
+      (!selectedEntry || selectedEntry.status !== "approved"),
+  );
+
   const summaryByDate = useMemo(() => {
     const map = new Map<string, number>();
     summary?.monthlyData?.forEach((d) => map.set(d.date, d.totalCountedPatients));
@@ -493,9 +499,50 @@ export function WorkerPraemienScreen({
             <Text style={styles.muted}>No hay días con cierre final en este mes.</Text>
           ) : null}
 
-          {selectedDate && closureSet.has(selectedDate) && !selectedEntry ? (
+          {selectedEntry ? (
+            <View style={styles.entryDetail}>
+              {selectedEntry.status === "approved" ? (
+                <Text style={styles.entryApproved}>
+                  Aprobado:{" "}
+                  {selectedEntry.adminFinalValue ?? selectedEntry.workerSubmittedValue}
+                </Text>
+              ) : (
+                <Text
+                  style={[
+                    styles.entryStatus,
+                    { color: statusColor(selectedEntry.status) },
+                  ]}
+                >
+                  {statusLabel(selectedEntry.status) || "Enviado"}
+                </Text>
+              )}
+              {selectedEntry.submittedViaDienstPartnerSync &&
+                (selectedEntry.status === "submitted" ||
+                  selectedEntry.status === "reopened") && (
+                  <Text style={styles.partnerSyncHint}>
+                    Este valor se envió automáticamente porque tu compañero de Dienst ya
+                    había registrado su Prämie ese día.
+                  </Text>
+                )}
+              {selectedEntry.status === "rejected" && selectedEntry.rejectionReason?.trim() ? (
+                <Text style={styles.entryRejected}>
+                  Motivo: {selectedEntry.rejectionReason.trim()}
+                </Text>
+              ) : null}
+              {selectedEntry.status === "reopened" && selectedEntry.reopenNote?.trim() ? (
+                <Text style={styles.entryReopenNote}>
+                  Mensaje del administrador: {selectedEntry.reopenNote.trim()}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
+          {canEditSelectedDay ? (
             <View style={styles.manualEditor}>
-              <Text style={styles.inputLabel}>Valor diario ({selectedDate})</Text>
+              <Text style={styles.inputLabel}>
+                Valor diario ({selectedDate})
+                {selectedEntry ? " — actualizar" : ""}
+              </Text>
               {selectedPartialTrips > 0 ? (
                 <Text style={styles.partialHint}>
                   Parcial acumulado: +{selectedPartialTrips}
@@ -775,5 +822,19 @@ const styles = StyleSheet.create({
   },
   errorText: { color: "#b91c1c", fontSize: 12, fontWeight: "600" },
   warnText: { color: "#92400e", fontSize: 12, fontWeight: "600" },
+  entryDetail: { marginTop: 8, gap: 6 },
+  entryStatus: { fontSize: 13, fontWeight: "600" },
+  entryApproved: { fontSize: 13, fontWeight: "700", color: "#166534" },
+  partnerSyncHint: { fontSize: 12, fontWeight: "600", color: "#0369a1", lineHeight: 17 },
+  entryRejected: { fontSize: 12, color: "#b91c1c", lineHeight: 17 },
+  entryReopenNote: {
+    fontSize: 12,
+    color: "#92400e",
+    lineHeight: 17,
+    backgroundColor: "#fffbeb",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
 });
 
