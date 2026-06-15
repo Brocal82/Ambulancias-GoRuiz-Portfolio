@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { getMonthlyPraemienSummary } from "../domain/api";
 import type { MonthlyPraemienDay } from "../domain/api";
+import { getAdminManualDailyMonth } from "../domain/manualDailyApi";
 import MonthlyMiniCalendar from "./MonthlyMiniCalendar";
 import PraemieProgressBars from "./PraemieProgressBars";
 import WorkerPraemienHistory from "./WorkerPraemienHistory";
@@ -12,6 +13,7 @@ import { usePraemienDienstDayTints } from "../hooks/usePraemienDienstDayTints";
 import { useAuth } from "../../../hooks/useAuth";
 import { MODULE_KEYS } from "../../../constants/modules";
 import { isPraemienManualEntryPhaseActive } from "../utils/isPraemienManualEntryPhaseActive";
+import { manualMonthSummaryFromEntries } from "../utils/manualMonthSummaryFromEntries";
 import { PRAEMIEN_MANUAL_PENDING_CHANGED } from "../utils/praemienManualPendingEvents";
 
 interface Props {
@@ -68,16 +70,31 @@ const AdminUserPraemienTab = ({ userId }: Props) => {
     setLoading(true);
     setSummaryError("");
 
-    void getMonthlyPraemienSummary(userId)
-      .then((data) => {
+    void (async () => {
+      try {
+        if (manualEffective) {
+          const now = new Date();
+          const entries = await getAdminManualDailyMonth(
+            userId,
+            now.getFullYear(),
+            now.getMonth() + 1,
+          );
+          const { days, averagePatients } = manualMonthSummaryFromEntries(entries);
+          setSummaries(days);
+          setAveragePatients(averagePatients);
+          return;
+        }
+
+        const data = await getMonthlyPraemienSummary(userId);
         setSummaries(data.monthlyData || []);
         setAveragePatients(data.averagePatients ?? 0);
-      })
-      .catch(() => {
+      } catch {
         setSummaryError(t("pages.praemien.page.error"));
-      })
-      .finally(() => setLoading(false));
-  }, [token, userId, t]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [token, userId, t, manualEffective]);
 
   useEffect(() => {
     reloadSummary();

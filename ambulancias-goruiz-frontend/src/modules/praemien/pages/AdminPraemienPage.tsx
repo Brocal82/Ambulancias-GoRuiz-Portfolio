@@ -11,6 +11,7 @@ import {
   type AdminManualPraemiePendingListEntry,
 } from "../domain/manualDailyApi";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
+import { showManualApproveSuccessToast } from "../utils/showManualApproveSuccessToast";
 import {
   PRAEMIEN_MANUAL_PENDING_CHANGED,
   dispatchPraemienManualPendingChanged,
@@ -85,8 +86,12 @@ export default function AdminPraemienPage() {
     body = { ...body, adminFinalValue: parsed.value };
     setBusyKey(k);
     try {
-      await postAdminManualDailyApprove(body);
-      toastT.success(["pages.adminUsers.praemiePendingListApproveSuccess"]);
+      const result = await postAdminManualDailyApprove(body);
+      showManualApproveSuccessToast(
+        t,
+        pendingListEntryToQueueRowData(row),
+        result.syncedTeammateUserIds,
+      );
       dispatchPraemienManualPendingChanged();
       clearDrafts(k);
       await load();

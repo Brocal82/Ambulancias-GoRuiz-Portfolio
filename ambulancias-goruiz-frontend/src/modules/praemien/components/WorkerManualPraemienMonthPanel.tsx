@@ -563,6 +563,13 @@ const WorkerManualPraemienMonthPanel = ({ effectiveFrom }: Props) => {
                   })}
                 </p>
               )}
+              {selectedEntry.submittedViaDienstPartnerSync &&
+                (selectedEntry.status === "submitted" ||
+                  selectedEntry.status === "reopened") && (
+                  <p className="text-sky-800">
+                    {t("pages.praemien.manual.partnerSyncSubmittedHint")}
+                  </p>
+                )}
               {selectedEntry.status === "rejected" && (
                 <p className="whitespace-pre-wrap text-rose-800">
                   {getManualRejectionNote(selectedEntry)
