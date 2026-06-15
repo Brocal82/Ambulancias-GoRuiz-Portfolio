@@ -189,7 +189,10 @@ export const adminPostManualDailyApprove = async (
       return;
     }
 
-    res.status(200).json(result.entry);
+    res.status(200).json({
+      entry: result.entry,
+      syncedTeammateUserIds: result.syncedTeammateUserIds,
+    });
   } catch (error) {
     console.error("Error en adminPostManualDailyApprove:", error);
     res.status(500).json({ message: "Error interno del servidor" });

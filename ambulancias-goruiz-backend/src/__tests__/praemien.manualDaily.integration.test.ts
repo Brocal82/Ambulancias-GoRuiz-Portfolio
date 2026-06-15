@@ -437,6 +437,7 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       expect(medicRow).toBeDefined();
       expect(medicRow.status).toBe("submitted");
       expect(medicRow.workerSubmittedValue).toBe(5);
+      expect(medicRow.submittedViaDienstPartnerSync).toBe(true);
 
       const pending = await request(app)
         .get(`${API}/praemien/manual-daily/admin/pending-entries`)
@@ -516,11 +517,16 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
         .send({ date: dateStr, workerSubmittedValue: 3, status: "submitted" })
         .expect(200);
 
-      await request(app)
+      const approveRes = await request(app)
         .post(`${API}/praemien/manual-daily/admin/approve`)
         .set("Authorization", `Bearer ${adminToken}`)
         .send({ userId: workerId, date: dateStr, adminFinalValue: 8 })
         .expect(200);
+
+      expect(approveRes.body.entry?.status).toBe("approved");
+      expect(approveRes.body.syncedTeammateUserIds).toEqual(
+        expect.arrayContaining([medicId]),
+      );
 
       const medicMonth = await request(app)
         .get(

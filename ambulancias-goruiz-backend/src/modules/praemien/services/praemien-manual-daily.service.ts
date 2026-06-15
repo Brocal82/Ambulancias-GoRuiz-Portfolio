@@ -193,6 +193,7 @@ export async function upsertMyManualDailyEntry(params: {
       workerSubmittedValue: submittedTotal,
       workerSubmittedAt: now,
       status: statusParam,
+      submittedViaDienstPartnerSync: false,
     });
     const dto = mapManualDailyDocToDto(
       created.toObject() as unknown as Record<string, unknown>,
@@ -231,6 +232,7 @@ export async function upsertMyManualDailyEntry(params: {
     nextStatus = statusParam;
   }
   patch.status = nextStatus;
+  patch.submittedViaDienstPartnerSync = false;
 
   await PraemienManualDailyEntry.updateOne(
     { _id: existing._id },
