@@ -12,6 +12,7 @@ type Props = {
   medicName: string;
   totalPraemie: number;
   totalRealTrips: number;
+  showPraemieUi?: boolean;
 };
 
 function formatDateEs(dateKey: string): string {
@@ -40,6 +41,7 @@ export function WorkerWorkdayClosedSummary({
   medicName,
   totalPraemie,
   totalRealTrips,
+  showPraemieUi = true,
 }: Props) {
   const schedule = `${startTime ?? "--:--"} – ${endTime ?? "--:--"}`;
   const tripsLabel = totalRealTrips === 1 ? "1 viaje" : `${totalRealTrips} viajes`;
@@ -70,8 +72,12 @@ export function WorkerWorkdayClosedSummary({
         </View>
 
         <View style={styles.statsCol}>
-          <Text style={styles.blockLabel}>Prämie</Text>
-          <Text style={styles.praemieValue}>{formatPraemieValue(totalPraemie)}</Text>
+          {showPraemieUi ? (
+            <>
+              <Text style={styles.blockLabel}>Prämie</Text>
+              <Text style={styles.praemieValue}>{formatPraemieValue(totalPraemie)}</Text>
+            </>
+          ) : null}
           <Text style={styles.tripsSub}>{tripsLabel}</Text>
         </View>
       </View>

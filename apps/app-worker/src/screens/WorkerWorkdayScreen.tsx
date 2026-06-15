@@ -27,6 +27,7 @@ import { canStartTripNow, filterSummariesForAssignment, msUntilNextLocalMidnight
 import { WorkerTripStepPanel } from "./WorkerTripStepPanel";
 import { WorkerWorkdayPreamble } from "./WorkerWorkdayPreamble";
 import { WorkerWorkdayClosedSummary } from "../components/WorkerWorkdayClosedSummary";
+import { usePraemienWorkdayUiActive } from "../hooks/usePraemienWorkdayUiActive";
 
 type AssignedDayFull = AssignedDay & {
   driver: { _id: string };
@@ -208,6 +209,7 @@ export function WorkerWorkdayScreen({
   agendaWsTrigger,
   workdaySessionResetTrigger,
 }: Props) {
+  const praemienWorkdayUiActive = usePraemienWorkdayUiActive(enabledModules);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [todayAssignment, setTodayAssignment] = useState<AssignedDay | null>(null);
@@ -862,6 +864,7 @@ export function WorkerWorkdayScreen({
                   medicName={displayWorkerName(todayAssignment.medic)}
                   totalPraemie={dayClosureTotals.totalPraemie}
                   totalRealTrips={dayClosureTotals.totalRealTrips}
+                  showPraemieUi={praemienWorkdayUiActive}
                 />
               </View>
             ) : todayAssignment && tripPanelAssignment ? (

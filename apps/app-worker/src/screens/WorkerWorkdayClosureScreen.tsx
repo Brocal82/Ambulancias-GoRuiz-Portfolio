@@ -42,6 +42,7 @@ import { resetAmbulanceSessionAfterPartialClosure } from "../utils/workdayAmbula
 import { clearTripDraftSessionAsync } from "../utils/workdayTripDraftStorage";
 import { resolveTodayAssignment, todayDateKey, filterSummariesForAssignment, workdayDataDateKey } from "../utils/workdayAssignment";
 import { WorkerPartialSummariesPanel } from "../components/WorkerPartialSummariesPanel";
+import { usePraemienWorkdayUiActive } from "../hooks/usePraemienWorkdayUiActive";
 
 type Props = {
   user: AuthUser;
@@ -173,6 +174,7 @@ export function WorkerWorkdayClosureScreen({
   onClosureComplete,
   onFinalClosureComplete,
 }: Props) {
+  const praemienWorkdayUiActive = usePraemienWorkdayUiActive(enabledModules);
   const [activeKey, setActiveKey] = useState<ClosureMenuKey>("inicio");
   const [trips, setTrips] = useState<WorkdayTrip[]>([]);
   const [loadError, setLoadError] = useState<string | undefined>(undefined);
@@ -566,6 +568,7 @@ export function WorkerWorkdayClosureScreen({
                 driverLabel={userLabel(todayAssignment.driver)}
                 medicLabel={userLabel(todayAssignment.medic)}
                 issuesToday={sentIssuesToday}
+                showPraemieUi={praemienWorkdayUiActive}
               />
             ) : null}
             <Text style={styles.placeholderText}>

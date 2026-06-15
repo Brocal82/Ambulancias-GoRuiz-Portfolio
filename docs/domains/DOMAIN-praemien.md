@@ -72,7 +72,7 @@ Campos relevantes: `companyId` (required), `userId`, `date`, `workerSubmittedVal
 
 **Política UI admin (producto):** el valor final debe introducirse explícitamente antes de aprobar. El backend aún acepta approve sin `adminFinalValue` (usa valor del trabajador); la web exige escribir el campo.
 
-**Rechazo:** la API `POST .../reject` sigue activa; la UI admin de cola ya no muestra rechazo (solo aprobar/corregir o reabrir desde ficha).
+**Rechazo:** la API `POST .../reject` sigue activa para datos legacy, integraciones y tests. **Política admin (desde #117):** la cola global no muestra rechazo; el flujo preferido es **reabrir** (`POST .../reopen`) para que el trabajador corrija y reenvíe. Entradas ya rechazadas pueden volver a enviarse con `PUT /manual-daily`.
 
 ---
 
@@ -128,6 +128,12 @@ Praemien calcula **promedio de pacientes efectivos** y nivel de prima (`premieLe
 - `src/modules/praemien/components/AdminManualPraemieQueuePanel.tsx` — cola pendientes (`/admin/praemien` y filtro usuarios)
 - Etiquetas UI: **pacientes efectivos** (conteo ponderado), no “viajes” crudos.
 - `calculateEffectivePatients` redondea a múltiplos de 0.5 (paridad con backend workday-summary).
+- **Workday + manual:** en modo manual efectivo, los modales de cierre parcial/final y el detalle admin de jornada ocultan columnas/totales Prämie (`usePraemienWorkdayUiActive` / `isPraemienWorkdayUiActive`). La entrada manual diaria sustituye el cálculo automático en jornada.
+
+### App móvil (`apps/app-worker`)
+
+- `WorkerPraemienScreen`: calendario manual, envío/actualización de valores, hint de sync compañero, estados rechazado/reabierto.
+- Workday móvil: misma regla `isPraemienWorkdayUiActive` para ocultar Prämie en cierres cuando el modo manual está vigente.
 
 ---
 

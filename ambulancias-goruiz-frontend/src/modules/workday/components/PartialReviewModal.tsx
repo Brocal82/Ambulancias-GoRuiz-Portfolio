@@ -6,8 +6,7 @@ import { toastT } from "../../../utils/toast";
 import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
 import { IssueReportModal } from "../../mechanics";
 import { useTranslation } from "react-i18next";
-import { useModules } from "../../../hooks/useModules";
-import { MODULE_KEYS } from "../../../constants/modules";
+import { usePraemienWorkdayUiActive } from "../../../hooks/usePraemienWorkdayUiActive";
 
 interface Props {
     trips: Trip[];
@@ -39,8 +38,7 @@ const PartialReviewModal: React.FC<Props> = ({
     onSend,
 }) => {
     const { t } = useTranslation();
-    const { hasModule } = useModules();
-    const praemienModuleEnabled = hasModule(MODULE_KEYS.PRAEMIEN);
+    const praemienWorkdayUiActive = usePraemienWorkdayUiActive();
 
     const [report, setReport] = useState("");
     const [finalKm, setFinalKm] = useState<number | "">("");
@@ -51,7 +49,7 @@ const PartialReviewModal: React.FC<Props> = ({
 
     const parsedInitialKm = Number(initialKm);
     const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
-    const totalEffectivePatients = praemienModuleEnabled
+    const totalEffectivePatients = praemienWorkdayUiActive
         ? calculateEffectivePatients(trips, assignedDay.date)
         : 0;
 
@@ -99,10 +97,10 @@ const PartialReviewModal: React.FC<Props> = ({
                     finalKm={parsedFinalKm}
                     trips={trips}
                     dense
-                    showPraemieColumn={praemienModuleEnabled}
+                    showPraemieColumn={praemienWorkdayUiActive}
                 />
 
-                {praemienModuleEnabled && (
+                {praemienWorkdayUiActive && (
                     <p className="text-center font-semibold text-green-700">
                         {t("pages.workday.partial.totalPatients", {
                             count: totalEffectivePatients,

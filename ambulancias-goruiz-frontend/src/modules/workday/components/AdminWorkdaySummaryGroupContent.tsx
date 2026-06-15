@@ -2,8 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import StatusBadge from "../../../components/common/StatusBadge";
-import { useModules } from "../../../hooks/useModules";
-import { MODULE_KEYS } from "../../../constants/modules";
+import { usePraemienWorkdayUiActive } from "../../../hooks/usePraemienWorkdayUiActive";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import type { WorkdaySummary } from "../domain";
 import ReviewSummary from "./ReviewSummary";
@@ -61,8 +60,7 @@ export default function AdminWorkdaySummaryGroupContent({
   compact = false,
 }: Props) {
   const { t } = useTranslation();
-  const { hasModule } = useModules();
-  const praemienModuleEnabled = hasModule(MODULE_KEYS.PRAEMIEN);
+  const praemienWorkdayUiActive = usePraemienWorkdayUiActive();
 
   const sorted = useMemo(() => {
     return [...summaries].sort((a, b) => {
@@ -142,9 +140,9 @@ export default function AdminWorkdaySummaryGroupContent({
                 a.timeWarning.localeCompare(b.timeWarning),
               )}
               dense
-              showPraemieColumn={praemienModuleEnabled}
+              showPraemieColumn={praemienWorkdayUiActive}
               totalEffectivePatients={
-                praemienModuleEnabled ? summary.totalEffectivePatients : null
+                praemienWorkdayUiActive ? summary.totalEffectivePatients : null
               }
             />
             </div>
