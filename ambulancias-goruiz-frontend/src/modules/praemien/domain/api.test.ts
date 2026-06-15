@@ -94,8 +94,15 @@ describe("praemien domain api", () => {
   });
 
   it("admin review transitions usan POST manual-daily/admin/*", async () => {
-    vi.mocked(api.post).mockResolvedValue({ data: {} });
-    await postAdminManualDailyApprove({ userId: "u1", date: "2026-05-01" });
+    vi.mocked(api.post).mockResolvedValue({
+      data: { entry: { date: "2026-05-01" }, syncedTeammateUserIds: [] },
+    });
+    const approveResult = await postAdminManualDailyApprove({
+      userId: "u1",
+      date: "2026-05-01",
+    });
+    expect(approveResult.entry.date).toBe("2026-05-01");
+    expect(approveResult.syncedTeammateUserIds).toEqual([]);
     await postAdminManualDailyReject({
       userId: "u1",
       date: "2026-05-01",

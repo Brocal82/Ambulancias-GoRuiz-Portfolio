@@ -305,7 +305,7 @@ export async function adminApproveManualDailyEntry(params: {
   /** Si es true (defecto), aprueba también al compañero de Dienst el mismo día si sigue pendiente. */
   cascadeTeammate?: boolean;
 }): Promise<
-  | { ok: true; entry: ManualDailyEntryDto }
+  | { ok: true; entry: ManualDailyEntryDto; syncedTeammateUserIds: string[] }
   | { ok: false; statusCode: number; message: string }
 > {
   const loaded = await loadEntryForAdmin(params);
@@ -392,7 +392,11 @@ export async function adminApproveManualDailyEntry(params: {
     });
   }
 
-  return { ok: true, entry: await enrichManualDailyDto(dto) };
+  return {
+    ok: true,
+    entry: await enrichManualDailyDto(dto),
+    syncedTeammateUserIds: syncedPartnerIds,
+  };
 }
 
 export async function adminRejectManualDailyEntry(params: {

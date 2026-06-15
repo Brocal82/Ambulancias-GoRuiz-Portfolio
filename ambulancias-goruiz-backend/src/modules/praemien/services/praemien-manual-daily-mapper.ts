@@ -16,6 +16,13 @@ export interface ManualDailyEntryDto {
   reopenedAt: string | null;
   reopenedBy: string | null;
   reopenNote: string | null;
+  /** True when auto-submitted from a Dienst teammate's send. */
+  submittedViaDienstPartnerSync?: boolean;
+}
+
+export interface ManualDailyApproveResultDto {
+  entry: ManualDailyEntryDto;
+  syncedTeammateUserIds: string[];
 }
 
 export function mapManualDailyDocToDto(
@@ -61,6 +68,7 @@ export function mapManualDailyDocToDto(
       const s = String(raw).trim();
       return s === "" ? null : s;
     })(),
+    submittedViaDienstPartnerSync: doc.submittedViaDienstPartnerSync === true,
   };
 }
 

@@ -25,6 +25,8 @@ export interface IPraemienManualDailyEntry extends Document {
   reopenedAt?: Date | null;
   reopenedBy?: Types.ObjectId | null;
   reopenNote?: string | null;
+  /** True when row was auto-submitted from a Dienst teammate's send (not self-initiated). */
+  submittedViaDienstPartnerSync?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,6 +72,11 @@ const praemienManualDailyEntrySchema = new Schema<IPraemienManualDailyEntry>(
       default: null,
     },
     reopenNote: { type: String, required: false, default: null, trim: true },
+    submittedViaDienstPartnerSync: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   { timestamps: true },
 );

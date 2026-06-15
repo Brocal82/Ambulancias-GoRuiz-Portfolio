@@ -99,6 +99,7 @@ export async function syncDienstPartnersManualDailySubmitted(params: {
         workerSubmittedValue: val,
         workerSubmittedAt: now,
         status: "submitted",
+        submittedViaDienstPartnerSync: true,
       });
       continue;
     }
@@ -110,6 +111,7 @@ export async function syncDienstPartnersManualDailySubmitted(params: {
       workerSubmittedValue: val,
       workerSubmittedAt: now,
       status: "submitted",
+      submittedViaDienstPartnerSync: true,
     };
     if (existing.originalWorkerValue == null) {
       patch.originalWorkerValue = Number(existing.workerSubmittedValue ?? 0);

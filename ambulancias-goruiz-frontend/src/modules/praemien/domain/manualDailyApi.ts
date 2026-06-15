@@ -23,7 +23,14 @@ export interface ManualDailyEntryDto {
   reopenedAt: string | null;
   reopenedBy: string | null;
   reopenNote: string | null;
+  /** True when auto-submitted from a Dienst teammate's send. */
+  submittedViaDienstPartnerSync?: boolean;
 }
+
+export type ManualDailyApproveResultDto = {
+  entry: ManualDailyEntryDto;
+  syncedTeammateUserIds: string[];
+};
 
 export async function putMyManualDailyEntry(body: {
   date: string;
@@ -237,12 +244,17 @@ export async function postAdminManualDailyApprove(body: {
   adminFinalValue?: number;
   /** Por defecto el backend también aprueba al compañero de Dienst si sigue pendiente. */
   cascadeTeammate?: boolean;
-}): Promise<ManualDailyEntryDto> {
-  const res = await axios.post<ManualDailyEntryDto>(
+}): Promise<ManualDailyApproveResultDto> {
+  const res = await axios.post<ManualDailyApproveResultDto>(
     "/praemien/manual-daily/admin/approve",
     body,
   );
-  return res.data;
+  return {
+    entry: res.data.entry,
+    syncedTeammateUserIds: Array.isArray(res.data.syncedTeammateUserIds)
+      ? res.data.syncedTeammateUserIds
+      : [],
+  };
 }
 
 export async function postAdminManualDailyReject(body: {

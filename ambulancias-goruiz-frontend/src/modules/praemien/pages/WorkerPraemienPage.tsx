@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { getMonthlyPraemienSummary } from "../domain/api";
 import type { MonthlyPraemienDay } from "../domain/api";
 import { getMyManualDailyEntriesForMonth } from "../domain/manualDailyApi";
+import { manualMonthSummaryFromEntries } from "../utils/manualMonthSummaryFromEntries";
 import WorkerPraemienHistory from "../components/WorkerPraemienHistory";
 import MonthlyMiniCalendar from "../components/MonthlyMiniCalendar";
 import PraemieProgressBars from "../components/PraemieProgressBars";
@@ -84,20 +85,9 @@ const WorkerPraemienPage = () => {
           now.getFullYear(),
           now.getMonth() + 1,
         );
-        const days = entries.map((entry) => ({
-          date: entry.date,
-          totalCountedPatients:
-            entry.status === "approved" && entry.adminFinalValue != null
-              ? entry.adminFinalValue
-              : entry.workerSubmittedValue,
-        }));
-        const avg =
-          days.length > 0
-            ? days.reduce((acc, day) => acc + day.totalCountedPatients, 0) /
-              days.length
-            : 0;
+        const { days, averagePatients } = manualMonthSummaryFromEntries(entries);
         setSummaries(days);
-        setMedia(Math.round(avg * 2) / 2);
+        setMedia(averagePatients);
         return;
       }
 

@@ -17,6 +17,7 @@ import {
   dispatchPraemienManualPendingChanged,
 } from "../utils/praemienManualPendingEvents";
 import { parseManualPraemieClientValue } from "../utils/parseManualPraemieClientValue";
+import { showManualApproveSuccessToast } from "../utils/showManualApproveSuccessToast";
 import MonthlyMiniCalendar, { type ViewMonth } from "./MonthlyMiniCalendar";
 import { AdminManualPraemieDayWorkdayReports } from "./AdminManualPraemieDayWorkdayReports";
 import {
@@ -345,11 +346,18 @@ const AdminManualPraemienReviewPanel = ({
                     return;
                   }
                   void run(async () => {
-                    await postAdminManualDailyApprove({
+                    const result = await postAdminManualDailyApprove({
                       userId,
                       date: selected.date,
                       adminFinalValue: parsed.value,
                     });
+                    if (queueRow) {
+                      showManualApproveSuccessToast(
+                        t,
+                        queueRow,
+                        result.syncedTeammateUserIds,
+                      );
+                    }
                   });
                 }}
                 busy={busy}
