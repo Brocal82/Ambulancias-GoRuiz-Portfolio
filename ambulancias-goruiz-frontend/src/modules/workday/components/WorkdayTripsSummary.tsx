@@ -1,11 +1,14 @@
 // frontend/src/components/workday/WorkdayTripsSummary.tsx
 import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../diensts";
+import type { PraemienRuleConfig } from "../../praemien/domain/api";
+import { getPraemienPreviewMultiplier } from "../../praemien/utils/praemienRulePreview";
 import { useTranslation } from "react-i18next";
 
 interface Props {
     trips: Trip[];
     assignedDay: AssignedDayFull;
+    praemienRules?: PraemienRuleConfig | null;
     onOpenTrip: (trip: Trip) => void;
 
     vehicleConfirmed: boolean;
@@ -19,6 +22,7 @@ interface Props {
 const WorkdayTripsSummary = ({
     trips,
     assignedDay,
+    praemienRules = null,
     onOpenTrip,
     vehicleConfirmed,
     isClosingDay,
@@ -77,22 +81,12 @@ const WorkdayTripsSummary = ({
                                         ? trip.totalKm
                                         : trip.kmEnd - trip.kmStart;
 
-                                const isWeekendAfternoonShift = () => {
-                                    const day = new Date(assignedDay.date).getDay();
-                                    if (day !== 0 && day !== 6) return false;
-                                    const [h] = assignedDay.startTime.split(":").map(Number);
-                                    return h >= 14 && h <= 17;
-                                };
-
-                                const getMultiplier = () => {
-                                    if (trip.countsTrip === 0) return 0;
-                                    if (totalKm >= 20) return 2;
-                                    if (totalKm >= 15) return 1.5;
-                                    if (isWeekendAfternoonShift()) return 1.5;
-                                    return 1;
-                                };
-
-                                const multiplier = getMultiplier();
+                                const multiplier = getPraemienPreviewMultiplier({
+                                    trip,
+                                    dienstDate: assignedDay.date,
+                                    dienstStartTime: assignedDay.startTime,
+                                    rules: praemienRules,
+                                });
 
                                 return (
                                     <li

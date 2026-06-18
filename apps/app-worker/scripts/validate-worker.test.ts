@@ -28,6 +28,13 @@ import {
   userIdFromAssignmentField,
 } from "../src/utils/assignmentUserId.js";
 import { collectAgendaAssignmentRefs } from "../src/utils/workerAgenda.js";
+import type { PraemienRuleConfig } from "../src/services/praemien.js";
+import { isPraemienRuleEffectiveOnDate } from "../src/utils/praemienRuleValidity.js";
+import {
+  calculateEffectivePatientsFromSummaryTrips,
+  getWorkdayTripPraemieMultiplier,
+} from "../src/utils/workdayTripPraemie.js";
+import type { WorkdaySummaryTrip } from "../src/services/workday.js";
 
 test("normalizeApiBaseUrl appends /api when missing", () => {
   assert.equal(normalizeApiBaseUrl("https://api.example.com"), "https://api.example.com/api");
@@ -263,4 +270,143 @@ test("collectAgendaAssignmentRefs keeps only rows for current worker", () => {
     dateKey: "2026-06-18",
     startTime: "14:00",
   });
+});
+
+const thursdayDate = "2025-06-12";
+const wednesdayDate = "2025-06-11";
+
+const baseTrip: WorkdaySummaryTrip = {
+  kmStart: 100,
+  kmEnd: 101,
+  wasCancelled: false,
+  countsTrip: 1,
+};
+
+const thursdayX2Rules: PraemienRuleConfig = {
+  version: 1,
+  cancelledTripPolicy: "excludeUnlessCountsTrip",
+  rules: [
+    {
+      id: "thursday-x2",
+      type: "weekday",
+      label: "Jueves x2",
+      enabled: true,
+      weekdays: [4],
+      multiplier: 2,
+    },
+  ],
+};
+
+test("Thursday x2 Praemien rule applies on Thursday dienst date", () => {
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(baseTrip, thursdayDate, "08:00", thursdayX2Rules),
+    2,
+  );
+});
+
+test("Thursday x2 Praemien rule does not apply on Wednesday dienst date", () => {
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(baseTrip, wednesdayDate, "08:00", thursdayX2Rules),
+    1,
+  );
+});
+
+test("future effectiveFrom is ignored for dienst dates before start", () => {
+  const rules: PraemienRuleConfig = {
+    ...thursdayX2Rules,
+    rules: [
+      {
+        ...thursdayX2Rules.rules[0]!,
+        effectiveFrom: "2025-06-20",
+      },
+    ],
+  };
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(baseTrip, thursdayDate, "08:00", rules),
+    1,
+  );
+  assert.equal(isPraemienRuleEffectiveOnDate(rules.rules[0]!, thursdayDate), false);
+});
+
+test("exact effectiveFrom applies on the boundary dienst date", () => {
+  const rules: PraemienRuleConfig = {
+    ...thursdayX2Rules,
+    rules: [
+      {
+        ...thursdayX2Rules.rules[0]!,
+        effectiveFrom: thursdayDate,
+      },
+    ],
+  };
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(baseTrip, thursdayDate, "08:00", rules),
+    2,
+  );
+  assert.equal(isPraemienRuleEffectiveOnDate(rules.rules[0]!, thursdayDate), true);
+});
+
+test("exact effectiveTo applies on the boundary dienst date", () => {
+  const rules: PraemienRuleConfig = {
+    ...thursdayX2Rules,
+    rules: [
+      {
+        ...thursdayX2Rules.rules[0]!,
+        effectiveTo: thursdayDate,
+      },
+    ],
+  };
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(baseTrip, thursdayDate, "08:00", rules),
+    2,
+  );
+  assert.equal(isPraemienRuleEffectiveOnDate(rules.rules[0]!, thursdayDate), true);
+});
+
+test("expired effectiveTo is ignored after the dienst date", () => {
+  const rules: PraemienRuleConfig = {
+    ...thursdayX2Rules,
+    rules: [
+      {
+        ...thursdayX2Rules.rules[0]!,
+        effectiveTo: "2025-06-11",
+      },
+    ],
+  };
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(baseTrip, thursdayDate, "08:00", rules),
+    1,
+  );
+  assert.equal(isPraemienRuleEffectiveOnDate(rules.rules[0]!, thursdayDate), false);
+});
+
+test("Praemien rules without validity dates keep previous preview behavior", () => {
+  const longTrip: WorkdaySummaryTrip = { ...baseTrip, kmStart: 0, kmEnd: 22 };
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(longTrip, thursdayDate, "08:00", thursdayX2Rules),
+    2,
+  );
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(longTrip, wednesdayDate, "08:00", null),
+    2,
+  );
+});
+
+test("disabled Praemien rule is ignored in preview multiplier", () => {
+  const rules: PraemienRuleConfig = {
+    ...thursdayX2Rules,
+    rules: [{ ...thursdayX2Rules.rules[0]!, enabled: false }],
+  };
+  assert.equal(
+    getWorkdayTripPraemieMultiplier(baseTrip, thursdayDate, "08:00", rules),
+    1,
+  );
+});
+
+test("default fallback Praemien rules are preserved when config is null", () => {
+  const longTrip: WorkdaySummaryTrip = { ...baseTrip, kmStart: 0, kmEnd: 22 };
+  assert.equal(getWorkdayTripPraemieMultiplier(longTrip, thursdayDate, "08:00", null), 2);
+  assert.equal(
+    calculateEffectivePatientsFromSummaryTrips([longTrip], thursdayDate, "08:00", null),
+    2,
+  );
 });
