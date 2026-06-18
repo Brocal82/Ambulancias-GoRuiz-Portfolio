@@ -3,6 +3,7 @@ import {
   normalizePraemienRuleConfig,
   type PraemienRuleConfig,
 } from "../../praemien/types/praemien-rule-config";
+import { isPraemienRuleEffectiveOnDate } from "../../praemien/utils/isPraemienRuleEffectiveOnDate";
 
 /** Minimal trip shape needed for effective-patient multiplier calculation. */
 export type EffectivePatientTripInput = {
@@ -35,6 +36,7 @@ export function calculateEffectivePatients(
 
     for (const rule of rules.rules) {
       if (!rule.enabled) continue;
+      if (!isPraemienRuleEffectiveOnDate(rule, dienstDate)) continue;
 
       if (rule.type === "km") {
         const underMax = rule.maxKm == null || km < rule.maxKm;

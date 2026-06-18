@@ -59,6 +59,8 @@ const praemienRuleSchema = new Schema(
       required: true,
     },
     multiplier: { type: Number, required: true, min: 0, max: 10 },
+    effectiveFrom: { type: String, required: false, default: null },
+    effectiveTo: { type: String, required: false, default: null },
     minKm: { type: Number, required: false, min: 0, max: 10000 },
     maxKm: { type: Number, required: false, min: 0, max: 10000, default: null },
     weekdays: { type: [Number], required: false, default: undefined },

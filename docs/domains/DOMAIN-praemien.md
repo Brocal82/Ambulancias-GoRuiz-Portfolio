@@ -130,6 +130,36 @@ Praemien calcula **promedio de pacientes efectivos** y nivel de prima (`premieLe
 - `calculateEffectivePatients` redondea a múltiplos de 0.5 (paridad con backend workday-summary).
 - **Workday + manual:** en modo manual efectivo, los modales de cierre parcial/final y el detalle admin de jornada ocultan columnas/totales Prämie (`usePraemienWorkdayUiActive` / `isPraemienWorkdayUiActive`). La entrada manual diaria sustituye el cálculo automático en jornada.
 
+### Reglas configurables (`Company.praemienRules`)
+
+Admin: `GET/PATCH /api/praemien/rules` — configuración por empresa (máx. 30 reglas). El cálculo en `calculateEffectivePatients` evalúa reglas habilitadas; si varias aplican al mismo viaje, se usa el multiplicador más alto.
+
+Cada regla puede incluir fechas de vigencia opcionales:
+
+| Campo | Formato | Comportamiento |
+|-------|---------|----------------|
+| `effectiveFrom` | `YYYY-MM-DD` o `null` | Si se omite, la regla aplica desde cualquier fecha pasada (comportamiento legacy). Si es futura, la regla está **programada** y no afecta Diensts anteriores. |
+| `effectiveTo` | `YYYY-MM-DD` o `null` | Si se omite o es `null`, **sin fecha de fin** (vigencia indefinida tras el inicio). Límites **inclusivos**. |
+
+Semántica en el cálculo (`isPraemienRuleEffectiveOnDate`):
+
+```
+aplica cuando:
+  (!effectiveFrom || dienstDate >= effectiveFrom)
+  && (!effectiveTo || dienstDate <= effectiveTo)
+```
+
+Estados UI (solo visualización admin; el cálculo usa la fecha del Dienst, no “hoy”):
+
+| Estado | Condición |
+|--------|-----------|
+| Desactivada | `enabled === false` |
+| Programada | `enabled` y hoy `< effectiveFrom` |
+| Activa | `enabled` y dentro del intervalo de vigencia |
+| Caducada | `enabled` y hoy `> effectiveTo` |
+
+**Histórico:** cambiar reglas o fechas **no** recalcula `MonthlyPraemie`, `WorkdaySummary` guardados ni snapshots mensuales. Solo afecta nuevos cierres de jornada.
+
 ### App móvil (`apps/app-worker`)
 
 - `WorkerPraemienScreen`: calendario manual, envío/actualización de valores, hint de sync compañero, estados rechazado/reabierto.
@@ -139,4 +169,4 @@ Praemien calcula **promedio de pacientes efectivos** y nivel de prima (`premieLe
 
 ## OpenAPI
 
-Rutas legacy bajo tag `Praemien` en `src/openapi/openapi.json`. Las rutas `manual-daily/*` pueden no estar todas documentadas en OpenAPI; ver tabla de endpoints arriba.
+Rutas bajo tag `Praemien` en `src/openapi/openapi.json`, incl. `GET/PATCH /api/praemien/rules` con `effectiveFrom`/`effectiveTo` en `PraemienRuleBase`. Las rutas `manual-daily/*` pueden no estar todas documentadas en OpenAPI; ver tabla de endpoints arriba.

@@ -99,4 +99,67 @@ describe("Praemien rules tenant configuration", () => {
       await Company.deleteOne({ _id: new mongoose.Types.ObjectId(own.companyId) });
     }
   });
+
+  it("persists optional validity dates on rules", async () => {
+    const own = await createTestAdminWithCompany();
+    try {
+      const saved = await request(app)
+        .patch(`${API}/praemien/rules`)
+        .set("Authorization", `Bearer ${own.adminToken}`)
+        .send({
+          version: 1,
+          rules: [
+            {
+              type: "km",
+              label: "Future km",
+              enabled: true,
+              minKm: 10,
+              maxKm: null,
+              multiplier: 2,
+              effectiveFrom: "2027-01-01",
+              effectiveTo: null,
+            },
+          ],
+          cancelledTripPolicy: "excludeUnlessCountsTrip",
+        })
+        .expect(200);
+
+      expect(saved.body.rules[0].effectiveFrom).toBe("2027-01-01");
+      expect(saved.body.rules[0].effectiveTo ?? null).toBeNull();
+
+      const ownCompany = await Company.findById(own.companyId).lean();
+      expect(ownCompany?.praemienRules?.rules?.[0]?.effectiveFrom).toBe("2027-01-01");
+    } finally {
+      await Company.deleteOne({ _id: new mongoose.Types.ObjectId(own.companyId) });
+    }
+  });
+
+  it("rejects invalid validity date ranges", async () => {
+    const own = await createTestAdminWithCompany();
+    try {
+      const res = await request(app)
+        .patch(`${API}/praemien/rules`)
+        .set("Authorization", `Bearer ${own.adminToken}`)
+        .send({
+          version: 1,
+          rules: [
+            {
+              type: "km",
+              label: "Bad range",
+              enabled: true,
+              minKm: 10,
+              maxKm: null,
+              multiplier: 2,
+              effectiveFrom: "2027-12-31",
+              effectiveTo: "2027-01-01",
+            },
+          ],
+          cancelledTripPolicy: "excludeUnlessCountsTrip",
+        })
+        .expect(400);
+      expect(String(res.body.message)).toMatch(/inválidos|invalid/i);
+    } finally {
+      await Company.deleteOne({ _id: new mongoose.Types.ObjectId(own.companyId) });
+    }
+  });
 });

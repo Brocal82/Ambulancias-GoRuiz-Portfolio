@@ -1,4 +1,5 @@
 import type { PraemienRuleConfig } from "../domain/api";
+import { isPraemienRuleEffectiveOnDate } from "./praemienRuleValidity";
 
 export type PraemienPreviewTrip = {
   wasCancelled?: boolean;
@@ -72,6 +73,7 @@ export function getPraemienPreviewMultiplier(params: {
 
   for (const rule of config.rules) {
     if (!rule.enabled) continue;
+    if (!isPraemienRuleEffectiveOnDate(rule, dienstDate)) continue;
     if (rule.type === "km") {
       const underMax = rule.maxKm == null || km < rule.maxKm;
       if (km >= rule.minKm && underMax) {
