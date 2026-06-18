@@ -1,5 +1,6 @@
 import type { PraemienRuleConfig } from "../services/praemien";
 import type { WorkdaySummaryTrip } from "../services/workday";
+import { isPraemienRuleEffectiveOnDate } from "./praemienRuleValidity";
 
 const DEFAULT_PRAEMIEN_RULES: PraemienRuleConfig = {
   version: 1,
@@ -61,6 +62,7 @@ export function getWorkdayTripPraemieMultiplier(
 
   for (const rule of config.rules) {
     if (!rule.enabled) continue;
+    if (!isPraemienRuleEffectiveOnDate(rule, dienstDate)) continue;
     if (rule.type === "km") {
       const underMax = rule.maxKm == null || km < rule.maxKm;
       if (km >= rule.minKm && underMax) {
