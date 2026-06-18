@@ -11,6 +11,7 @@ import { confirmAction } from "../../../utils/confirm";
 import CancelButton from "../../../components/common/actions/CancelButton";
 import SaveIconButton from "../../../components/common/actions/SaveIconButton";
 import CreateIconButton from "../../../components/common/actions/CreateIconButton";
+import { withCommonIconButtonInteraction } from "../../../components/common/actions/iconButtonStyles";
 import EditIconButton from "../../../components/common/actions/EditIconButton";
 import DeleteIconButton from "../../../components/common/actions/DeleteIconButton";
 import StatusBadge from "../../../components/common/StatusBadge";
@@ -56,6 +57,7 @@ export function AdminPraemienRulesPanel() {
   const [saving, setSaving] = useState(false);
   const [ruleModal, setRuleModal] = useState<RuleModalState | null>(null);
   const [modalSessionKey, setModalSessionKey] = useState(0);
+  const [listExpanded, setListExpanded] = useState(false);
 
   const beginModalSession = () => {
     const nextKey = modalSessionKey + 1;
@@ -88,11 +90,6 @@ export function AdminPraemienRulesPanel() {
       cancelled = true;
     };
   }, [t]);
-
-  const activeCount = useMemo(
-    () => rules.rules.filter((rule) => rule.enabled).length,
-    [rules.rules],
-  );
 
   const modalDraftConfig = useMemo((): PraemienRuleConfig | null => {
     if (!ruleModal) return null;
@@ -218,23 +215,26 @@ export function AdminPraemienRulesPanel() {
 
   return (
     <section className="space-y-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             {t("pages.praemien.adminRules.title")}
           </h2>
-          <p className="text-sm text-slate-600">
-            {t("pages.praemien.adminRules.subtitle", {
-              active: activeCount,
-              total: rules.rules.length,
+          <button
+            type="button"
+            id="praemien-rules-list-toggle"
+            aria-expanded={listExpanded}
+            aria-controls="praemien-rules-list"
+            aria-label={t("pages.praemien.adminRules.toggleRulesList", {
+              count: rules.rules.length,
             })}
-          </p>
-          <p className="text-sm text-slate-500">
-            {t("pages.praemien.adminRules.defaultLogicHint")}
-          </p>
-          <p className="text-sm text-slate-500">
-            {t("pages.praemien.adminRules.futureOnlyHint")}
-          </p>
+            onClick={() => setListExpanded((expanded) => !expanded)}
+            className={withCommonIconButtonInteraction(
+              "inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-sm font-medium tabular-nums text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400",
+            )}
+          >
+            {rules.rules.length}
+          </button>
         </div>
         <CreateIconButton
           onClick={openCreateModal}
@@ -243,14 +243,16 @@ export function AdminPraemienRulesPanel() {
         />
       </div>
 
-      {rules.rules.length === 0 ? (
-        <div className="rounded-md border border-dashed border-slate-300 py-10 text-center">
-          <p className="text-sm text-slate-500">
-            {t("pages.praemien.adminRules.empty")}
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
+      {listExpanded ? (
+        <div id="praemien-rules-list">
+          {rules.rules.length === 0 ? (
+            <div className="rounded-md border border-dashed border-slate-300 py-10 text-center">
+              <p className="text-sm text-slate-500">
+                {t("pages.praemien.adminRules.empty")}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
           <table className="w-full min-w-[56rem] table-auto border-collapse text-sm">
             <colgroup>
               <col className="w-[7rem]" />
@@ -304,7 +306,9 @@ export function AdminPraemienRulesPanel() {
             </tbody>
           </table>
         </div>
-      )}
+          )}
+        </div>
+      ) : null}
 
       {ruleModal ? (
         <PraemienRuleModal

@@ -43,6 +43,37 @@ function countRuleRows() {
   return screen.getAllByRole("row").length - 1;
 }
 
+function rulesListToggle() {
+  return screen.getByLabelText(
+    (label) =>
+      typeof label === "string" && label.startsWith("pages.praemien.adminRules.toggleRulesList"),
+  );
+}
+
+function toggleRuleCount() {
+  return rulesListToggle().textContent?.trim() ?? "";
+}
+
+async function waitForRulesPanelLoaded(total = 3) {
+  await waitFor(() => {
+    expect(toggleRuleCount()).toBe(String(total));
+  });
+}
+
+async function expandRulesList() {
+  fireEvent.click(rulesListToggle());
+  await waitFor(() => {
+    expect(rulesListToggle().getAttribute("aria-expanded")).toBe("true");
+  });
+}
+
+async function collapseRulesList() {
+  fireEvent.click(rulesListToggle());
+  await waitFor(() => {
+    expect(rulesListToggle().getAttribute("aria-expanded")).toBe("false");
+  });
+}
+
 describe("AdminPraemienRulesPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -54,16 +85,51 @@ describe("AdminPraemienRulesPanel", () => {
     cleanup();
   });
 
-  it("shows loading then renders compact overview rows", async () => {
+  it("shows loading then compact header with collapsed rules list", async () => {
     render(<AdminPraemienRulesPanel />);
     expect(screen.getByText("pages.praemien.adminRules.loading")).toBeTruthy();
 
-    await waitFor(() => {
-      expect(screen.getByText("15 a 20 km")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded();
 
+    expect(rulesListToggle().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("15 a 20 km")).toBeNull();
+    expect(screen.queryByText("pages.praemien.adminRules.defaultLogicHint")).toBeNull();
+    expect(screen.queryByText("pages.praemien.adminRules.futureOnlyHint")).toBeNull();
+    expect(screen.queryByText("pages.praemien.adminRules.subtitle")).toBeNull();
+    expect(screen.queryByText(/rulesCounter/)).toBeNull();
+    expect(screen.queryByText(/rulesTotal/)).toBeNull();
+    expect(toggleRuleCount()).toBe("3");
+
+    await expandRulesList();
+    expect(screen.getByText("15 a 20 km")).toBeTruthy();
     expect(screen.getByText("pages.praemien.adminRules.table.conditions")).toBeTruthy();
     expect(screen.getAllByText("×1.5").length).toBeGreaterThan(0);
+  });
+
+  it("toggles rules list visibility from the counter chip", async () => {
+    render(<AdminPraemienRulesPanel />);
+    await waitForRulesPanelLoaded();
+
+    expect(screen.queryByText("15 a 20 km")).toBeNull();
+
+    await expandRulesList();
+    expect(screen.getByText("15 a 20 km")).toBeTruthy();
+
+    await collapseRulesList();
+    expect(screen.queryByText("15 a 20 km")).toBeNull();
+  });
+
+  it("opens create modal while list remains collapsed", async () => {
+    render(<AdminPraemienRulesPanel />);
+    await waitForRulesPanelLoaded();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
+    );
+
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(rulesListToggle().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("15 a 20 km")).toBeNull();
   });
 
   it("shows empty state when no rules", async () => {
@@ -74,6 +140,9 @@ describe("AdminPraemienRulesPanel", () => {
     });
 
     render(<AdminPraemienRulesPanel />);
+
+    await waitForRulesPanelLoaded(0);
+    await expandRulesList();
 
     await waitFor(() => {
       expect(screen.getByText("pages.praemien.adminRules.empty")).toBeTruthy();
@@ -93,10 +162,10 @@ describe("AdminPraemienRulesPanel", () => {
   it("does not render a global save button", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("15 a 20 km")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
 
+    expect(screen.getByText("15 a 20 km")).toBeTruthy();
     expect(screen.queryByTitle("pages.praemien.adminRules.save")).toBeNull();
     expect(screen.queryByTitle("pages.praemien.adminRules.noChanges")).toBeNull();
   });
@@ -104,9 +173,7 @@ describe("AdminPraemienRulesPanel", () => {
   it("renders shared create button and no rule-type selector outside modal", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("15 a 20 km")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded();
 
     expect(
       screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
@@ -118,9 +185,7 @@ describe("AdminPraemienRulesPanel", () => {
   it("opens create modal with rule-type selector inside modal only", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
 
     expect(screen.queryByRole("combobox")).toBeNull();
 
@@ -140,9 +205,9 @@ describe("AdminPraemienRulesPanel", () => {
   it("opens create modal without changing rule count", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
+    expect(countRuleRows()).toBe(3);
 
     fireEvent.click(
       screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
@@ -157,9 +222,9 @@ describe("AdminPraemienRulesPanel", () => {
   it("cancel create discards draft and does not persist", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
+    expect(countRuleRows()).toBe(3);
 
     fireEvent.click(
       screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
@@ -185,9 +250,7 @@ describe("AdminPraemienRulesPanel", () => {
   it("save create persists full config and adds row", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
 
     fireEvent.click(
       screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
@@ -219,9 +282,8 @@ describe("AdminPraemienRulesPanel", () => {
   it("edit opens copied draft without mutating list until save", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("15 a 20 km")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
 
     fireEvent.click(screen.getAllByTitle("pages.praemien.adminRules.actions.edit")[0]);
 
@@ -244,9 +306,8 @@ describe("AdminPraemienRulesPanel", () => {
   it("save edit persists replacement via updatePraemienRules", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("15 a 20 km")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
 
     const editButtons = screen.getAllByTitle("pages.praemien.adminRules.actions.edit");
     fireEvent.click(editButtons[0]);
@@ -275,9 +336,8 @@ describe("AdminPraemienRulesPanel", () => {
   it("disable persists immediately without global save", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("15 a 20 km")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
 
     const disableButtons = screen.getAllByRole("button", {
       name: "pages.praemien.adminRules.actions.disableShort",
@@ -301,9 +361,9 @@ describe("AdminPraemienRulesPanel", () => {
   it("remove persists immediately after confirmation", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
+    expect(countRuleRows()).toBe(3);
 
     const deleteButtons = screen.getAllByTitle("pages.praemien.adminRules.actions.remove");
     fireEvent.click(deleteButtons[0]);
@@ -315,6 +375,28 @@ describe("AdminPraemienRulesPanel", () => {
     const payload = vi.mocked(updatePraemienRules).mock.calls[0][0];
     expect(payload.rules).toHaveLength(2);
     expect(payload.rules.some((rule) => rule.label === "15 a 20 km")).toBe(false);
+  });
+
+  it("shows only the numeric rule count in the toggle control", async () => {
+    vi.mocked(getPraemienRules).mockResolvedValue({
+      version: 1,
+      cancelledTripPolicy: "excludeUnlessCountsTrip",
+      rules: Array.from({ length: 12 }, (_, index) => ({
+        id: `rule-${index}`,
+        type: "km" as const,
+        label: `Rule ${index + 1}`,
+        enabled: true,
+        minKm: 0,
+        maxKm: null,
+        multiplier: 1,
+      })),
+    });
+
+    render(<AdminPraemienRulesPanel />);
+
+    await waitForRulesPanelLoaded(12);
+    expect(toggleRuleCount()).toBe("12");
+    expect(screen.queryByText(/rulesTotal/)).toBeNull();
   });
 
   it("opens modal editor for weekdayPickupTime rule", async () => {
@@ -337,9 +419,9 @@ describe("AdminPraemienRulesPanel", () => {
 
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Pickup rule")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded(1);
+    await expandRulesList();
+    expect(screen.getByText("Pickup rule")).toBeTruthy();
 
     fireEvent.click(screen.getByTitle("pages.praemien.adminRules.actions.edit"));
 
@@ -351,9 +433,8 @@ describe("AdminPraemienRulesPanel", () => {
   it("create after editing another rule opens a clean default draft", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("15 a 20 km")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded();
+    await expandRulesList();
 
     fireEvent.click(screen.getAllByTitle("pages.praemien.adminRules.actions.edit")[0]);
     const editDialog = screen.getByRole("dialog");
@@ -380,9 +461,7 @@ describe("AdminPraemienRulesPanel", () => {
   it("multiplier input uses 0.5 step in create modal", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
 
     fireEvent.click(
       screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
@@ -398,9 +477,7 @@ describe("AdminPraemienRulesPanel", () => {
   it("blocks modal save when draft validation fails", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
 
     fireEvent.click(
       screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
@@ -436,9 +513,10 @@ describe("AdminPraemienRulesPanel", () => {
 
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("pages.praemien.adminRules.status.scheduled")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded(1);
+    await expandRulesList();
+
+    expect(screen.getByText("pages.praemien.adminRules.status.scheduled")).toBeTruthy();
 
     vi.restoreAllMocks();
   });
@@ -446,9 +524,7 @@ describe("AdminPraemienRulesPanel", () => {
   it("saves rule with validity dates in payload", async () => {
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(countRuleRows()).toBe(3);
-    });
+    await waitForRulesPanelLoaded();
 
     fireEvent.click(
       screen.getByRole("button", { name: "pages.praemien.adminRules.addRule" }),
@@ -515,9 +591,9 @@ describe("AdminPraemienRulesPanel", () => {
 
     render(<AdminPraemienRulesPanel />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Dated rule")).toBeTruthy();
-    });
+    await waitForRulesPanelLoaded(3);
+    await expandRulesList();
+    expect(screen.getByText("Dated rule")).toBeTruthy();
 
     expect(screen.getByText("pages.praemien.adminRules.table.fromDate")).toBeTruthy();
     expect(screen.getByText("pages.praemien.adminRules.table.untilDate")).toBeTruthy();

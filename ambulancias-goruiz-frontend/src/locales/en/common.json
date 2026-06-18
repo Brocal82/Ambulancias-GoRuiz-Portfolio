@@ -1122,6 +1122,11 @@
             },
             "adminRules": {
                 "title": "Prämien rules",
+                "rulesTotalNone": "No rules",
+                "rulesTotalSingular": "1 rule",
+                "rulesTotalPlural": "{{count}} rules",
+                "rulesCounter": "{{active}} active / {{total}} rules",
+                "toggleRulesList": "Show or hide list of {{count}} rules",
                 "subtitle": "{{active}} active of {{total}} rules. When several apply to the same trip, the highest multiplier is used.",
                 "defaultLogicHint": "Default system logic still applies until you enable custom rules.",
                 "futureOnlyHint": "Saved rules only affect new workday closures; already saved months are not recalculated.",

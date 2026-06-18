@@ -1122,6 +1122,11 @@
             },
             "adminRules": {
                 "title": "Reglas de Prämien",
+                "rulesTotalNone": "Sin reglas",
+                "rulesTotalSingular": "1 regla",
+                "rulesTotalPlural": "{{count}} reglas",
+                "rulesCounter": "{{active}} activas / {{total}} reglas",
+                "toggleRulesList": "Mostrar u ocultar lista de {{count}} reglas",
                 "subtitle": "{{active}} activas de {{total}} reglas. Si varias aplican al mismo viaje, se usa el multiplicador más alto.",
                 "defaultLogicHint": "La lógica por defecto del sistema sigue aplicando mientras no actives reglas personalizadas.",
                 "futureOnlyHint": "Las reglas guardadas solo afectan a cierres de jornada nuevos; los meses ya guardados no se recalculan.",

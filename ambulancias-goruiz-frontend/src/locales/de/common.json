@@ -1117,6 +1117,11 @@
             },
             "adminRules": {
                 "title": "Prämien-Regeln",
+                "rulesTotalNone": "Keine Regeln",
+                "rulesTotalSingular": "1 Regel",
+                "rulesTotalPlural": "{{count}} Regeln",
+                "rulesCounter": "{{active}} aktiv / {{total}} Regeln",
+                "toggleRulesList": "Regelliste mit {{count}} Regeln ein- oder ausblenden",
                 "subtitle": "{{active}} aktiv von {{total}} Regeln. Wenn mehrere auf dieselbe Fahrt zutreffen, gilt der höchste Multiplikator.",
                 "defaultLogicHint": "Die Standard-Systemlogik gilt weiter, bis Sie eigene Regeln aktivieren.",
                 "futureOnlyHint": "Gespeicherte Regeln gelten nur für neue Tagesabschlüsse; bereits gespeicherte Monate werden nicht neu berechnet.",
