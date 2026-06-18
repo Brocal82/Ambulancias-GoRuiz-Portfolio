@@ -1,24 +1,14 @@
 // src/components/workday/ReviewSummary.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import { formatYYYYMMDDToDDMMYYYY } from "../../../utils/timeUtils";
 import { useTranslation } from "react-i18next";
 import { APP_NAV_MATCH_TABLE_THEAD } from "../../../components/ui/appTableHeader";
+import { getPraemienRules, type PraemienRuleConfig } from "../../praemien/domain/api";
+import { getPraemienPreviewMultiplier } from "../../praemien/utils/praemienRulePreview";
 
 const calcTripKm = (t: Trip) => Math.max(0, t.kmEnd - t.kmStart);
-
-const getMultiplier = (t: Trip, totalKm: number, isWeekendLate: boolean) => {
-    if (t.countsTrip === 0) return 0;
-    if (t.countsTrip === 1) {
-        if (totalKm >= 20) return 2;
-        if (totalKm >= 15 || isWeekendLate) return 1.5;
-        return 1;
-    }
-    if (totalKm >= 20) return 2;
-    if (totalKm >= 15 || isWeekendLate) return 1.5;
-    return 1;
-};
 
 interface Props {
     assignedDay: AssignedDayFull;
@@ -46,15 +36,23 @@ const ReviewSummary: React.FC<Props> = ({
     totalEffectivePatients = null,
 }) => {
     const { t } = useTranslation();
+    const [praemienRules, setPraemienRules] = useState<PraemienRuleConfig | null>(null);
     const tableColSpan = showPraemieColumn ? 13 : 12;
 
-    const weekendLate =
-        showPraemieColumn &&
-        [0, 6].includes(new Date(assignedDay.date).getDay()) &&
-        (() => {
-            const h = Number(assignedDay.startTime.split(":")[0] ?? 0);
-            return h >= 14 && h <= 17;
-        })();
+    useEffect(() => {
+        if (!showPraemieColumn) return;
+        let cancelled = false;
+        getPraemienRules()
+            .then((rules) => {
+                if (!cancelled) setPraemienRules(rules);
+            })
+            .catch(() => {
+                if (!cancelled) setPraemienRules(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [showPraemieColumn]);
 
     const totalKmDiff = Math.max(0, finalKm - initialKm);
     const showTotalPraemieHeader =
@@ -233,7 +231,12 @@ const ReviewSummary: React.FC<Props> = ({
                         {trips.map((tItem, i) => {
                             const diff = calcTripKm(tItem);
                             const mult = showPraemieColumn
-                                ? getMultiplier(tItem, diff, weekendLate)
+                                ? getPraemienPreviewMultiplier({
+                                    trip: tItem,
+                                    dienstDate: assignedDay.date,
+                                    dienstStartTime: assignedDay.startTime,
+                                    rules: praemienRules,
+                                })
                                 : 0;
                             const isStornoThatCounts =
                                 showPraemieColumn &&

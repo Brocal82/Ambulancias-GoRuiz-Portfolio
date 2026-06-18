@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { Trip } from "../domain/types/trip";
 import type { AssignedDayFull } from "../../../modules/diensts";
 import ReviewSummary from "./ReviewSummary";
 import { toastT } from "../../../utils/toast";
-import { calculateEffectivePatients } from "../../praemien/utils/calculateEffectivePatients";
+import { getPraemienRules, type PraemienRuleConfig } from "../../praemien/domain/api";
+import { calculatePraemienPreviewTotal } from "../../praemien/utils/praemienRulePreview";
 import { IssueReportModal } from "../../mechanics";
 import { useTranslation } from "react-i18next";
 import { usePraemienWorkdayUiActive } from "../../../hooks/usePraemienWorkdayUiActive";
@@ -46,11 +47,35 @@ const PartialReviewModal: React.FC<Props> = ({
     const [showIssueModal, setShowIssueModal] = useState(false);
     const [issueData, setIssueData] = useState<any | null>(null);
     const [isSending, setIsSending] = useState(false);
+    const [praemienRules, setPraemienRules] = useState<PraemienRuleConfig | null>(null);
+
+    useEffect(() => {
+        if (!praemienWorkdayUiActive) {
+            setPraemienRules(null);
+            return;
+        }
+        let cancelled = false;
+        getPraemienRules()
+            .then((rules) => {
+                if (!cancelled) setPraemienRules(rules);
+            })
+            .catch(() => {
+                if (!cancelled) setPraemienRules(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [praemienWorkdayUiActive]);
 
     const parsedInitialKm = Number(initialKm);
     const parsedFinalKm = finalKm === "" ? 0 : Number(finalKm);
     const totalEffectivePatients = praemienWorkdayUiActive
-        ? calculateEffectivePatients(trips, assignedDay.date)
+        ? calculatePraemienPreviewTotal({
+            trips,
+            dienstDate: assignedDay.date,
+            dienstStartTime: assignedDay.startTime,
+            rules: praemienRules,
+        })
         : 0;
 
     const ensureValidFinalKm = (): boolean => {
@@ -98,6 +123,9 @@ const PartialReviewModal: React.FC<Props> = ({
                     trips={trips}
                     dense
                     showPraemieColumn={praemienWorkdayUiActive}
+                    totalEffectivePatients={
+                        praemienWorkdayUiActive ? totalEffectivePatients : null
+                    }
                 />
 
                 {praemienWorkdayUiActive && (

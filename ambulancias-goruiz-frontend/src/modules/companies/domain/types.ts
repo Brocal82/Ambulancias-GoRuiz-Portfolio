@@ -1,6 +1,12 @@
 /** First month when a scheduled praemien mode change takes effect (next-month rule). */
 export type PraemienModeEffectiveFrom = { year: number; month: number };
 
+export type PraemienRuleConfig = {
+  version: 1;
+  rules: Array<Record<string, unknown>>;
+  cancelledTripPolicy: "excludeUnlessCountsTrip";
+};
+
 export interface Company {
   _id: string;
   name: string;
@@ -10,6 +16,7 @@ export interface Company {
   /** When `praemien` is enabled; Phase 1 storage only for manual. */
   praemienMode?: "automatic" | "manual";
   praemienModeEffectiveFrom?: PraemienModeEffectiveFrom | null;
+  praemienRules?: PraemienRuleConfig | null;
   workerCount?: number;
   adminCount?: number;
   userCount?: number;
@@ -72,6 +79,7 @@ export interface CreateCompanyInput {
   enabledModules?: string[];
   praemienMode?: "automatic" | "manual";
   praemienModeEffectiveFrom?: PraemienModeEffectiveFrom | null;
+  praemienRules?: PraemienRuleConfig | null;
 }
 
 export interface UpdateCompanyInput {
@@ -81,6 +89,7 @@ export interface UpdateCompanyInput {
   enabledModules?: string[];
   praemienMode?: "automatic" | "manual";
   praemienModeEffectiveFrom?: PraemienModeEffectiveFrom | null;
+  praemienRules?: PraemienRuleConfig | null;
 }
 
 export interface CreateAdminInput {
