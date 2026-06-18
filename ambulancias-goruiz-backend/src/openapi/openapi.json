@@ -1322,6 +1322,39 @@
         }
       }
     },
+    "/api/praemien/rules": {
+      "get": {
+        "summary": "Get company Prämien rule configuration (admin)",
+        "description": "Requires module `praemien` and admin role. Returns tenant-scoped multiplier rules used by workday effective-patient calculation. Rules without `effectiveFrom`/`effectiveTo` behave as always active (legacy). Optional dates use inclusive YYYY-MM-DD bounds; a future `effectiveFrom` schedules a rule without affecting current Diensts.",
+        "tags": ["Praemien"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Rule config", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PraemienRuleConfig" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      },
+      "patch": {
+        "summary": "Update company Prämien rule configuration (admin)",
+        "description": "Requires module `praemien` and admin role. Replaces the full rule config for the admin's company. Each rule may include optional `effectiveFrom` and `effectiveTo` (YYYY-MM-DD, inclusive). Empty/null end date means no expiry. Invalid ranges (`effectiveTo` < `effectiveFrom`) are rejected. Saved rules affect new workday calculations only; existing MonthlyPraemie snapshots are not rewritten.",
+        "tags": ["Praemien"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PraemienRuleConfig" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Saved config", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PraemienRuleConfig" } } } },
+          "400": { "description": "Invalid payload", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } }
+        }
+      }
+    },
     "/api/mechanics/report-issue": {
       "post": {
         "summary": "Report mechanic issue (worker/admin on assignment)",
@@ -2698,6 +2731,62 @@
           "reviewedAt": { "type": "string", "format": "date-time", "nullable": true },
           "trips": { "type": "array", "items": { "type": "object" } }
         }
+      },
+      "PraemienRuleBase": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string", "maxLength": 80 },
+          "enabled": { "type": "boolean" },
+          "multiplier": { "type": "number", "minimum": 0, "maximum": 10 },
+          "effectiveFrom": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Optional inclusive start date (YYYY-MM-DD). Omitted = active from any past date."
+          },
+          "effectiveTo": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Optional inclusive end date (YYYY-MM-DD). Null/omitted = no end date."
+          }
+        },
+        "required": ["enabled", "multiplier"]
+      },
+      "PraemienKmRule": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PraemienRuleBase" },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["km"] },
+              "minKm": { "type": "number", "minimum": 0 },
+              "maxKm": { "type": "number", "nullable": true }
+            },
+            "required": ["type", "minKm"]
+          }
+        ]
+      },
+      "PraemienRule": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/PraemienKmRule" }
+        ],
+        "description": "Discriminated union by `type` (km, weekday, dienstStartTime, weekdayDienstStartTime, weekdayPickupTime). All variants share optional validity dates on PraemienRuleBase."
+      },
+      "PraemienRuleConfig": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "integer", "enum": [1] },
+          "rules": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": { "$ref": "#/components/schemas/PraemienRule" }
+          },
+          "cancelledTripPolicy": { "type": "string", "enum": ["excludeUnlessCountsTrip"] }
+        },
+        "required": ["version", "rules", "cancelledTripPolicy"]
       },
       "PraemienMonthlySummaryDay": {
         "type": "object",

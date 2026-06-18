@@ -3,6 +3,8 @@ export type PraemienRuleBase = {
   label?: string;
   enabled: boolean;
   multiplier: number;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
 };
 
 export type PraemienKmRule = PraemienRuleBase & {
@@ -118,14 +120,57 @@ function normalizeWeekdays(value: unknown): number[] {
   ).sort((a, b) => a - b);
 }
 
+function validDate(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function parseOptionalRuleDate(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (validDate(trimmed)) return trimmed;
+  return undefined;
+}
+
+function normalizeValidityFields(
+  raw: Record<string, unknown>,
+): Pick<PraemienRuleBase, "effectiveFrom" | "effectiveTo"> | null {
+  const validity: Pick<PraemienRuleBase, "effectiveFrom" | "effectiveTo"> = {};
+
+  if ("effectiveFrom" in raw) {
+    const parsed = parseOptionalRuleDate(raw.effectiveFrom);
+    if (parsed === undefined) return null;
+    if (parsed != null) validity.effectiveFrom = parsed;
+  }
+  if ("effectiveTo" in raw) {
+    const parsed = parseOptionalRuleDate(raw.effectiveTo);
+    if (parsed === undefined) return null;
+    if (parsed != null) validity.effectiveTo = parsed;
+  }
+  if (
+    validity.effectiveFrom &&
+    validity.effectiveTo &&
+    validity.effectiveTo < validity.effectiveFrom
+  ) {
+    return null;
+  }
+  return validity;
+}
+
 function normalizeRule(rule: unknown, index: number): PraemienRule | null {
   if (!rule || typeof rule !== "object") return null;
-  const raw = rule as Partial<PraemienRule>;
+  const raw = rule as Partial<PraemienRule> & Record<string, unknown>;
+  const validity = normalizeValidityFields(raw);
+  if (validity == null) return null;
+
   const base = {
     id: typeof raw.id === "string" && raw.id.trim() ? raw.id.trim() : `rule-${index}`,
     label: typeof raw.label === "string" ? raw.label.trim().slice(0, 80) : "",
     enabled: raw.enabled !== false,
     multiplier: finiteNumber(raw.multiplier) ? raw.multiplier : 1,
+    ...validity,
   };
   if (base.multiplier < 0 || base.multiplier > 10) return null;
 

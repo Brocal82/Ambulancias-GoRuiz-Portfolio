@@ -17,8 +17,13 @@ export interface MonthlyPraemieHistoryItem {
   averagePatients: number;
 }
 
+export type PraemienRuleValidity = {
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+};
+
 export type PraemienRule =
-  | {
+  | (PraemienRuleValidity & {
       id?: string;
       label?: string;
       enabled: boolean;
@@ -26,16 +31,16 @@ export type PraemienRule =
       type: "km";
       minKm: number;
       maxKm?: number | null;
-    }
-  | {
+    })
+  | (PraemienRuleValidity & {
       id?: string;
       label?: string;
       enabled: boolean;
       multiplier: number;
       type: "weekday";
       weekdays: number[];
-    }
-  | {
+    })
+  | (PraemienRuleValidity & {
       id?: string;
       label?: string;
       enabled: boolean;
@@ -43,8 +48,8 @@ export type PraemienRule =
       type: "dienstStartTime";
       startTimeFrom: string;
       startTimeTo: string;
-    }
-  | {
+    })
+  | (PraemienRuleValidity & {
       id?: string;
       label?: string;
       enabled: boolean;
@@ -53,8 +58,8 @@ export type PraemienRule =
       weekdays: number[];
       startTimeFrom: string;
       startTimeTo: string;
-    }
-  | {
+    })
+  | (PraemienRuleValidity & {
       id?: string;
       label?: string;
       enabled: boolean;
@@ -63,7 +68,7 @@ export type PraemienRule =
       weekdays: number[];
       pickupTimeFrom: string;
       pickupTimeTo: string;
-    };
+    });
 
 export type PraemienRuleConfig = {
   version: 1;

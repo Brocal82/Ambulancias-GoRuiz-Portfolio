@@ -4,11 +4,17 @@ const timeStringSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida");
 
+const dateStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)");
+
 const ruleBaseSchema = {
   id: z.string().trim().min(1).max(80).optional(),
   label: z.string().trim().max(80).optional(),
   enabled: z.boolean(),
   multiplier: z.number().min(0).max(10),
+  effectiveFrom: dateStringSchema.nullable().optional(),
+  effectiveTo: dateStringSchema.nullable().optional(),
 };
 
 const kmRuleSchema = z
@@ -105,6 +111,17 @@ export const praemienRuleConfigSchema = z
           code: z.ZodIssueCode.custom,
           path: ["rules", index, "pickupTimeTo"],
           message: "pickupTimeFrom no puede ser mayor que pickupTimeTo",
+        });
+      }
+      if (
+        rule.effectiveFrom &&
+        rule.effectiveTo &&
+        rule.effectiveTo < rule.effectiveFrom
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["rules", index, "effectiveTo"],
+          message: "effectiveTo no puede ser anterior a effectiveFrom",
         });
       }
     });

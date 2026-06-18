@@ -4,7 +4,9 @@ import { AdminPraemienRulesPanel } from "../components/AdminPraemienRulesPanel";
 export default function AdminPraemienPage() {
   return (
     <div className="space-y-4">
-      <AdminPraemienRulesPanel />
+      <div className="mx-auto min-w-0 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <AdminPraemienRulesPanel />
+      </div>
       <AdminManualPraemieQueuePanel />
     </div>
   );
