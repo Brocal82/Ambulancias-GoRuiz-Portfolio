@@ -5,6 +5,7 @@ import { Team } from "../../teams/models/team.model";
 import Dienst from "../../diensts/models/dienst.model";
 import { MODULE_KEYS } from "../constants/modules.constants";
 import type { CreateCompanyInput, UpdateCompanyInput } from "../schemas/company.schema";
+import { normalizePraemienRuleConfig } from "../../praemien/types/praemien-rule-config";
 
 /** Companies not soft-deleted (legacy rows may lack deletedAt). */
 export const ACTIVE_COMPANY_FILTER = {
@@ -200,6 +201,12 @@ export async function createCompany(
     doc.praemienModeEffectiveFrom = data.praemienModeEffectiveFrom;
   } else {
     doc.praemienModeEffectiveFrom = null;
+  }
+  if (data.praemienRules !== undefined) {
+    doc.praemienRules =
+      data.praemienRules === null
+        ? null
+        : normalizePraemienRuleConfig(data.praemienRules);
   }
   if (createdBy && mongoose.Types.ObjectId.isValid(createdBy)) {
     doc.createdBy = new mongoose.Types.ObjectId(createdBy);
@@ -416,6 +423,12 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   }
   if (data.praemienModeEffectiveFrom !== undefined) {
     $set.praemienModeEffectiveFrom = data.praemienModeEffectiveFrom;
+  }
+  if (data.praemienRules !== undefined) {
+    $set.praemienRules =
+      data.praemienRules === null
+        ? null
+        : normalizePraemienRuleConfig(data.praemienRules);
   }
   if (data.emailDomain !== undefined) {
     $set.emailDomain = data.emailDomain;

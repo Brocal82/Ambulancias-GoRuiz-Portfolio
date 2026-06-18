@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
+import type { PraemienRuleConfig } from "../../praemien/types/praemien-rule-config";
 
 /* ─────────────────────────────────────────────
  * 1. Sub–schema de los viajes guardados
@@ -62,6 +63,8 @@ export interface IWorkdaySummary extends Document {
   extraNote?: string;
   totalEffectivePatients: number;
   totalRealTrips: number;
+  /** Snapshot of company Prämien rules applied to totalEffectivePatients. */
+  praemienRulesSnapshot?: PraemienRuleConfig;
 
   /** 👇 NUEVO: estado de revisión para el dashboard */
   isReviewed: boolean;
@@ -99,6 +102,7 @@ const workdaySummarySchema = new Schema<IWorkdaySummary>({
   extraNote: { type: String, default: "" },
   totalEffectivePatients: { type: Number, required: true },
   totalRealTrips: { type: Number, required: true },
+  praemienRulesSnapshot: { type: Schema.Types.Mixed, default: undefined },
 
   /** 👇 NUEVO: revisión */
   isReviewed: { type: Boolean, default: false },

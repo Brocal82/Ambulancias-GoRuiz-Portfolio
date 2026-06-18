@@ -185,3 +185,27 @@ export function voidEmitPraemienWorkerRefresh(
     companyId,
   );
 }
+
+/** Admin rule update -> same-company admins/workers refetch Praemien state. */
+export function voidEmitPraemienRulesChanged(companyId: string): void {
+  void (async () => {
+    try {
+      const companyOid = new mongoose.Types.ObjectId(companyId);
+      const users = await User.find({
+        companyId: companyOid,
+        role: { $in: ["admin", "worker"] },
+      })
+        .select("_id")
+        .lean();
+      const ids = users.map((user) => String(user._id));
+      await notifyUsersModuleGated(
+        ids,
+        WS_EVENTS.PRAEMIEN_CHANGED,
+        MODULE_KEYS.PRAEMIEN,
+        companyId,
+      );
+    } catch (err) {
+      console.error("[ws-notify] voidEmitPraemienRulesChanged failed:", err);
+    }
+  })();
+}

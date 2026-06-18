@@ -3,6 +3,10 @@ import {
   getMonthlyPraemienSummary,
   getPraemienMonthlyHistory,
 } from "./controllers/praemien-read.controller";
+import {
+  getMyCompanyPraemienRules,
+  updateMyCompanyPraemienRules,
+} from "./controllers/praemien-rules.controller";
 import { saveMonthlyPraemie } from "./controllers/praemien-write.controller";
 import {
   getMyManualDailyEntriesMonth,
@@ -47,6 +51,20 @@ router.post(
   requireModule(MODULE_KEYS.PRAEMIEN),
   authorizeRole("admin"),
   saveMonthlyPraemie,
+);
+router.get(
+  "/rules",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole(["admin", "worker"]),
+  getMyCompanyPraemienRules,
+);
+router.patch(
+  "/rules",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  updateMyCompanyPraemienRules,
 );
 
 /** Phase 3: worker manual daily values (only when company manual mode is effective). */

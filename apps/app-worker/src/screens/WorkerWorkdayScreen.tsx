@@ -28,6 +28,7 @@ import { WorkerTripStepPanel } from "./WorkerTripStepPanel";
 import { WorkerWorkdayPreamble } from "./WorkerWorkdayPreamble";
 import { WorkerWorkdayClosedSummary } from "../components/WorkerWorkdayClosedSummary";
 import { usePraemienWorkdayUiActive } from "../hooks/usePraemienWorkdayUiActive";
+import { getPraemienRules, type PraemienRuleConfig } from "../services/praemien";
 
 type AssignedDayFull = AssignedDay & {
   driver: { _id: string };
@@ -181,6 +182,7 @@ type Props = {
   onOpenWorkdayClosure?: () => void;
   workdayWsTrigger?: number;
   agendaWsTrigger?: number;
+  praemienWsTrigger?: number;
   /** Incremented after partial/final closure to force-reset local jornada session. */
   workdaySessionResetTrigger?: number;
 };
@@ -207,6 +209,7 @@ export function WorkerWorkdayScreen({
   onOpenWorkdayClosure,
   workdayWsTrigger,
   agendaWsTrigger,
+  praemienWsTrigger,
   workdaySessionResetTrigger,
 }: Props) {
   const praemienWorkdayUiActive = usePraemienWorkdayUiActive(enabledModules);
@@ -226,6 +229,7 @@ export function WorkerWorkdayScreen({
   const [ambulancesList, setAmbulancesList] = useState<AmbulanceListItem[]>([]);
   const [ambulancesLoading, setAmbulancesLoading] = useState(false);
   const [confirmingAmbulance, setConfirmingAmbulance] = useState(false);
+  const [praemienRules, setPraemienRules] = useState<PraemienRuleConfig | null>(null);
 
   const prevSessionResetTrigger = useRef(workdaySessionResetTrigger);
   useEffect(() => {
@@ -282,6 +286,24 @@ export function WorkerWorkdayScreen({
   useEffect(() => {
     void loadWorkday();
   }, [loadWorkday]);
+
+  useEffect(() => {
+    if (!praemienWorkdayUiActive) {
+      setPraemienRules(null);
+      return;
+    }
+    let cancelled = false;
+    void getPraemienRules()
+      .then((rules) => {
+        if (!cancelled) setPraemienRules(rules);
+      })
+      .catch(() => {
+        if (!cancelled) setPraemienRules(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [praemienWorkdayUiActive, praemienWsTrigger]);
 
   /** Recarga al cambiar el día calendario o al volver a primer plano (turnos nocturnos incluidos). */
   useEffect(() => {
@@ -874,6 +896,8 @@ export function WorkerWorkdayScreen({
                   canStartWork={canStartWork}
                   blocked={tripsBlocked}
                   vehicleSetupComplete={vehicleSetupComplete}
+                  showPraemieUi={praemienWorkdayUiActive}
+                  praemienRules={praemienRules}
                   onTripCreated={() => void loadWorkday({ silent: true })}
                 />
               </View>

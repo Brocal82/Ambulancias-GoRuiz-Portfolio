@@ -425,6 +425,7 @@ export function WorkerTabsShell({
               onOpenWorkdayClosure={() => setWorkdayClosureOpen(true)}
               workdayWsTrigger={workdayWsTrigger}
               agendaWsTrigger={agendaWsTrigger}
+              praemienWsTrigger={praemienWsTrigger}
               workdaySessionResetTrigger={workdaySessionResetTrigger}
             />
           </View>

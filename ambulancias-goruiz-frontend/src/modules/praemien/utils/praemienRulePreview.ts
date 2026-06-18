@@ -1,7 +1,14 @@
-import type { PraemienRuleConfig } from "../services/praemien";
-import type { WorkdaySummaryTrip } from "../services/workday";
+import type { PraemienRuleConfig } from "../domain/api";
 
-const DEFAULT_PRAEMIEN_RULES: PraemienRuleConfig = {
+export type PraemienPreviewTrip = {
+  wasCancelled?: boolean;
+  countsTrip?: number;
+  kmStart?: number;
+  kmEnd?: number;
+  timePickup?: string;
+};
+
+export const DEFAULT_PRAEMIEN_RULES: PraemienRuleConfig = {
   version: 1,
   rules: [
     {
@@ -36,26 +43,30 @@ const DEFAULT_PRAEMIEN_RULES: PraemienRuleConfig = {
   cancelledTripPolicy: "excludeUnlessCountsTrip",
 };
 
-export function calcWorkdayTripKm(trip: WorkdaySummaryTrip): number {
-  const ks = trip.kmStart;
-  const ke = trip.kmEnd;
-  if (typeof ks !== "number" || typeof ke !== "number" || Number.isNaN(ks) || Number.isNaN(ke)) {
+function kmForTrip(trip: PraemienPreviewTrip): number {
+  if (
+    typeof trip.kmStart !== "number" ||
+    typeof trip.kmEnd !== "number" ||
+    Number.isNaN(trip.kmStart) ||
+    Number.isNaN(trip.kmEnd)
+  ) {
     return 0;
   }
-  return Math.max(0, ke - ks);
+  return Math.max(0, trip.kmEnd - trip.kmStart);
 }
 
-export function getWorkdayTripPraemieMultiplier(
-  trip: WorkdaySummaryTrip,
-  dienstDate: string,
-  dienstStartTime?: string | null,
-  rules: PraemienRuleConfig | null = null,
-): number {
+export function getPraemienPreviewMultiplier(params: {
+  trip: PraemienPreviewTrip;
+  dienstDate: string;
+  dienstStartTime?: string | null;
+  rules?: PraemienRuleConfig | null;
+}): number {
+  const { trip, dienstDate, dienstStartTime } = params;
+  const config = params.rules ?? DEFAULT_PRAEMIEN_RULES;
   if (trip.wasCancelled && trip.countsTrip !== 1) return 0;
   if (trip.countsTrip === 0) return 0;
 
-  const config = rules ?? DEFAULT_PRAEMIEN_RULES;
-  const km = calcWorkdayTripKm(trip);
+  const km = kmForTrip(trip);
   const weekday = new Date(dienstDate).getDay();
   let multiplier = 1;
 
@@ -110,18 +121,22 @@ export function getWorkdayTripPraemieMultiplier(
   return multiplier;
 }
 
-export function calculateEffectivePatientsFromSummaryTrips(
-  trips: WorkdaySummaryTrip[],
-  dienstDate: string,
-  dienstStartTime?: string | null,
-  rules: PraemienRuleConfig | null = null,
-): number {
-  const total = trips.reduce((sum, trip) => {
-    return sum + getWorkdayTripPraemieMultiplier(trip, dienstDate, dienstStartTime, rules);
-  }, 0);
+export function calculatePraemienPreviewTotal(params: {
+  trips: PraemienPreviewTrip[];
+  dienstDate: string;
+  dienstStartTime?: string | null;
+  rules?: PraemienRuleConfig | null;
+}): number {
+  const total = params.trips.reduce(
+    (sum, trip) =>
+      sum +
+      getPraemienPreviewMultiplier({
+        trip,
+        dienstDate: params.dienstDate,
+        dienstStartTime: params.dienstStartTime,
+        rules: params.rules,
+      }),
+    0,
+  );
   return Math.round(total * 2) / 2;
-}
-
-export function formatPraemieValue(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(value);
 }

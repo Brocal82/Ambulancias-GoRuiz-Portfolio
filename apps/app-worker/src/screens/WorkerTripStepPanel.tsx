@@ -25,6 +25,11 @@ import {
   saveTripDraftSessionAsync,
   type StoredTripDraftSession,
 } from "../utils/workdayTripDraftStorage";
+import type { PraemienRuleConfig } from "../services/praemien";
+import {
+  formatPraemieValue,
+  getWorkdayTripPraemieMultiplier,
+} from "../utils/workdayTripPraemie";
 
 const LONG_PRESS_MS = 1200;
 const ANSCHLUSS_MARKER = "🔗 Anschluss";
@@ -123,6 +128,8 @@ type Props = {
   blocked: boolean;
   /** Igual que la web: hasta confirmar km (y ambulancia) en cabecera no se registran viajes. */
   vehicleSetupComplete?: boolean;
+  showPraemieUi?: boolean;
+  praemienRules?: PraemienRuleConfig | null;
   onTripCreated: () => void;
 };
 
@@ -131,6 +138,8 @@ export function WorkerTripStepPanel({
   canStartWork,
   blocked,
   vehicleSetupComplete = true,
+  showPraemieUi = true,
+  praemienRules = null,
   onTripCreated,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("meta");
@@ -805,6 +814,28 @@ export function WorkerTripStepPanel({
   };
 
   const showStornoUi = phase === "steps" && currentStep > 1;
+  const praemiePreview = useMemo(() => {
+    if (!showPraemieUi || phase !== "steps") return null;
+    if (!draft.timePickup.trim()) return null;
+    if (!Number.isFinite(draft.kmStart) || !Number.isFinite(draft.kmEnd)) return null;
+    if (draft.kmStart <= 0 || draft.kmEnd <= 0 || draft.kmEnd < draft.kmStart) return null;
+    return getWorkdayTripPraemieMultiplier(
+      {
+        ...draft,
+        countsTrip: draft.countsTrip === 0 ? 0 : 1,
+      },
+      assignedDay.date,
+      assignedDay.startTime,
+      praemienRules,
+    );
+  }, [
+    assignedDay.date,
+    assignedDay.startTime,
+    draft,
+    phase,
+    praemienRules,
+    showPraemieUi,
+  ]);
 
   const stornoPanelEl = showStornoUi && stornoBarOpen ? (
     <View style={styles.stornoPanel}>
@@ -1025,6 +1056,14 @@ export function WorkerTripStepPanel({
           ) : null}
 
           <View style={styles.bigStepCenter}>
+            {praemiePreview != null ? (
+              <View style={styles.praemiePreviewPill}>
+                <Text style={styles.praemiePreviewLabel}>Prämie estimada</Text>
+                <Text style={styles.praemiePreviewValue}>
+                  {formatPraemieValue(praemiePreview)}
+                </Text>
+              </View>
+            ) : null}
             <Pressable
               disabled={bigStepDisabled}
               onPressIn={() => armStepHold(currentStep, bigStepDisabled)}
@@ -1428,6 +1467,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingVertical: 6,
+  },
+  praemiePreviewPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    backgroundColor: "#ecfdf5",
+  },
+  praemiePreviewLabel: {
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  praemiePreviewValue: {
+    color: "#065f46",
+    fontSize: 15,
+    fontWeight: "900",
   },
   roundStepButton: {
     alignItems: "center",

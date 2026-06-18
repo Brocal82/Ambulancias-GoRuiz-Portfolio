@@ -17,6 +17,60 @@ export interface MonthlyPraemieHistoryItem {
   averagePatients: number;
 }
 
+export type PraemienRule =
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "km";
+      minKm: number;
+      maxKm?: number | null;
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "weekday";
+      weekdays: number[];
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "dienstStartTime";
+      startTimeFrom: string;
+      startTimeTo: string;
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "weekdayDienstStartTime";
+      weekdays: number[];
+      startTimeFrom: string;
+      startTimeTo: string;
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "weekdayPickupTime";
+      weekdays: number[];
+      pickupTimeFrom: string;
+      pickupTimeTo: string;
+    };
+
+export type PraemienRuleConfig = {
+  version: 1;
+  rules: PraemienRule[];
+  cancelledTripPolicy: "excludeUnlessCountsTrip";
+};
+
 // Obtener resumen mensual (actual)
 export async function getMonthlyPraemienSummary(
   userId?: string,
@@ -38,5 +92,17 @@ export async function getPraemienMonthlyHistory(
     "/praemien/monthly-history",
     { params },
   );
+  return response.data;
+}
+
+export async function getPraemienRules(): Promise<PraemienRuleConfig> {
+  const response = await axios.get<PraemienRuleConfig>("/praemien/rules");
+  return response.data;
+}
+
+export async function updatePraemienRules(
+  rules: PraemienRuleConfig,
+): Promise<PraemienRuleConfig> {
+  const response = await axios.patch<PraemienRuleConfig>("/praemien/rules", rules);
   return response.data;
 }
