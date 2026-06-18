@@ -23,6 +23,11 @@ import {
   todayDateKey,
   workdayDataDateKey,
 } from "../src/utils/workdayAssignment.js";
+import {
+  isAssignmentForUser,
+  userIdFromAssignmentField,
+} from "../src/utils/assignmentUserId.js";
+import { collectAgendaAssignmentRefs } from "../src/utils/workerAgenda.js";
 
 test("normalizeApiBaseUrl appends /api when missing", () => {
   assert.equal(normalizeApiBaseUrl("https://api.example.com"), "https://api.example.com/api");
@@ -191,4 +196,71 @@ test("isNowWithinDienst respects overnight window", (t) => {
   } finally {
     t.mock.timers.reset();
   }
+});
+
+test("userIdFromAssignmentField handles string and populated user refs", () => {
+  assert.equal(userIdFromAssignmentField(" 507f1f77bcf86cd799439011 "), "507f1f77bcf86cd799439011");
+  assert.equal(
+    userIdFromAssignmentField({ _id: "507f1f77bcf86cd799439012", name: "Ana" }),
+    "507f1f77bcf86cd799439012",
+  );
+  assert.equal(userIdFromAssignmentField(null), null);
+});
+
+test("isAssignmentForUser matches driver or medic only", () => {
+  const userId = "507f1f77bcf86cd799439011";
+  assert.equal(
+    isAssignmentForUser({ driver: userId, medic: "other" }, userId),
+    true,
+  );
+  assert.equal(
+    isAssignmentForUser({ driver: "other", medic: { _id: userId } }, userId),
+    true,
+  );
+  assert.equal(
+    isAssignmentForUser({ driver: "other-a", medic: "other-b" }, userId),
+    false,
+  );
+});
+
+test("collectAgendaAssignmentRefs keeps only rows for current worker", () => {
+  const userId = "507f1f77bcf86cd799439011";
+  const diensts = [
+    {
+      _id: "dienst-old",
+      assignments: [
+        {
+          date: "2026-06-18",
+          startTime: "08:00",
+          driver: "other-driver",
+          medic: "other-medic",
+        },
+      ],
+    },
+    {
+      _id: "dienst-new",
+      assignments: [
+        {
+          date: "2026-06-18",
+          startTime: "14:00",
+          driver: userId,
+          medic: "other-medic",
+        },
+        {
+          date: "2026-06-18",
+          startTime: "08:00",
+          driver: "other-driver",
+          medic: "other-medic-2",
+        },
+      ],
+    },
+  ];
+
+  const refs = collectAgendaAssignmentRefs(diensts, userId);
+  assert.equal(refs.length, 1);
+  assert.deepEqual(refs[0], {
+    dienstId: "dienst-new",
+    dateKey: "2026-06-18",
+    startTime: "14:00",
+  });
 });
