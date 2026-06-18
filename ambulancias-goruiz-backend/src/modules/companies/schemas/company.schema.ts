@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { praemienRuleConfigSchema } from "../../praemien/schemas/praemien-rules.schema";
 
 const praemienModeEffectiveFromSchema = z
   .object({
@@ -25,6 +26,7 @@ export const createCompanySchema = z.object({
   enabledModules: z.array(z.string()).optional(),
   praemienMode: z.enum(["automatic", "manual"]).optional(),
   praemienModeEffectiveFrom: praemienModeEffectiveFromSchema.nullable().optional(),
+  praemienRules: praemienRuleConfigSchema.nullable().optional(),
 });
 
 const updateEmailDomainField = z.preprocess(
@@ -45,6 +47,7 @@ export const updateCompanySchema = z.object({
   enabledModules: z.array(z.string()).optional(),
   praemienMode: z.enum(["automatic", "manual"]).optional(),
   praemienModeEffectiveFrom: praemienModeEffectiveFromSchema.nullable().optional(),
+  praemienRules: praemienRuleConfigSchema.nullable().optional(),
 });
 
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;

@@ -68,6 +68,7 @@ router.patch(
         "enabledModules",
         "praemienMode",
         "praemienModeEffectiveFrom",
+        "praemienRules",
       ];
       return sensitiveFields.some((field) =>
         Object.prototype.hasOwnProperty.call(req.body ?? {}, field)

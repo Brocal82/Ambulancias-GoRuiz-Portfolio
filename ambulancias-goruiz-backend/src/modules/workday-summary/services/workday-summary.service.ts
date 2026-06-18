@@ -5,6 +5,7 @@ import WorkdaySummary from "../models/workday-summary.model";
 import type { IWorkdaySummary } from "../models/workday-summary.model";
 import { sendPushNotification, voidEmitWorkdayAdminSideEffects, voidEmitWorkdayWorkerRefresh, voidEmitPraemienWorkerRefresh, collectWorkerIdsFromAssignments } from "../../notifications";
 import { calculateEffectivePatients } from "../utils/calculateEffectivePatients";
+import { getPraemienRuleConfigForCompany } from "../../praemien/services/resolve-praemien-rule-config.service";
 import {
   WorkdaySummaryError,
   resolveAssignmentByAssignmentId,
@@ -106,7 +107,13 @@ export async function createWorkdaySummary(
   const endTime = assignment?.endTime ?? null;
   const { driver, medic } = assignment;
 
-  const totalEffectivePatients = calculateEffectivePatients(summaryTrips, date);
+  const praemienRulesSnapshot = await getPraemienRuleConfigForCompany(companyOid);
+  const totalEffectivePatients = calculateEffectivePatients(
+    summaryTrips,
+    date,
+    praemienRulesSnapshot,
+    startTime,
+  );
   const totalDienstKm = finalKm - initialKm;
   const totalRealTrips = summaryTrips.filter((t) => t.countsTrip === 1).length;
 
@@ -125,6 +132,7 @@ export async function createWorkdaySummary(
     isFinalClosure: true,
     totalEffectivePatients,
     totalRealTrips,
+    praemienRulesSnapshot,
     dienstNumber,
     startTime,
     endTime,
@@ -223,7 +231,13 @@ export async function submitPartialClosure(
   const endTime = assignment?.endTime ?? null;
   const { driver, medic } = assignment;
 
-  const totalEffectivePatients = calculateEffectivePatients(summaryTrips, date);
+  const praemienRulesSnapshot = await getPraemienRuleConfigForCompany(companyOid);
+  const totalEffectivePatients = calculateEffectivePatients(
+    summaryTrips,
+    date,
+    praemienRulesSnapshot,
+    startTime,
+  );
   const totalDienstKm = finalKm - initialKm;
   const totalRealTrips = summaryTrips.filter((t) => t.countsTrip === 1).length;
 
@@ -242,6 +256,7 @@ export async function submitPartialClosure(
     isFinalClosure: false,
     totalEffectivePatients,
     totalRealTrips,
+    praemienRulesSnapshot,
     dienstNumber,
     startTime,
     endTime,

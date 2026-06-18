@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
+import type { PraemienRuleConfig } from "../../praemien/types/praemien-rule-config";
 
 export interface ICompany extends Document {
   name: string;
@@ -24,6 +25,11 @@ export interface ICompany extends Document {
    * Null/absent = no pending transition (current mode applies).
    */
   praemienModeEffectiveFrom?: { year: number; month: number } | null;
+  /**
+   * Company-scoped, constrained Prämien rules for new Workday closures.
+   * Missing value preserves legacy defaults.
+   */
+  praemienRules?: PraemienRuleConfig | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +38,51 @@ const praemienModeEffectiveFromSchema = new Schema(
   {
     year: { type: Number, required: true },
     month: { type: Number, required: true, min: 1, max: 12 },
+  },
+  { _id: false },
+);
+
+const praemienRuleSchema = new Schema(
+  {
+    id: { type: String, required: false, trim: true },
+    label: { type: String, required: false, trim: true },
+    enabled: { type: Boolean, required: true, default: true },
+    type: {
+      type: String,
+      enum: [
+        "km",
+        "weekday",
+        "dienstStartTime",
+        "weekdayDienstStartTime",
+        "weekdayPickupTime",
+      ],
+      required: true,
+    },
+    multiplier: { type: Number, required: true, min: 0, max: 10 },
+    minKm: { type: Number, required: false, min: 0, max: 10000 },
+    maxKm: { type: Number, required: false, min: 0, max: 10000, default: null },
+    weekdays: { type: [Number], required: false, default: undefined },
+    startTimeFrom: { type: String, required: false },
+    startTimeTo: { type: String, required: false },
+    pickupTimeFrom: { type: String, required: false },
+    pickupTimeTo: { type: String, required: false },
+  },
+  { _id: false },
+);
+
+const praemienRuleConfigSchema = new Schema(
+  {
+    version: { type: Number, required: true, enum: [1], default: 1 },
+    rules: {
+      type: [praemienRuleSchema],
+      required: true,
+    },
+    cancelledTripPolicy: {
+      type: String,
+      enum: ["excludeUnlessCountsTrip"],
+      required: true,
+      default: "excludeUnlessCountsTrip",
+    },
   },
   { _id: false },
 );
@@ -48,6 +99,10 @@ const companySchema = new Schema<ICompany>(
     },
     praemienModeEffectiveFrom: {
       type: praemienModeEffectiveFromSchema,
+      default: null,
+    },
+    praemienRules: {
+      type: praemienRuleConfigSchema,
       default: null,
     },
     emailDomain: {
