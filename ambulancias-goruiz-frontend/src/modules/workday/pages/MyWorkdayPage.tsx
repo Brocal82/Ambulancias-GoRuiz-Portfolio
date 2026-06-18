@@ -9,6 +9,8 @@ import { sendPartialClosure, sendFinalClosure } from "../domain";
 
 import { useAuth } from "../../../hooks/useAuth";
 import { useModules } from "../../../hooks/useModules";
+import { usePraemienWorkdayUiActive } from "../../../hooks/usePraemienWorkdayUiActive";
+import { getPraemienRules, type PraemienRuleConfig } from "../../praemien/domain/api";
 import { MODULE_KEYS } from "../../../constants/modules";
 import type { AssignedDayFull } from "../../diensts";
 import { normalizeAmbulanceIdToString } from "../../diensts";
@@ -73,6 +75,7 @@ const MyWorkday = () => {
   const { t } = useTranslation();
   const { token, user } = useAuth();
   const { hasModule } = useModules();
+  const praemienWorkdayUiActive = usePraemienWorkdayUiActive();
   const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
   const mechanicsModuleOn = hasModule(MODULE_KEYS.MECHANICS);
   const today = todayBerlinDayKey();
@@ -131,6 +134,25 @@ const MyWorkday = () => {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
   const [showTripsList, setShowTripsList] = useState(false);
+  const [praemienRules, setPraemienRules] = useState<PraemienRuleConfig | null>(null);
+
+  useEffect(() => {
+    if (!praemienWorkdayUiActive) {
+      setPraemienRules(null);
+      return;
+    }
+    let cancelled = false;
+    getPraemienRules()
+      .then((rules) => {
+        if (!cancelled) setPraemienRules(rules);
+      })
+      .catch(() => {
+        if (!cancelled) setPraemienRules(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [praemienWorkdayUiActive]);
 
   const {
     showCloseQuestion,
@@ -709,6 +731,7 @@ const MyWorkday = () => {
             <WorkdayTripsSummary
               trips={trips}
               assignedDay={assignedDay}
+              praemienRules={praemienRules}
               onOpenTrip={(trip) => setSelectedTrip(trip)}
               vehicleConfirmed={vehicleConfirmed}
               isClosingDay={isClosingDay}
