@@ -1,12 +1,40 @@
+import type { PraemienRuleConfig } from "../services/praemien";
 import type { WorkdaySummaryTrip } from "../services/workday";
 
-function isWeekendLateDienst(dienstDate: string, startTime?: string): boolean {
-  const day = new Date(dienstDate).getDay();
-  if (day !== 0 && day !== 6) return false;
-  if (!startTime?.trim()) return false;
-  const h = Number(startTime.split(":")[0]);
-  return !Number.isNaN(h) && h >= 14 && h <= 17;
-}
+const DEFAULT_PRAEMIEN_RULES: PraemienRuleConfig = {
+  version: 1,
+  rules: [
+    {
+      id: "legacy-km-15-20",
+      type: "km",
+      label: "15 a 20 km",
+      enabled: true,
+      minKm: 15,
+      maxKm: 20,
+      multiplier: 1.5,
+    },
+    {
+      id: "legacy-km-20-plus",
+      type: "km",
+      label: "20 km o mas",
+      enabled: true,
+      minKm: 20,
+      maxKm: null,
+      multiplier: 2,
+    },
+    {
+      id: "legacy-weekend-dienst",
+      type: "weekdayDienstStartTime",
+      label: "Fin de semana Dienst 13-17",
+      enabled: true,
+      weekdays: [0, 6],
+      startTimeFrom: "13:00",
+      startTimeTo: "17:00",
+      multiplier: 1.5,
+    },
+  ],
+  cancelledTripPolicy: "excludeUnlessCountsTrip",
+};
 
 export function calcWorkdayTripKm(trip: WorkdaySummaryTrip): number {
   const ks = trip.kmStart;
@@ -17,33 +45,79 @@ export function calcWorkdayTripKm(trip: WorkdaySummaryTrip): number {
   return Math.max(0, ke - ks);
 }
 
-/** Same rules as web `ReviewSummary.getMultiplier`. */
 export function getWorkdayTripPraemieMultiplier(
   trip: WorkdaySummaryTrip,
   dienstDate: string,
-  dienstStartTime?: string,
+  dienstStartTime?: string | null,
+  rules: PraemienRuleConfig | null = null,
 ): number {
-  const diff = calcWorkdayTripKm(trip);
-  const weekendLate = isWeekendLateDienst(dienstDate, dienstStartTime);
+  if (trip.wasCancelled && trip.countsTrip !== 1) return 0;
   if (trip.countsTrip === 0) return 0;
-  if (trip.countsTrip === 1) {
-    if (diff >= 20) return 2;
-    if (diff >= 15 || weekendLate) return 1.5;
-    return 1;
+
+  const config = rules ?? DEFAULT_PRAEMIEN_RULES;
+  const km = calcWorkdayTripKm(trip);
+  const weekday = new Date(dienstDate).getDay();
+  let multiplier = 1;
+
+  for (const rule of config.rules) {
+    if (!rule.enabled) continue;
+    if (rule.type === "km") {
+      const underMax = rule.maxKm == null || km < rule.maxKm;
+      if (km >= rule.minKm && underMax) {
+        multiplier = Math.max(multiplier, rule.multiplier);
+      }
+      continue;
+    }
+    if (rule.type === "weekday") {
+      if (rule.weekdays.includes(weekday)) {
+        multiplier = Math.max(multiplier, rule.multiplier);
+      }
+      continue;
+    }
+    if (rule.type === "dienstStartTime") {
+      if (
+        dienstStartTime &&
+        dienstStartTime >= rule.startTimeFrom &&
+        dienstStartTime <= rule.startTimeTo
+      ) {
+        multiplier = Math.max(multiplier, rule.multiplier);
+      }
+      continue;
+    }
+    if (rule.type === "weekdayDienstStartTime") {
+      if (
+        dienstStartTime &&
+        rule.weekdays.includes(weekday) &&
+        dienstStartTime >= rule.startTimeFrom &&
+        dienstStartTime <= rule.startTimeTo
+      ) {
+        multiplier = Math.max(multiplier, rule.multiplier);
+      }
+      continue;
+    }
+    if (rule.type === "weekdayPickupTime") {
+      if (
+        trip.timePickup &&
+        rule.weekdays.includes(weekday) &&
+        trip.timePickup >= rule.pickupTimeFrom &&
+        trip.timePickup <= rule.pickupTimeTo
+      ) {
+        multiplier = Math.max(multiplier, rule.multiplier);
+      }
+    }
   }
-  if (diff >= 20) return 2;
-  if (diff >= 15 || weekendLate) return 1.5;
-  return 1;
+
+  return multiplier;
 }
 
 export function calculateEffectivePatientsFromSummaryTrips(
   trips: WorkdaySummaryTrip[],
   dienstDate: string,
-  dienstStartTime?: string,
+  dienstStartTime?: string | null,
+  rules: PraemienRuleConfig | null = null,
 ): number {
   const total = trips.reduce((sum, trip) => {
-    if (trip.wasCancelled && trip.countsTrip !== 1) return sum;
-    return sum + getWorkdayTripPraemieMultiplier(trip, dienstDate, dienstStartTime);
+    return sum + getWorkdayTripPraemieMultiplier(trip, dienstDate, dienstStartTime, rules);
   }, 0);
   return Math.round(total * 2) / 2;
 }

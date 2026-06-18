@@ -16,6 +16,60 @@ export type MonthlyPraemieHistoryItem = {
   averagePatients: number;
 };
 
+export type PraemienRule =
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "km";
+      minKm: number;
+      maxKm?: number | null;
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "weekday";
+      weekdays: number[];
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "dienstStartTime";
+      startTimeFrom: string;
+      startTimeTo: string;
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "weekdayDienstStartTime";
+      weekdays: number[];
+      startTimeFrom: string;
+      startTimeTo: string;
+    }
+  | {
+      id?: string;
+      label?: string;
+      enabled: boolean;
+      multiplier: number;
+      type: "weekdayPickupTime";
+      weekdays: number[];
+      pickupTimeFrom: string;
+      pickupTimeTo: string;
+    };
+
+export type PraemienRuleConfig = {
+  version: 1;
+  rules: PraemienRule[];
+  cancelledTripPolicy: "excludeUnlessCountsTrip";
+};
+
 export type PraemienManualDailyStatus =
   | "draft"
   | "submitted"
@@ -49,6 +103,13 @@ export async function getMonthlyPraemienSummary(): Promise<MonthlyPraemienSummar
 
 export async function getPraemienMonthlyHistory(): Promise<MonthlyPraemieHistoryItem[]> {
   return apiRequest<MonthlyPraemieHistoryItem[]>("/praemien/monthly-history", {
+    method: "GET",
+    requiresAuth: true,
+  });
+}
+
+export async function getPraemienRules(): Promise<PraemienRuleConfig> {
+  return apiRequest<PraemienRuleConfig>("/praemien/rules", {
     method: "GET",
     requiresAuth: true,
   });

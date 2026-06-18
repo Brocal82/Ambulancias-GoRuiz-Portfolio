@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import type { MechanicsIssueReport } from "../services/mechanics";
+import type { PraemienRuleConfig } from "../services/praemien";
 import type { AssignedDayUser, WorkdaySummary, WorkdaySummaryTrip } from "../services/workday";
 import {
   calcWorkdayTripKm,
@@ -24,6 +25,7 @@ type Props = {
   medicLabel: string;
   issuesToday?: MechanicsIssueReport[];
   showPraemieUi?: boolean;
+  praemienRules?: PraemienRuleConfig | null;
 };
 
 function workerName(field: string | AssignedDayUser | undefined): string {
@@ -62,6 +64,7 @@ function PartialSummaryDetailModal({
   issue,
   onClose,
   showPraemieUi = true,
+  praemienRules = null,
 }: {
   summary: WorkdaySummary;
   driverLabel: string;
@@ -69,6 +72,7 @@ function PartialSummaryDetailModal({
   issue?: MechanicsIssueReport;
   onClose: () => void;
   showPraemieUi?: boolean;
+  praemienRules?: PraemienRuleConfig | null;
 }) {
   const detailDriver = workerName(summary.driver) || driverLabel;
   const detailMedic = workerName(summary.medic) || medicLabel;
@@ -79,7 +83,12 @@ function PartialSummaryDetailModal({
     summary.totalRealTrips ?? trips.filter((t) => t.countsTrip === 1).length;
   const praemieTotal =
     summary.totalEffectivePatients ??
-    calculateEffectivePatientsFromSummaryTrips(trips, summary.date, summary.startTime);
+    calculateEffectivePatientsFromSummaryTrips(
+      trips,
+      summary.date,
+      summary.startTime,
+      praemienRules,
+    );
   const initialKm =
     summary.initialKm != null && Number.isFinite(summary.initialKm)
       ? String(Math.round(summary.initialKm))
@@ -160,6 +169,7 @@ function PartialSummaryDetailModal({
                     trip,
                     summary.date,
                     summary.startTime,
+                    praemienRules,
                   );
                   const isStorno = Boolean(trip.wasCancelled);
                   const stornoNoCount = isStorno && trip.countsTrip === 0;
@@ -217,6 +227,7 @@ export function WorkerPartialSummariesPanel({
   medicLabel,
   issuesToday = [],
   showPraemieUi = true,
+  praemienRules = null,
 }: Props) {
   const [detailSummary, setDetailSummary] = useState<WorkdaySummary | null>(null);
 
@@ -290,6 +301,7 @@ export function WorkerPartialSummariesPanel({
           issue={detailIssue}
           onClose={() => setDetailSummary(null)}
           showPraemieUi={showPraemieUi}
+          praemienRules={praemienRules}
         />
       ) : null}
     </>

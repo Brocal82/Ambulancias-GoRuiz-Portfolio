@@ -43,6 +43,7 @@ import { clearTripDraftSessionAsync } from "../utils/workdayTripDraftStorage";
 import { resolveTodayAssignment, todayDateKey, filterSummariesForAssignment, workdayDataDateKey } from "../utils/workdayAssignment";
 import { WorkerPartialSummariesPanel } from "../components/WorkerPartialSummariesPanel";
 import { usePraemienWorkdayUiActive } from "../hooks/usePraemienWorkdayUiActive";
+import { getPraemienRules, type PraemienRuleConfig } from "../services/praemien";
 
 type Props = {
   user: AuthUser;
@@ -205,6 +206,7 @@ export function WorkerWorkdayClosureScreen({
   const [extraNote, setExtraNote] = useState("");
   const [hasFinalClosureToday, setHasFinalClosureToday] = useState(false);
   const [partialSummariesToday, setPartialSummariesToday] = useState<WorkdaySummary[]>([]);
+  const [praemienRules, setPraemienRules] = useState<PraemienRuleConfig | null>(null);
 
   const hasAmbulancesModule = useMemo(
     () => Boolean(enabledModules?.includes(MODULE_KEYS.AMBULANCES)),
@@ -309,6 +311,24 @@ export function WorkerWorkdayClosureScreen({
       cancelled = true;
     };
   }, [hasAmbulancesModule, user._id]);
+
+  useEffect(() => {
+    if (!praemienWorkdayUiActive) {
+      setPraemienRules(null);
+      return;
+    }
+    let cancelled = false;
+    void getPraemienRules()
+      .then((rules) => {
+        if (!cancelled) setPraemienRules(rules);
+      })
+      .catch(() => {
+        if (!cancelled) setPraemienRules(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [praemienWorkdayUiActive]);
 
   useEffect(() => {
     let cancelled = false;
@@ -569,6 +589,7 @@ export function WorkerWorkdayClosureScreen({
                 medicLabel={userLabel(todayAssignment.medic)}
                 issuesToday={sentIssuesToday}
                 showPraemieUi={praemienWorkdayUiActive}
+                praemienRules={praemienRules}
               />
             ) : null}
             <Text style={styles.placeholderText}>
@@ -1110,6 +1131,7 @@ export function WorkerWorkdayClosureScreen({
     partialDone,
     partialReason,
     partialSummariesToday,
+    praemienRules,
     sendIssue,
     sendingIssue,
     submitFinalClosure,
