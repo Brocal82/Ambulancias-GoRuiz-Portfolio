@@ -16,6 +16,7 @@ import { ApiError } from "../services/http";
 import { AuthUser, ScheduleSource } from "../types/auth";
 import { getMyVacationRequests, VacationRequestItem } from "../services/vacations";
 import { getMySickLeaves, SickLeaveItem } from "../services/sickLeaves";
+import { isAssignmentForUser, userIdFromAssignmentField } from "../utils/assignmentUserId";
 
 type Props = {
   user: AuthUser;
@@ -110,15 +111,6 @@ function normalizeAmbulanceLabel(value: unknown): string {
   return "N/A";
 }
 
-function normalizeObjectId(value: unknown): string | null {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  if (typeof value === "object" && value !== null) {
-    const maybeId = (value as { _id?: string })._id;
-    return maybeId ?? null;
-  }
-  return null;
-}
 
 function normalizeUserLabel(value: unknown): string {
   if (!value) return "Sin asignar";
@@ -251,6 +243,7 @@ export function WorkerAgendaScreen({
           ? `#${dienst.dienstNumber}`
           : "#-";
       for (const assignment of dienst.assignments ?? []) {
+        if (!isAssignmentForUser(assignment, user._id)) continue;
         const assignmentDateKey = normalizeDateKey(assignment.date);
         if (!assignmentDateKey) continue;
         const item: DayScheduleItem = {
@@ -265,8 +258,8 @@ export function WorkerAgendaScreen({
           medicLabel: normalizeUserLabel(assignment.medic),
         };
 
-        const driverId = normalizeObjectId(assignment.driver);
-        const medicId = normalizeObjectId(assignment.medic);
+        const driverId = userIdFromAssignmentField(assignment.driver);
+        const medicId = userIdFromAssignmentField(assignment.medic);
         if (driverId === user._id && medicId === user._id) {
           item.workerRole = "driver/medic";
         } else if (driverId === user._id) {
