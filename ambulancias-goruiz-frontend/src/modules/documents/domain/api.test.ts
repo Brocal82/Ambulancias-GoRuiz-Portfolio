@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import api from "../../../api/axios";
 import {
   listAdminDocuments,
+  listDocumentDeliveries,
   uploadDocumentsBatch,
   deleteDocument,
   deleteDocumentBatch,
@@ -78,5 +79,32 @@ describe("documents domain api", () => {
     expect(api.post).toHaveBeenCalledWith("/documents/deliveries/d1/acknowledge", {
       password: "secret",
     });
+  });
+
+  // P1.1 / P1.2 — Admin evidence
+  it("listDocumentDeliveries sin filtro usa GET /documents/:id/deliveries", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { deliveries: [] } });
+    const result = await listDocumentDeliveries("doc123");
+    expect(api.get).toHaveBeenCalledWith("/documents/doc123/deliveries");
+    expect(result).toEqual([]);
+  });
+
+  it("listDocumentDeliveries con filtro 'all' omite query param", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { deliveries: [] } });
+    await listDocumentDeliveries("doc123", "all");
+    expect(api.get).toHaveBeenCalledWith("/documents/doc123/deliveries");
+  });
+
+  it("listDocumentDeliveries con filtro 'opened' incluye query param", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { deliveries: [{ deliveryId: "d1" }] } });
+    const result = await listDocumentDeliveries("doc123", "opened");
+    expect(api.get).toHaveBeenCalledWith("/documents/doc123/deliveries?status=opened");
+    expect(result).toHaveLength(1);
+  });
+
+  it("listDocumentDeliveries con filtro 'not_acknowledged' incluye query param", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { deliveries: [] } });
+    await listDocumentDeliveries("doc123", "not_acknowledged");
+    expect(api.get).toHaveBeenCalledWith("/documents/doc123/deliveries?status=not_acknowledged");
   });
 });

@@ -38,6 +38,14 @@ export interface PayrollDocument {
   matchReason?: string;
   createdAt: string;
   updatedAt: string;
+
+  // P1.3 / P1.4 — Open evidence fields (compliance hardening)
+  /** ISO timestamp of the worker's first successful authenticated file access. Null if never opened. */
+  firstOpenedAt: string | null;
+  /** ISO timestamp of the most recent successful authenticated file access. */
+  lastOpenedAt: string | null;
+  /** Total count of successful authenticated file accesses by the assigned worker. */
+  openCount: number;
 }
 
 export interface UploadPayrollPayload {

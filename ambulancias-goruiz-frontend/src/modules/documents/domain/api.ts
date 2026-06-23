@@ -1,5 +1,5 @@
 import api from "../../../api/axios";
-import type { WorkerDocumentDelivery } from "./types";
+import type { AdminDocumentDelivery, WorkerDocumentDelivery } from "./types";
 
 // ─── Admin API ────────────────────────────────────────────────────────────────
 
@@ -47,6 +47,21 @@ export const markMyDocumentDeliveryRead = async (
     `/documents/deliveries/${deliveryId}/read`,
   );
   return res.data;
+};
+
+/**
+ * P1.1 — Admin Evidence: fetch per-worker deliveries for a document.
+ * Optional status filter: pending | opened | not_opened | acknowledged | not_acknowledged
+ */
+export const listDocumentDeliveries = async (
+  documentId: string,
+  status?: string,
+): Promise<AdminDocumentDelivery[]> => {
+  const params = status && status !== "all" ? `?status=${status}` : "";
+  const res = await api.get<{ deliveries: AdminDocumentDelivery[] }>(
+    `/documents/${documentId}/deliveries${params}`,
+  );
+  return res.data.deliveries;
 };
 
 export const acknowledgeMyDocumentDelivery = async (

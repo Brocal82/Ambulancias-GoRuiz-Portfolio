@@ -10,6 +10,7 @@ import {
   deleteCompanyDocumentsBatch,
   deleteCompanyDocument,
   listCompanyDocuments,
+  listDocumentDeliveries,
   listMyDocumentDeliveries,
   markMyDocumentDeliveryRead,
   uploadCompanyDocument,
@@ -78,6 +79,16 @@ router.delete(
   requireModule(MODULE_KEYS.DOCUMENTS),
   authorizeRole("admin"),
   deleteCompanyDocumentsBatch,
+);
+
+// P1.1 — Admin Evidence: per-worker delivery detail for a document
+router.get(
+  "/:documentId/deliveries",
+  authenticateToken,
+  requireModule(MODULE_KEYS.DOCUMENTS),
+  authorizeRole("admin"),
+  validateObjectId("documentId"),
+  listDocumentDeliveries,
 );
 
 router.delete(

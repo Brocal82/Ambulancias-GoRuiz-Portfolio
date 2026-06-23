@@ -1257,6 +1257,12 @@ export default function AdminPayrollPage() {
                       Estado
                     </th>
                     <th
+                      className={`${monthlyTh} px-2 text-center whitespace-nowrap`}
+                      title="P1.4: Acceso del trabajador al documento"
+                    >
+                      Visto
+                    </th>
+                    <th
                       className={`${monthlyTh} px-2 text-center whitespace-nowrap min-w-[14rem]`}
                     >
                       Acciones
@@ -1267,7 +1273,7 @@ export default function AdminPayrollPage() {
                   {monthlyFilteredDocs.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-4 py-5 text-center text-xs text-slate-500"
                       >
                         Ningún documento coincide con el filtro.
@@ -1306,6 +1312,24 @@ export default function AdminPayrollPage() {
                         </td>
                         <td className="px-2 py-1 text-center align-middle">
                           <MatchBadge status={doc.matchStatus} />
+                        </td>
+                        <td className="px-2 py-1 text-center align-middle whitespace-nowrap">
+                          {doc.matchStatus !== "unmatched" && doc.workerId ? (
+                            doc.firstOpenedAt ? (
+                              <span
+                                className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
+                                title={`Primera apertura: ${doc.firstOpenedAt}`}
+                              >
+                                Abierto
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-inset ring-slate-300">
+                                No abierto
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-slate-400 text-[10px]">—</span>
+                          )}
                         </td>
                         <td
                           className={`px-2 py-1.5 align-middle ${assigningId !== doc._id ? "whitespace-nowrap" : ""
