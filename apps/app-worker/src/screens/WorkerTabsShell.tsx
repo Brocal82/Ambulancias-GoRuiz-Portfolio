@@ -38,6 +38,7 @@ type Props = {
   scheduleSource: ScheduleSource;
   onLogout: () => Promise<void>;
   onRefreshProfile: () => Promise<void>;
+  onRefreshCompanyModules: () => Promise<"ok" | "unauthorized">;
 };
 
 function PlaceholderScreen({
@@ -62,6 +63,7 @@ export function WorkerTabsShell({
   scheduleSource,
   onLogout,
   onRefreshProfile,
+  onRefreshCompanyModules,
 }: Props) {
   const [activeTab, setActiveTab] = useState<WorkerTabKey>("home");
   const [initialAgendaDate, setInitialAgendaDate] = useState<string | undefined>(undefined);
@@ -146,17 +148,11 @@ export function WorkerTabsShell({
     };
   }, [refreshUnreadMessagesCount]);
 
-  const hasRealtimeModule =
-    hasMessagesModule ||
-    hasAgendaModule ||
-    hasWorkdayModule ||
-    hasVacationModule ||
-    hasSickLeavesModule ||
-    hasAppointmentsModule ||
-    hasPraemienModule;
+  // Authenticated workers always keep WS open for session/config events.
+  const shouldConnectWs = true;
 
   useEffect(() => {
-    if (!hasRealtimeModule) {
+    if (!shouldConnectWs) {
       wsRef.current?.close();
       if (wsReconnectTimerRef.current) {
         clearTimeout(wsReconnectTimerRef.current);
@@ -220,6 +216,17 @@ export function WorkerTabsShell({
             setAppointmentWsTrigger((prev) => prev + 1);
           } else if (msg.event === "praemien_changed" && hasPraemienModule) {
             setPraemienWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "modules_changed") {
+            void onRefreshCompanyModules();
+          } else if (msg.event === "company_changed") {
+            void (async () => {
+              const result = await onRefreshCompanyModules();
+              if (result === "unauthorized") {
+                await onLogout();
+              }
+            })();
+          } else if (msg.event === "account_changed") {
+            void onRefreshProfile();
           }
         } catch {
           // ignore malformed frames
@@ -264,12 +271,15 @@ export function WorkerTabsShell({
       appStateSubscription.remove();
     };
   }, [
-    hasRealtimeModule,
+    shouldConnectWs,
     hasVacationModule,
     hasSickLeavesModule,
     hasAppointmentsModule,
     hasPraemienModule,
     refreshUnreadMessagesCount,
+    onRefreshCompanyModules,
+    onRefreshProfile,
+    onLogout,
   ]);
 
   const nonWorkdayContent = useMemo(() => {

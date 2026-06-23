@@ -10,6 +10,9 @@ export const WS_EVENTS = {
   MECHANICS_CHANGED: "mechanics_changed",
   PRAEMIEN_CHANGED: "praemien_changed",
   ADMIN_COUNTS_CHANGED: "admin_counts_changed",
+  COMPANY_CHANGED: "company_changed",
+  MODULES_CHANGED: "modules_changed",
+  ACCOUNT_CHANGED: "account_changed",
 } as const;
 
 export type WsEventName = (typeof WS_EVENTS)[keyof typeof WS_EVENTS];

@@ -35,6 +35,7 @@ function AppContent() {
     login,
     logout,
     refreshProfile,
+    refreshCompanyModules,
   } =
     useAuth();
 
@@ -59,6 +60,7 @@ function AppContent() {
           scheduleSource={scheduleSource}
           onLogout={logout}
           onRefreshProfile={refreshProfile}
+          onRefreshCompanyModules={refreshCompanyModules}
         />
       ) : (
         <LoginScreen onLogin={login} errorMessage={authError} />

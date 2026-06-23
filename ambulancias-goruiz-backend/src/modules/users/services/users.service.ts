@@ -22,6 +22,7 @@ import {
   validatePscheinStoredDocumentPath,
 } from "../utils/pschein.validation";
 import { isSameCompany } from "../../../utils/requireCompany";
+import { voidEmitAccountChanged } from "../../notifications/utils/ws-notify";
 
 const ZONE = "Europe/Berlin";
 
@@ -323,6 +324,8 @@ export async function updateUserService(
   if (!updatedUser) {
     throw new Error("Usuario no encontrado");
   }
+
+  voidEmitAccountChanged([userId]);
 
   return updatedUser;
 }
@@ -689,6 +692,8 @@ export async function deleteUserService(userId: string, adminCompanyId?: string)
       throw new Error("No tienes permiso para eliminar este usuario");
     }
   }
+
+  voidEmitAccountChanged([userId]);
 
   const deletedUser = await User.findByIdAndDelete(userId);
 

@@ -36,6 +36,12 @@ export interface AuthContextType {
   // ✅ CLAVE para evitar parpadeos
   isAuthReady: boolean;
 
+  /** Refetch enabledModules from GET /companies/me (no-op for superadmin). */
+  refreshModules: () => Promise<void>;
+
+  /** Refetch current user profile; clears session on 401/403/404. */
+  refreshUser: () => Promise<void>;
+
   login: (
     token: string,
     userId: string,

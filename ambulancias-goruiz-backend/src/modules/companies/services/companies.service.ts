@@ -6,11 +6,26 @@ import Dienst from "../../diensts/models/dienst.model";
 import { MODULE_KEYS } from "../constants/modules.constants";
 import type { CreateCompanyInput, UpdateCompanyInput } from "../schemas/company.schema";
 import { normalizePraemienRuleConfig } from "../../praemien/types/praemien-rule-config";
+import {
+  voidEmitCompanyChanged,
+  voidEmitModulesChanged,
+} from "../../notifications/utils/ws-notify";
 
 /** Companies not soft-deleted (legacy rows may lack deletedAt). */
 export const ACTIVE_COMPANY_FILTER = {
   $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
 };
+
+function jsonEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
+function modulesListEqual(prev: string[], next: string[]): boolean {
+  if (prev.length !== next.length) return false;
+  const a = [...prev].sort();
+  const b = [...next].sort();
+  return a.every((value, index) => value === b[index]);
+}
 
 export type CompanyUsersByRole = {
   admin: number;
@@ -260,11 +275,15 @@ export async function deleteCompany(id: string) {
   const oid = parseCompanyOid(id);
   if (!oid) return null;
   const now = new Date();
-  return await Company.findOneAndUpdate(
+  const updated = await Company.findOneAndUpdate(
     { _id: oid, ...ACTIVE_COMPANY_FILTER },
     { $set: { deletedAt: now, isActive: false } },
     { new: true },
   ).lean();
+  if (updated) {
+    voidEmitCompanyChanged(id);
+  }
+  return updated;
 }
 
 export async function getCompanyAdmins(companyId: string) {
@@ -438,6 +457,16 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
   if (Object.keys(update).length === 0) {
     return await Company.findById(id).lean();
   }
+
+  const existingBefore = await Company.findById(id)
+    .select(
+      "enabledModules isActive emailDomain praemienMode praemienModeEffectiveFrom praemienRules",
+    )
+    .lean();
+  if (!existingBefore) {
+    return null;
+  }
+
   const updated = await Company.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,
@@ -445,6 +474,42 @@ export async function updateCompany(id: string, data: UpdateCompanyInput) {
 
   if (shouldStripAmbulanceModuleData && updated) {
     await stripAmbulanceReferencesForCompany(id);
+  }
+
+  if (updated) {
+    const prevModules = Array.isArray(
+      (existingBefore as { enabledModules?: string[] }).enabledModules,
+    )
+      ? ((existingBefore as { enabledModules: string[] }).enabledModules as string[])
+      : [];
+    if ($set.enabledModules !== undefined) {
+      const nextModules = $set.enabledModules as string[];
+      if (!modulesListEqual(prevModules, nextModules)) {
+        voidEmitModulesChanged(id);
+      }
+    }
+
+    const companySessionChanged =
+      ($set.isActive !== undefined &&
+        $set.isActive !== (existingBefore as { isActive?: boolean }).isActive) ||
+      ($set.emailDomain !== undefined &&
+        $set.emailDomain !== (existingBefore as { emailDomain?: string }).emailDomain) ||
+      ($set.praemienMode !== undefined &&
+        $set.praemienMode !== (existingBefore as { praemienMode?: string }).praemienMode) ||
+      ($set.praemienModeEffectiveFrom !== undefined &&
+        !jsonEqual(
+          $set.praemienModeEffectiveFrom,
+          (existingBefore as { praemienModeEffectiveFrom?: unknown })
+            .praemienModeEffectiveFrom,
+        )) ||
+      ($set.praemienRules !== undefined &&
+        !jsonEqual(
+          $set.praemienRules,
+          (existingBefore as { praemienRules?: unknown }).praemienRules,
+        ));
+    if (companySessionChanged) {
+      voidEmitCompanyChanged(id);
+    }
   }
 
   return updated;

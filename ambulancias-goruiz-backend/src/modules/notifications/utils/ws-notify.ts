@@ -209,3 +209,40 @@ export function voidEmitPraemienRulesChanged(companyId: string): void {
     }
   })();
 }
+
+async function collectSameCompanyUserIds(companyId: string): Promise<string[]> {
+  const companyOid = new mongoose.Types.ObjectId(companyId);
+  const users = await User.find({ companyId: companyOid }).select("_id").lean();
+  return users.map((user) => String(user._id));
+}
+
+/** Company-level session config changed → all same-company connected users. */
+export function voidEmitCompanyChanged(companyId: string): void {
+  void (async () => {
+    try {
+      const ids = await collectSameCompanyUserIds(companyId);
+      notifyUsers(ids, WS_EVENTS.COMPANY_CHANGED);
+    } catch (err) {
+      console.error("[ws-notify] voidEmitCompanyChanged failed:", err);
+    }
+  })();
+}
+
+/** enabledModules changed → all same-company connected users. */
+export function voidEmitModulesChanged(companyId: string): void {
+  void (async () => {
+    try {
+      const ids = await collectSameCompanyUserIds(companyId);
+      notifyUsers(ids, WS_EVENTS.MODULES_CHANGED);
+    } catch (err) {
+      console.error("[ws-notify] voidEmitModulesChanged failed:", err);
+    }
+  })();
+}
+
+/** User account/profile/status changed → targeted user sessions. */
+export function voidEmitAccountChanged(userIds: Iterable<string>): void {
+  const unique = [...new Set([...userIds].map((id) => String(id).trim()).filter(Boolean))];
+  if (unique.length === 0) return;
+  notifyUsers(unique, WS_EVENTS.ACCOUNT_CHANGED);
+}
