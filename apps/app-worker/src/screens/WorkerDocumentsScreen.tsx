@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -57,9 +57,11 @@ function getAcknowledgeErrorMessage(error: unknown): string {
 export function WorkerDocumentsScreen({
   hasCompanyDocumentsModule = true,
   hasPayrollModule = true,
+  wsTrigger,
 }: {
   hasCompanyDocumentsModule?: boolean;
   hasPayrollModule?: boolean;
+  wsTrigger?: number;
 }) {
   const [activeTab, setActiveTab] = useState<DocumentsTabKey>(() =>
     resolveInitialDocumentsTab(hasPayrollModule, hasCompanyDocumentsModule),
@@ -97,6 +99,13 @@ export function WorkerDocumentsScreen({
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  const prevWsTrigger = useRef(wsTrigger);
+  useEffect(() => {
+    if (wsTrigger === undefined || wsTrigger === prevWsTrigger.current) return;
+    prevWsTrigger.current = wsTrigger;
+    void loadAll();
+  }, [wsTrigger, loadAll]);
 
   const toConfirmRows = useMemo(
     () => pendingDeliveries.filter((delivery) => delivery.requiresAcknowledgment),

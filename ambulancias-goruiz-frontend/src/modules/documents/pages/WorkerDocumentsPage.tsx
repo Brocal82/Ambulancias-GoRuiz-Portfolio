@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
@@ -8,6 +8,7 @@ import {
   markMyDocumentDeliveryRead,
 } from "../domain/api";
 import type { WorkerDocumentDelivery } from "../domain/types";
+import { subscribeDocumentsChanged } from "../utils/documentsEvents";
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
@@ -37,6 +38,8 @@ export default function WorkerDocumentsPage() {
   const [ackTarget, setAckTarget] = useState<WorkerDocumentDelivery | null>(null);
   const [ackPassword, setAckPassword] = useState("");
   const [ackSubmitting, setAckSubmitting] = useState(false);
+  const tokenRef = useRef(token);
+  useEffect(() => { tokenRef.current = token; }, [token]);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -54,6 +57,12 @@ export default function WorkerDocumentsPage() {
     if (!token) return;
     void fetchRows();
   }, [token, fetchRows]);
+
+  useEffect(() => {
+    return subscribeDocumentsChanged(() => {
+      if (tokenRef.current) void fetchRows();
+    });
+  }, [fetchRows]);
 
   const handleOpen = async (row: WorkerDocumentDelivery) => {
     setOpeningId(row.deliveryId);

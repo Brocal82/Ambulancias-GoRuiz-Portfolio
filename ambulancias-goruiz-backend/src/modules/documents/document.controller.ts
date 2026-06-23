@@ -9,6 +9,11 @@ import { unlinkMulterFiles } from "../../utils/unlinkUploadedFiles";
 import { CompanyDocument } from "./models/document.model";
 import { DocumentDelivery } from "./models/document-delivery.model";
 import User from "../users/models/user.model";
+import {
+  voidEmitDocumentsChangedToWorkers,
+  voidEmitDocumentsChangedToAllCompanyWorkers,
+  voidEmitDocumentsChangedToAdmins,
+} from "../notifications/utils/ws-notify";
 
 type UploadedFile = {
   originalname?: string;
@@ -253,6 +258,12 @@ export async function uploadCompanyDocument(req: Request, res: Response) {
       requiresAcknowledgment,
     });
 
+    if (targetWorkerObjectId) {
+      voidEmitDocumentsChangedToWorkers([String(targetWorkerObjectId)], companyResult.companyId);
+    } else {
+      voidEmitDocumentsChangedToAllCompanyWorkers(companyResult.companyId);
+    }
+
     res.status(201).json({
       id: doc._id,
       originalName: doc.originalName,
@@ -372,6 +383,9 @@ export async function uploadCompanyDocumentsBatch(req: Request, res: Response) {
         requiresAcknowledgment: requiresAcknowledgmentForApi(doc),
       });
     }
+
+    const workerIds = workers.map((w) => String(w._id));
+    voidEmitDocumentsChangedToWorkers(workerIds, companyResult.companyId);
 
     res.status(201).json({
       count: createdDocs.length,
@@ -575,6 +589,8 @@ export async function deleteCompanyDocument(req: Request, res: Response) {
       return;
     }
 
+    voidEmitDocumentsChangedToAllCompanyWorkers(companyResult.companyId);
+
     res.status(200).json({ message: "Documento eliminado correctamente" });
   } catch (err) {
     console.error("Error al eliminar documento de empresa:", err);
@@ -612,6 +628,8 @@ export async function deleteCompanyDocumentsBatch(req: Request, res: Response) {
       res.status(404).json({ message: "No se encontraron documentos para ese lote" });
       return;
     }
+
+    voidEmitDocumentsChangedToAllCompanyWorkers(companyResult.companyId);
 
     res.status(200).json({
       message: "Lote de documentos eliminado correctamente",
@@ -762,6 +780,7 @@ export async function markMyDocumentDeliveryRead(req: Request, res: Response) {
       .lean();
 
     if (updated?.readAt) {
+      voidEmitDocumentsChangedToAdmins(companyResult.companyId);
       res.status(200).json({
         deliveryId: String(deliveryOid),
         readAt: updated.readAt,
@@ -907,6 +926,7 @@ export async function acknowledgeMyDocumentDelivery(req: Request, res: Response)
       .lean();
 
     if (updated?.acknowledgedAt) {
+      voidEmitDocumentsChangedToAdmins(companyResult.companyId);
       res.status(200).json({
         deliveryId: String(deliveryOid),
         readAt: updated.readAt ?? null,
