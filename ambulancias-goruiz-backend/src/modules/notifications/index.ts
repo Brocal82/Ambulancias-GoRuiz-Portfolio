@@ -24,5 +24,7 @@ export {
   voidEmitDocumentsChangedToWorkers,
   voidEmitDocumentsChangedToAllCompanyWorkers,
   voidEmitDocumentsChangedToAdmins,
+  voidEmitPayrollChangedToWorkers,
+  voidEmitPayrollChangedToAdmins,
 } from "./utils/ws-notify";
 export { notifyUsers, setupWebSocketServer } from "./ws-manager";

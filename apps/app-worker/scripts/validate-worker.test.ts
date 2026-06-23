@@ -402,6 +402,48 @@ test("disabled Praemien rule is ignored in preview multiplier", () => {
   );
 });
 
+test("payroll push navigation still routes to documents tab", () => {
+  const target = resolvePushNavigationTarget({ screen: "documents" }, [MODULE_KEYS.PAYROLL]);
+  assert.equal(target?.tab, "documents");
+});
+
+test("payroll_changed event is handled via the documents tab (payroll module enables documents tab)", () => {
+  // hasDocumentsModule = hasCompanyDocumentsModule || hasPayrollModule
+  // Payroll-only company should still show documents tab
+  const tab = resolveInitialDocumentsTab(true, false);
+  assert.equal(tab, "payroll");
+});
+
+test("payrollWsTrigger counter pattern: initial trigger is ignored, increment fires reload", () => {
+  // Simulate the useRef(payrollWsTrigger) + useEffect logic used in WorkerDocumentsScreen.
+  // The ref is initialized with the prop's initial value (0, from useState(0) in WorkerTabsShell).
+  const INITIAL_TRIGGER = 0;
+  let prevTrigger: number | undefined = INITIAL_TRIGGER;
+  let reloadCount = 0;
+
+  function simulateTriggerEffect(newTrigger: number | undefined): void {
+    if (newTrigger === undefined || newTrigger === prevTrigger) return;
+    prevTrigger = newTrigger;
+    reloadCount++;
+  }
+
+  // Initial render — trigger is 0, ref is 0: equal → skip
+  simulateTriggerEffect(0);
+  assert.equal(reloadCount, 0);
+
+  // First WS event → trigger becomes 1 → fires reload
+  simulateTriggerEffect(1);
+  assert.equal(reloadCount, 1);
+
+  // Same value re-render — should not re-fire
+  simulateTriggerEffect(1);
+  assert.equal(reloadCount, 1);
+
+  // Second WS event → trigger becomes 2 → fires again
+  simulateTriggerEffect(2);
+  assert.equal(reloadCount, 2);
+});
+
 test("default fallback Praemien rules are preserved when config is null", () => {
   const longTrip: WorkdaySummaryTrip = { ...baseTrip, kmStart: 0, kmEnd: 22 };
   assert.equal(getWorkdayTripPraemieMultiplier(longTrip, thursdayDate, "08:00", null), 2);

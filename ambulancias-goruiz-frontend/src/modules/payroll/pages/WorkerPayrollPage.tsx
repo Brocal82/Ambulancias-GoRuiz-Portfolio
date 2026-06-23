@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
@@ -6,6 +6,7 @@ import ViewIconButton from "../../../components/common/actions/ViewIconButton";
 import { listMyPayrollDocuments } from "../domain/api";
 import type { WorkerPayrollDocument } from "../domain/types";
 import { PAYROLL_MONTH_NAMES } from "../domain/constants";
+import { subscribePayrollChanged } from "../utils/payrollEvents";
 import { APP_NAV_MATCH_TABLE_THEAD_STICKY } from "../../../components/ui/appTableHeader";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,6 +31,8 @@ function fmtDate(iso: string): string {
 
 export default function WorkerPayrollPage() {
   const { token } = useAuth();
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
 
   const [docs, setDocs] = useState<WorkerPayrollDocument[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,6 +53,12 @@ export default function WorkerPayrollPage() {
     if (!token) return;
     void fetchDocs();
   }, [token, fetchDocs]);
+
+  useEffect(() => {
+    return subscribePayrollChanged(() => {
+      if (tokenRef.current) void fetchDocs();
+    });
+  }, [fetchDocs]);
 
   const handleOpen = async (doc: WorkerPayrollDocument) => {
     try {

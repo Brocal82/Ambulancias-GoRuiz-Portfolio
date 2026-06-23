@@ -32,6 +32,7 @@ import ResolutionWorkspace from "../components/ResolutionWorkspace";
 import MatchBadge from "../components/MatchBadge";
 import BackButton from "../../../components/ui/BackButton";
 import { APP_NAV_MATCH_TABLE_HEADER_TR } from "../../../components/ui/appTableHeader";
+import { subscribePayrollChanged } from "../utils/payrollEvents";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -401,6 +402,12 @@ export default function AdminPayrollPage() {
       .then((all) => setWorkers(all.filter((u) => u.role === "worker")))
       .catch(() => toastT.error("Error al cargar los trabajadores"));
   }, [token, fetchDocs]);
+
+  useEffect(() => {
+    return subscribePayrollChanged(() => {
+      void fetchDocs();
+    });
+  }, [fetchDocs]);
 
   useEffect(() => {
     if (!token) return;

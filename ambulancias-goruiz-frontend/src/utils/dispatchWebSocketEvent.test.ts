@@ -9,6 +9,8 @@ import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
 import { emitAppointmentsChanged } from "../modules/appointments/utils/appointmentEvents";
 import { emitMechanicsIssuesChanged } from "../modules/mechanics/utils/mechanicsEvents";
 import { dispatchPraemienManualPendingChanged } from "../modules/praemien/utils/praemienManualPendingEvents";
+import { emitDocumentsChanged } from "../modules/documents/utils/documentsEvents";
+import { emitPayrollChanged } from "../modules/payroll/utils/payrollEvents";
 import {
   emitAuthAccountChanged,
   emitAuthCompanyChanged,
@@ -55,6 +57,14 @@ vi.mock("../modules/mechanics/utils/mechanicsEvents", () => ({
 
 vi.mock("../modules/praemien/utils/praemienManualPendingEvents", () => ({
   dispatchPraemienManualPendingChanged: vi.fn(),
+}));
+
+vi.mock("../modules/documents/utils/documentsEvents", () => ({
+  emitDocumentsChanged: vi.fn(),
+}));
+
+vi.mock("../modules/payroll/utils/payrollEvents", () => ({
+  emitPayrollChanged: vi.fn(),
 }));
 
 describe("dispatchWebSocketEvent", () => {
@@ -106,6 +116,26 @@ describe("dispatchWebSocketEvent", () => {
     expect(emitAuthAccountChanged).toHaveBeenCalledTimes(1);
   });
 
+  it("maps documents_changed to documents local refresh", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.DOCUMENTS_CHANGED });
+    expect(emitDocumentsChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps payroll_changed to payroll local refresh", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.PAYROLL_CHANGED });
+    expect(emitPayrollChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it("payroll_changed does not trigger documents_changed", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.PAYROLL_CHANGED });
+    expect(emitDocumentsChanged).not.toHaveBeenCalled();
+  });
+
+  it("documents_changed does not trigger payroll_changed", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.DOCUMENTS_CHANGED });
+    expect(emitPayrollChanged).not.toHaveBeenCalled();
+  });
+
   it("ignores unknown events", () => {
     dispatchWebSocketEvent({ event: "unknown_event" });
     expect(emitDienstsChanged).not.toHaveBeenCalled();
@@ -115,5 +145,6 @@ describe("dispatchWebSocketEvent", () => {
     expect(emitAuthModulesChanged).not.toHaveBeenCalled();
     expect(emitAuthCompanyChanged).not.toHaveBeenCalled();
     expect(emitAuthAccountChanged).not.toHaveBeenCalled();
+    expect(emitPayrollChanged).not.toHaveBeenCalled();
   });
 });
