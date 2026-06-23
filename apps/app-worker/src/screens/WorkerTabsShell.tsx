@@ -111,6 +111,7 @@ export function WorkerTabsShell({
   const [appointmentWsTrigger, setAppointmentWsTrigger] = useState(0);
   const [praemienWsTrigger, setPraemienWsTrigger] = useState(0);
   const [documentsWsTrigger, setDocumentsWsTrigger] = useState(0);
+  const [payrollWsTrigger, setPayrollWsTrigger] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsReconnectDelayRef = useRef(1000);
@@ -219,6 +220,8 @@ export function WorkerTabsShell({
             setPraemienWsTrigger((prev) => prev + 1);
           } else if (msg.event === "documents_changed" && hasDocumentsModule) {
             setDocumentsWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "payroll_changed" && hasPayrollModule) {
+            setPayrollWsTrigger((prev) => prev + 1);
           } else if (msg.event === "modules_changed") {
             void onRefreshCompanyModules();
           } else if (msg.event === "company_changed") {
@@ -279,6 +282,7 @@ export function WorkerTabsShell({
     hasSickLeavesModule,
     hasAppointmentsModule,
     hasPraemienModule,
+    hasPayrollModule,
     refreshUnreadMessagesCount,
     onRefreshCompanyModules,
     onRefreshProfile,
@@ -388,6 +392,7 @@ export function WorkerTabsShell({
             hasCompanyDocumentsModule={hasCompanyDocumentsModule}
             hasPayrollModule={hasPayrollModule}
             wsTrigger={documentsWsTrigger}
+            payrollWsTrigger={payrollWsTrigger}
           />
         ) : (
           <PlaceholderScreen
@@ -417,6 +422,7 @@ export function WorkerTabsShell({
     onRefreshProfile,
     praemienWsTrigger,
     documentsWsTrigger,
+    payrollWsTrigger,
     scheduleSource,
     user,
     wsTrigger,

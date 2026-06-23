@@ -284,3 +284,25 @@ export function voidEmitDocumentsChangedToAdmins(companyId: string): void {
     MODULE_KEYS.DOCUMENTS,
   );
 }
+
+/** Payroll changed → specific worker recipients (upload/assign/invalidate with known recipients). */
+export function voidEmitPayrollChangedToWorkers(
+  workerIds: Iterable<string>,
+  companyId: string,
+): void {
+  void notifyUsersModuleGated(
+    [...workerIds],
+    WS_EVENTS.PAYROLL_CHANGED,
+    MODULE_KEYS.PAYROLL,
+    companyId,
+  );
+}
+
+/** Payroll changed → company admins. */
+export function voidEmitPayrollChangedToAdmins(companyId: string): void {
+  void notifyCompanyAdminsModuleGated(
+    companyId,
+    WS_EVENTS.PAYROLL_CHANGED,
+    MODULE_KEYS.PAYROLL,
+  );
+}

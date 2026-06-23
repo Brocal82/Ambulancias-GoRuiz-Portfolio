@@ -7,6 +7,10 @@ import { requireCompanyForAdmin } from "../../../utils/requireCompany";
 import { validateSecureUploadFilename } from "../../../utils/secureUploadFilename";
 import { matchWorkerFromFilename } from "../utils/payroll-filename-parser";
 import { sendPushNotification } from "../../notifications";
+import {
+  voidEmitPayrollChangedToWorkers,
+  voidEmitPayrollChangedToAdmins,
+} from "../../notifications/utils/ws-notify";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Duplicate detection helper (Phase 8a)
@@ -373,6 +377,8 @@ export async function uploadPayrollDocument(
           : "Tienes una nueva nómina disponible.",
         { screen: "documents" },
       );
+      voidEmitPayrollChangedToWorkers([workerOid.toString()], adminCompanyId);
+      voidEmitPayrollChangedToAdmins(adminCompanyId);
 
       const { replacedDocument, possibleDuplicate } =
         await finalizeConfirmedPayrollUpload({
@@ -429,6 +435,8 @@ export async function uploadPayrollDocument(
           : "Tienes una nueva nómina disponible.",
         { screen: "documents" },
       );
+      voidEmitPayrollChangedToWorkers([matchedWorkerOid.toString()], adminCompanyId);
+      voidEmitPayrollChangedToAdmins(adminCompanyId);
 
       const { replacedDocument, possibleDuplicate } =
         await finalizeConfirmedPayrollUpload({
@@ -474,6 +482,7 @@ export async function uploadPayrollDocument(
       month: parsedMonth,
     });
     documentCreated = true;
+    voidEmitPayrollChangedToAdmins(adminCompanyId);
 
     res.status(201).json({
       message:
@@ -624,6 +633,7 @@ export async function uploadPayrollBatch(
     };
 
     const results: BatchResultItem[] = [];
+    const batchMatchedWorkerIds = new Set<string>();
     let matched = 0;
     let unmatched = 0;
     let failed = 0;
@@ -682,6 +692,7 @@ export async function uploadPayrollBatch(
           if (replacedDocument) duplicateWarnings++;
           if (possibleDuplicate) duplicateWarnings++;
 
+          batchMatchedWorkerIds.add(batchWorkerOid.toString());
           results.push({
             originalName,
             status: "matched",
@@ -733,6 +744,13 @@ export async function uploadPayrollBatch(
         });
         failed++;
       }
+    }
+
+    if (batchMatchedWorkerIds.size > 0) {
+      voidEmitPayrollChangedToWorkers(batchMatchedWorkerIds, adminCompanyId);
+    }
+    if (matched > 0 || unmatched > 0) {
+      voidEmitPayrollChangedToAdmins(adminCompanyId);
     }
 
     res.status(200).json({
@@ -821,6 +839,9 @@ export async function assignPayrollDocument(
     payroll.workerId = workerOid;
     payroll.matchStatus = "manual";
     await payroll.save();
+
+    voidEmitPayrollChangedToWorkers([workerId], adminCompanyId);
+    voidEmitPayrollChangedToAdmins(adminCompanyId);
 
     void sendPushNotification(
       [workerId],
@@ -1213,7 +1234,7 @@ export async function invalidatePayrollDocument(
     const payroll = await PayrollDocument.findOne({
       _id: new mongoose.Types.ObjectId(id),
       companyId: companyOid,
-    }).select("_id deletedAt");
+    }).select("_id deletedAt workerId");
 
     if (!payroll) {
       res.status(404).json({ message: "Documento de nómina no encontrado" });
@@ -1227,6 +1248,11 @@ export async function invalidatePayrollDocument(
 
     payroll.deletedAt = new Date();
     await payroll.save();
+
+    if (payroll.workerId) {
+      voidEmitPayrollChangedToWorkers([String(payroll.workerId)], adminCompanyId);
+    }
+    voidEmitPayrollChangedToAdmins(adminCompanyId);
 
     res.status(200).json({
       message: "Documento invalidado correctamente",

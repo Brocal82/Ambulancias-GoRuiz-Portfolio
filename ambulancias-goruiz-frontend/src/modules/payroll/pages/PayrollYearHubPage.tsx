@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { subscribePayrollChanged } from "../utils/payrollEvents";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { toastT } from "../../../utils/toast";
@@ -32,6 +33,8 @@ function monthCellStatus(
 
 export default function PayrollYearHubPage() {
   const { token } = useAuth();
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
   const navigate = useNavigate();
   const [hubYear, setHubYear] = useState(() => new Date().getFullYear());
   const [docs, setDocs] = useState<PayrollDocument[]>([]);
@@ -56,6 +59,12 @@ export default function PayrollYearHubPage() {
     if (!token) return;
     void fetchDocs();
   }, [token, fetchDocs]);
+
+  useEffect(() => {
+    return subscribePayrollChanged(() => {
+      if (tokenRef.current) void fetchDocs();
+    });
+  }, [fetchDocs]);
 
   useEffect(() => {
     if (!token) return;

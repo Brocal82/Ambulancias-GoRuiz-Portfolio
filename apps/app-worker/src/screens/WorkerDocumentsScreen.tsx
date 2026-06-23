@@ -58,10 +58,12 @@ export function WorkerDocumentsScreen({
   hasCompanyDocumentsModule = true,
   hasPayrollModule = true,
   wsTrigger,
+  payrollWsTrigger,
 }: {
   hasCompanyDocumentsModule?: boolean;
   hasPayrollModule?: boolean;
   wsTrigger?: number;
+  payrollWsTrigger?: number;
 }) {
   const [activeTab, setActiveTab] = useState<DocumentsTabKey>(() =>
     resolveInitialDocumentsTab(hasPayrollModule, hasCompanyDocumentsModule),
@@ -106,6 +108,13 @@ export function WorkerDocumentsScreen({
     prevWsTrigger.current = wsTrigger;
     void loadAll();
   }, [wsTrigger, loadAll]);
+
+  const prevPayrollWsTrigger = useRef(payrollWsTrigger);
+  useEffect(() => {
+    if (payrollWsTrigger === undefined || payrollWsTrigger === prevPayrollWsTrigger.current) return;
+    prevPayrollWsTrigger.current = payrollWsTrigger;
+    void loadAll();
+  }, [payrollWsTrigger, loadAll]);
 
   const toConfirmRows = useMemo(
     () => pendingDeliveries.filter((delivery) => delivery.requiresAcknowledgment),
