@@ -246,3 +246,41 @@ export function voidEmitAccountChanged(userIds: Iterable<string>): void {
   if (unique.length === 0) return;
   notifyUsers(unique, WS_EVENTS.ACCOUNT_CHANGED);
 }
+
+/** Documents changed → specific worker recipients (upload with known recipients). */
+export function voidEmitDocumentsChangedToWorkers(
+  workerIds: Iterable<string>,
+  companyId: string,
+): void {
+  void notifyUsersModuleGated(
+    [...workerIds],
+    WS_EVENTS.DOCUMENTS_CHANGED,
+    MODULE_KEYS.DOCUMENTS,
+    companyId,
+  );
+}
+
+/** Documents changed → all active workers in company (delete operations). */
+export function voidEmitDocumentsChangedToAllCompanyWorkers(companyId: string): void {
+  void (async () => {
+    try {
+      const companyOid = new mongoose.Types.ObjectId(companyId);
+      const workers = await User.find({ companyId: companyOid, role: "worker", isActive: true })
+        .select("_id")
+        .lean();
+      const ids = workers.map((w) => String(w._id));
+      await notifyUsersModuleGated(ids, WS_EVENTS.DOCUMENTS_CHANGED, MODULE_KEYS.DOCUMENTS, companyId);
+    } catch (err) {
+      console.error("[ws-notify] voidEmitDocumentsChangedToAllCompanyWorkers failed:", err);
+    }
+  })();
+}
+
+/** Documents changed → company admins (worker read/ack). */
+export function voidEmitDocumentsChangedToAdmins(companyId: string): void {
+  void notifyCompanyAdminsModuleGated(
+    companyId,
+    WS_EVENTS.DOCUMENTS_CHANGED,
+    MODULE_KEYS.DOCUMENTS,
+  );
+}

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toastT } from "../../../utils/toast";
@@ -14,6 +14,7 @@ import {
   filterPdfFiles,
   isAcknowledgmentUploadEnabled,
 } from "../utils/uploadValidation";
+import { subscribeDocumentsChanged } from "../utils/documentsEvents";
 import PayrollUploadTriggerButton from "../../../components/common/actions/PayrollUploadTriggerButton";
 import SendIconButton from "../../../components/common/actions/SendIconButton";
 import ViewIconButton from "../../../components/common/actions/ViewIconButton";
@@ -140,7 +141,7 @@ const AdminDocumentsPage = () => {
     [documents],
   );
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
     try {
       const data = await listAdminDocuments<AdminDocument>();
@@ -150,11 +151,15 @@ const AdminDocumentsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void fetchDocuments();
-  }, []);
+  }, [fetchDocuments]);
+
+  useEffect(() => {
+    return subscribeDocumentsChanged(() => void fetchDocuments());
+  }, [fetchDocuments]);
 
   useEffect(() => {
     if (batchFiles.length !== 1) {

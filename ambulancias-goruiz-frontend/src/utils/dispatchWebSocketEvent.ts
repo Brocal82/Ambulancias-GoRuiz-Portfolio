@@ -1,5 +1,6 @@
 import { emitAppointmentsChanged } from "../modules/appointments/utils/appointmentEvents";
 import { emitDienstsChanged } from "../modules/diensts/utils/dienstEvents";
+import { emitDocumentsChanged } from "../modules/documents/utils/documentsEvents";
 import { emitMessagesChanged } from "../modules/messages/utils/messageEvents";
 import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
 import { emitVacationRequestsUpdated } from "../modules/vacation/utils/vacationEvents";
@@ -59,6 +60,9 @@ export function dispatchWebSocketEvent(frame: WsFrame): void {
       return;
     case WS_EVENTS.ACCOUNT_CHANGED:
       emitAuthAccountChanged();
+      return;
+    case WS_EVENTS.DOCUMENTS_CHANGED:
+      emitDocumentsChanged();
       return;
     default:
       return;

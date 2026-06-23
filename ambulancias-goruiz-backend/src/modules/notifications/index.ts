@@ -21,5 +21,8 @@ export {
   voidEmitCompanyChanged,
   voidEmitModulesChanged,
   voidEmitAccountChanged,
+  voidEmitDocumentsChangedToWorkers,
+  voidEmitDocumentsChangedToAllCompanyWorkers,
+  voidEmitDocumentsChangedToAdmins,
 } from "./utils/ws-notify";
 export { notifyUsers, setupWebSocketServer } from "./ws-manager";

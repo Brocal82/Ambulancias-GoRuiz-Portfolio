@@ -110,6 +110,7 @@ export function WorkerTabsShell({
   const [sickLeaveWsTrigger, setSickLeaveWsTrigger] = useState(0);
   const [appointmentWsTrigger, setAppointmentWsTrigger] = useState(0);
   const [praemienWsTrigger, setPraemienWsTrigger] = useState(0);
+  const [documentsWsTrigger, setDocumentsWsTrigger] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsReconnectDelayRef = useRef(1000);
@@ -216,6 +217,8 @@ export function WorkerTabsShell({
             setAppointmentWsTrigger((prev) => prev + 1);
           } else if (msg.event === "praemien_changed" && hasPraemienModule) {
             setPraemienWsTrigger((prev) => prev + 1);
+          } else if (msg.event === "documents_changed" && hasDocumentsModule) {
+            setDocumentsWsTrigger((prev) => prev + 1);
           } else if (msg.event === "modules_changed") {
             void onRefreshCompanyModules();
           } else if (msg.event === "company_changed") {
@@ -320,6 +323,7 @@ export function WorkerTabsShell({
             hasPraemienModule={hasPraemienModule}
             agendaWsTrigger={agendaWsTrigger}
             praemienWsTrigger={praemienWsTrigger}
+            documentsWsTrigger={documentsWsTrigger}
             showBottomPreview={false}
           />
         );
@@ -383,6 +387,7 @@ export function WorkerTabsShell({
           <WorkerDocumentsScreen
             hasCompanyDocumentsModule={hasCompanyDocumentsModule}
             hasPayrollModule={hasPayrollModule}
+            wsTrigger={documentsWsTrigger}
           />
         ) : (
           <PlaceholderScreen
@@ -411,6 +416,7 @@ export function WorkerTabsShell({
     onLogout,
     onRefreshProfile,
     praemienWsTrigger,
+    documentsWsTrigger,
     scheduleSource,
     user,
     wsTrigger,

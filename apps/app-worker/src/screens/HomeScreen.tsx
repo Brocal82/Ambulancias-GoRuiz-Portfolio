@@ -129,6 +129,7 @@ type Props = {
   showBottomPreview?: boolean;
   agendaWsTrigger?: number;
   praemienWsTrigger?: number;
+  documentsWsTrigger?: number;
 };
 
 export function HomeScreen({
@@ -157,6 +158,7 @@ export function HomeScreen({
   showBottomPreview = true,
   agendaWsTrigger,
   praemienWsTrigger,
+  documentsWsTrigger,
 }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -345,6 +347,15 @@ export function HomeScreen({
     prevPraemienWsTrigger.current = praemienWsTrigger;
     void loadDienstAndPraemie();
   }, [loadDienstAndPraemie, praemienWsTrigger]);
+
+  const prevDocumentsWsTrigger = useRef(documentsWsTrigger);
+  useEffect(() => {
+    if (documentsWsTrigger === undefined || documentsWsTrigger === prevDocumentsWsTrigger.current) {
+      return;
+    }
+    prevDocumentsWsTrigger.current = documentsWsTrigger;
+    void refreshAlerts();
+  }, [documentsWsTrigger, refreshAlerts]);
 
   const pscheinExpiryDate = user.pscheinExpiry ? new Date(user.pscheinExpiry) : null;
   const displayName = `${user.name ?? ""} ${user.lastName ?? ""}`.trim() || "Usuario";
