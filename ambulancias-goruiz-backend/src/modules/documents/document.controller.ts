@@ -814,6 +814,120 @@ export async function markMyDocumentDeliveryRead(req: Request, res: Response) {
 /** Misma cadena que `loginUserService` ante contraseña incorrecta (no filtrar detalles). */
 const ACK_PASSWORD_AUTH_FAILURE = "Email o contraseña incorrectos.";
 
+/**
+ * P1.1 — Admin Evidence Visibility: per-worker delivery detail for a document.
+ *
+ * GET /api/documents/:documentId/deliveries?status=<filter>
+ *
+ * Returns all DocumentDelivery records for the document, joined with worker
+ * name and employeeNumber. Supports optional status filter:
+ *   pending          → readAt is null
+ *   opened           → readAt is not null
+ *   not_opened       → readAt is null
+ *   acknowledged     → acknowledgedAt is not null
+ *   not_acknowledged → acknowledgedAt is null
+ *
+ * Multi-tenant: document and deliveries are both filtered by companyId.
+ * No cross-company data is accessible.
+ */
+export async function listDocumentDeliveries(req: Request, res: Response) {
+  const companyResult = requireCompanyForAdmin(req);
+  if (!companyResult.ok) {
+    res.status(companyResult.statusCode).json({ message: companyResult.message });
+    return;
+  }
+
+  const { documentId } = req.params;
+  if (!documentId || !mongoose.Types.ObjectId.isValid(documentId)) {
+    res.status(400).json({ message: "ID de documento no válido" });
+    return;
+  }
+
+  const { status } = req.query as { status?: string };
+  const VALID_STATUSES = ["pending", "opened", "not_opened", "acknowledged", "not_acknowledged"];
+  if (status && !VALID_STATUSES.includes(status)) {
+    res.status(400).json({ message: "Filtro de estado no válido" });
+    return;
+  }
+
+  try {
+    const companyObjectId = new mongoose.Types.ObjectId(companyResult.companyId);
+    const documentOid = new mongoose.Types.ObjectId(documentId);
+
+    const doc = await CompanyDocument.findOne({
+      _id: documentOid,
+      companyId: companyObjectId,
+      deletedAt: null,
+    })
+      .select("_id")
+      .lean();
+
+    if (!doc) {
+      res.status(404).json({ message: "Documento no encontrado" });
+      return;
+    }
+
+    const deliveryFilter: Record<string, unknown> = {
+      companyId: companyObjectId,
+      documentId: documentOid,
+    };
+
+    if (status === "pending" || status === "not_opened") {
+      deliveryFilter.readAt = null;
+    } else if (status === "opened") {
+      deliveryFilter.readAt = { $ne: null };
+    } else if (status === "acknowledged") {
+      deliveryFilter.acknowledgedAt = { $ne: null };
+    } else if (status === "not_acknowledged") {
+      deliveryFilter.acknowledgedAt = null;
+    }
+
+    const deliveries = await DocumentDelivery.find(deliveryFilter)
+      .sort({ sentAt: -1 })
+      .lean();
+
+    if (deliveries.length === 0) {
+      res.status(200).json({ deliveries: [] });
+      return;
+    }
+
+    const workerIds = [
+      ...new Set(deliveries.map((d) => String(d.workerId))),
+    ].map((id) => new mongoose.Types.ObjectId(id));
+
+    const workers = await User.find({
+      _id: { $in: workerIds },
+      companyId: companyObjectId,
+    })
+      .select("_id name lastName employeeNumber")
+      .lean();
+
+    const workerById = new Map(workers.map((w) => [String(w._id), w]));
+
+    const result = deliveries.map((d) => {
+      const worker = workerById.get(String(d.workerId));
+      const ack = (d as { acknowledgedAt?: Date | null }).acknowledgedAt;
+      return {
+        deliveryId: String(d._id),
+        workerId: String(d.workerId),
+        workerName: worker
+          ? `${(worker as { lastName: string }).lastName}, ${(worker as { name: string }).name}`
+          : "Trabajador no encontrado",
+        employeeNumber:
+          (worker as { employeeNumber?: string } | undefined)?.employeeNumber ?? null,
+        sentAt: d.sentAt,
+        readAt: d.readAt ?? null,
+        acknowledgedAt: ack ?? null,
+      };
+    });
+
+    res.status(200).json({ deliveries: result });
+  } catch (err) {
+    console.error("Error al listar entregas de documento:", err);
+    res.status(500).json({ message: "Error al obtener las entregas" });
+  }
+}
+
 export async function acknowledgeMyDocumentDelivery(req: Request, res: Response) {
   const companyResult = requireCompanyForWorker(req);
   if (!companyResult.ok) {

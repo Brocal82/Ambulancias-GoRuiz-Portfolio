@@ -13,3 +13,26 @@ export interface WorkerDocumentDelivery {
   readAt: string | null;
   acknowledgedAt: string | null;
 }
+
+/**
+ * P1.1 — Admin Evidence: per-worker delivery detail.
+ * GET /api/documents/:documentId/deliveries
+ */
+export interface AdminDocumentDelivery {
+  deliveryId: string;
+  workerId: string;
+  workerName: string;
+  employeeNumber: string | null;
+  sentAt: string;
+  readAt: string | null;
+  acknowledgedAt: string | null;
+}
+
+/** P1.2 — Filter values for the document delivery detail view. */
+export type DeliveryStatusFilter =
+  | "all"
+  | "pending"
+  | "opened"
+  | "not_opened"
+  | "acknowledged"
+  | "not_acknowledged";

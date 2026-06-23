@@ -5,10 +5,12 @@ import { toastT } from "../../../utils/toast";
 import { openSecureFile } from "../../../utils/openSecureFile";
 import {
   listAdminDocuments,
+  listDocumentDeliveries,
   uploadDocumentsBatch,
   deleteDocument,
   deleteDocumentBatch,
 } from "../domain/api";
+import type { AdminDocumentDelivery, DeliveryStatusFilter } from "../domain/types";
 import { buildDocumentsUploadFormData } from "../utils/buildUploadFormData";
 import {
   filterPdfFiles,
@@ -32,12 +34,51 @@ type AdminDocument = {
   readCount: number;
   acknowledgedCount: number;
   pendingAcknowledgmentCount: number;
-  /** Present when API returns it; not shown in UI yet. */
   readButNotAcknowledgedCount?: number;
   requiresAcknowledgment: boolean;
-  /** Present for batch uploads; absent on legacy rows. */
   uploadBatchId?: string | null;
 };
+
+// ── P1.1 / P1.2: Delivery evidence helpers ────────────────────────────────────
+
+const DELIVERY_FILTER_LABELS: Record<DeliveryStatusFilter, string> = {
+  all: "Todos",
+  pending: "Pendientes",
+  opened: "Abiertos",
+  not_opened: "No abiertos",
+  acknowledged: "Confirmados",
+  not_acknowledged: "No confirmados",
+};
+
+function deliveryStatusBadge(d: AdminDocumentDelivery): {
+  label: string;
+  className: string;
+} {
+  if (d.acknowledgedAt) {
+    return {
+      label: "Confirmado",
+      className:
+        "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20",
+    };
+  }
+  if (d.readAt) {
+    return {
+      label: "Abierto",
+      className:
+        "inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20",
+    };
+  }
+  return {
+    label: "Pendiente",
+    className:
+      "inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20",
+  };
+}
+
+function formatEvidenceDate(iso: string | null): string {
+  if (!iso) return "—";
+  return format(new Date(iso), "dd/MM/yyyy HH:mm", { locale: es });
+}
 
 type DocumentDisplayRow =
   | { kind: "single"; doc: AdminDocument }
@@ -122,6 +163,113 @@ function batchSelectionSummary(
   };
 }
 
+// ── P1.1 / P1.2: Document Evidence Panel ──────────────────────────────────────
+
+const EVIDENCE_FILTERS: DeliveryStatusFilter[] = [
+  "all",
+  "pending",
+  "opened",
+  "not_opened",
+  "acknowledged",
+  "not_acknowledged",
+];
+
+function DocumentEvidencePanel({
+  filter,
+  onFilterChange,
+  deliveries,
+  loading,
+}: {
+  filter: DeliveryStatusFilter;
+  onFilterChange: (f: DeliveryStatusFilter) => void;
+  deliveries: AdminDocumentDelivery[];
+  loading: boolean;
+}) {
+  return (
+    <div className="mt-1 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50">
+        <span className="text-xs font-semibold text-slate-600 mr-1">Filtrar:</span>
+        {EVIDENCE_FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => onFilterChange(f)}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 ${
+              filter === f
+                ? "bg-slate-800 text-white"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            {DELIVERY_FILTER_LABELS[f]}
+          </button>
+        ))}
+        {loading && (
+          <span className="ml-2 text-xs text-slate-400">Cargando…</span>
+        )}
+      </div>
+      {deliveries.length === 0 && !loading ? (
+        <p className="px-4 py-4 text-xs text-slate-500">
+          No hay entregas para este filtro.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50">
+                <th className="px-3 py-2 font-medium text-slate-500 whitespace-nowrap">
+                  Trabajador
+                </th>
+                <th className="px-3 py-2 font-medium text-slate-500 whitespace-nowrap">
+                  Nº empleado
+                </th>
+                <th className="px-3 py-2 font-medium text-slate-500 whitespace-nowrap">
+                  Estado
+                </th>
+                <th className="px-3 py-2 font-medium text-slate-500 whitespace-nowrap">
+                  Enviado
+                </th>
+                <th className="px-3 py-2 font-medium text-slate-500 whitespace-nowrap">
+                  Abierto
+                </th>
+                <th className="px-3 py-2 font-medium text-slate-500 whitespace-nowrap">
+                  Confirmado
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {deliveries.map((d) => {
+                const badge = deliveryStatusBadge(d);
+                return (
+                  <tr key={d.deliveryId} className="hover:bg-slate-50">
+                    <td className="px-3 py-1.5 text-slate-800 font-medium whitespace-nowrap">
+                      {d.workerName}
+                    </td>
+                    <td className="px-3 py-1.5 text-slate-600 whitespace-nowrap">
+                      {d.employeeNumber ?? "—"}
+                    </td>
+                    <td className="px-3 py-1.5 whitespace-nowrap">
+                      <span className={badge.className}>{badge.label}</span>
+                    </td>
+                    <td className="px-3 py-1.5 text-slate-600 whitespace-nowrap">
+                      {formatEvidenceDate(d.sentAt)}
+                    </td>
+                    <td className="px-3 py-1.5 text-slate-600 whitespace-nowrap">
+                      {formatEvidenceDate(d.readAt)}
+                    </td>
+                    <td className="px-3 py-1.5 text-slate-600 whitespace-nowrap">
+                      {formatEvidenceDate(d.acknowledgedAt)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const AdminDocumentsPage = () => {
   const [documents, setDocuments] = useState<AdminDocument[]>([]);
   const [loading, setLoading] = useState(false);
@@ -135,6 +283,12 @@ const AdminDocumentsPage = () => {
   const [expandedBatchIds, setExpandedBatchIds] = useState<Record<string, boolean>>(
     {},
   );
+
+  // P1.1 / P1.2: Evidence panel state
+  const [evidenceDocId, setEvidenceDocId] = useState<string | null>(null);
+  const [evidenceFilter, setEvidenceFilter] = useState<DeliveryStatusFilter>("all");
+  const [evidenceDeliveries, setEvidenceDeliveries] = useState<AdminDocumentDelivery[]>([]);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
 
   const displayRows = useMemo(
     () => buildDocumentDisplayRows(documents),
@@ -152,6 +306,50 @@ const AdminDocumentsPage = () => {
       setLoading(false);
     }
   }, []);
+
+  // P1.1 / P1.2: Fetch delivery evidence for a document with optional filter
+  const fetchEvidence = useCallback(
+    async (docId: string, filter: DeliveryStatusFilter) => {
+      setEvidenceLoading(true);
+      try {
+        const data = await listDocumentDeliveries(
+          docId,
+          filter === "all" ? undefined : filter,
+        );
+        setEvidenceDeliveries(data);
+      } catch (err) {
+        toastT.apiError(err, "Error al cargar las entregas");
+      } finally {
+        setEvidenceLoading(false);
+      }
+    },
+    [],
+  );
+
+  const handleEvidenceToggle = useCallback(
+    (docId: string) => {
+      if (evidenceDocId === docId) {
+        setEvidenceDocId(null);
+        setEvidenceDeliveries([]);
+        setEvidenceFilter("all");
+      } else {
+        setEvidenceDocId(docId);
+        setEvidenceFilter("all");
+        void fetchEvidence(docId, "all");
+      }
+    },
+    [evidenceDocId, fetchEvidence],
+  );
+
+  const handleEvidenceFilterChange = useCallback(
+    (filter: DeliveryStatusFilter) => {
+      setEvidenceFilter(filter);
+      if (evidenceDocId) {
+        void fetchEvidence(evidenceDocId, filter);
+      }
+    },
+    [evidenceDocId, fetchEvidence],
+  );
 
   useEffect(() => {
     void fetchDocuments();
@@ -501,46 +699,77 @@ const AdminDocumentsPage = () => {
                 <tbody className="divide-y divide-slate-100">
                   {displayRows.map((row) =>
                     row.kind === "single" ? (
-                      <tr key={row.doc.id} className="hover:bg-slate-50">
-                        <td className="w-0 max-w-xs px-4 py-1.5 text-center">
-                          <span
-                            className="block truncate whitespace-nowrap text-sm text-slate-800"
-                            title={row.doc.originalName}
-                          >
-                            {row.doc.originalName}
-                          </span>
-                        </td>
-                        <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap text-center">
-                          {formatUploadedAt(row.doc.createdAt)}
-                        </td>
-                        <td className="px-4 py-1.5 text-xs text-slate-600 whitespace-nowrap text-center">
-                          {row.doc.mimeType}
-                        </td>
-                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
-                          {row.doc.totalRecipients}
-                        </td>
-                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
-                          {row.doc.readCount}
-                        </td>
-                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
-                          {row.doc.acknowledgedCount}
-                        </td>
-                        <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
-                          {row.doc.pendingAcknowledgmentCount}
-                        </td>
-                        <td className="px-4 py-1.5 whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
-                            <ViewIconButton
-                              onClick={() => void handleOpen(row.doc)}
-                              title={`Ver ${row.doc.originalName}`}
-                            />
-                            <DeleteIconButton
-                              onClick={() => void handleDelete(row.doc)}
-                              title="Eliminar documento"
-                            />
-                          </div>
-                        </td>
-                      </tr>
+                      <Fragment key={row.doc.id}>
+                        <tr className="hover:bg-slate-50">
+                          <td className="w-0 max-w-xs px-4 py-1.5 text-center">
+                            <span
+                              className="block truncate whitespace-nowrap text-sm text-slate-800"
+                              title={row.doc.originalName}
+                            >
+                              {row.doc.originalName}
+                            </span>
+                          </td>
+                          <td className="px-4 py-1.5 text-sm text-slate-700 whitespace-nowrap text-center">
+                            {formatUploadedAt(row.doc.createdAt)}
+                          </td>
+                          <td className="px-4 py-1.5 text-xs text-slate-600 whitespace-nowrap text-center">
+                            {row.doc.mimeType}
+                          </td>
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.doc.totalRecipients}
+                          </td>
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.doc.readCount}
+                          </td>
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.doc.acknowledgedCount}
+                          </td>
+                          <td className="px-4 py-1.5 text-xs text-slate-700 text-center whitespace-nowrap">
+                            {row.doc.pendingAcknowledgmentCount}
+                          </td>
+                          <td className="px-4 py-1.5 whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleEvidenceToggle(row.doc.id)}
+                                title={
+                                  evidenceDocId === row.doc.id
+                                    ? "Ocultar entregas"
+                                    : "Ver entregas por trabajador"
+                                }
+                                aria-expanded={evidenceDocId === row.doc.id}
+                                className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 ${
+                                  evidenceDocId === row.doc.id
+                                    ? "border-blue-200 bg-blue-50 text-blue-700"
+                                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                }`}
+                              >
+                                👥
+                              </button>
+                              <ViewIconButton
+                                onClick={() => void handleOpen(row.doc)}
+                                title={`Ver ${row.doc.originalName}`}
+                              />
+                              <DeleteIconButton
+                                onClick={() => void handleDelete(row.doc)}
+                                title="Eliminar documento"
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                        {evidenceDocId === row.doc.id ? (
+                          <tr>
+                            <td colSpan={8} className="px-4 pb-3 pt-0 bg-slate-50/80">
+                              <DocumentEvidencePanel
+                                filter={evidenceFilter}
+                                onFilterChange={handleEvidenceFilterChange}
+                                deliveries={evidenceDeliveries}
+                                loading={evidenceLoading}
+                              />
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
                     ) : (
                       <Fragment key={row.uploadBatchId}>
                         <tr className="hover:bg-slate-50">

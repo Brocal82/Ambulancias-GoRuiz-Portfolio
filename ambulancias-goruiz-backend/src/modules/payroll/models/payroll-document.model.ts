@@ -41,6 +41,14 @@ export interface IPayrollDocument extends Document {
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+
+  // ── P1.3: Open evidence (compliance hardening) ────────────────────────────
+  /** Timestamp of the worker's first successful authenticated file access. Set once, never updated. */
+  firstOpenedAt: Date | null;
+  /** Timestamp of the most recent successful authenticated file access. Updated on every access. */
+  lastOpenedAt: Date | null;
+  /** Total count of successful authenticated file accesses by the assigned worker. */
+  openCount: number;
 }
 
 const PayrollDocumentSchema = new Schema<IPayrollDocument>(
@@ -105,6 +113,23 @@ const PayrollDocumentSchema = new Schema<IPayrollDocument>(
       required: false,
       default: null,
       index: true,
+    },
+
+    // ── P1.3: Open evidence ───────────────────────────────────────────────────
+    firstOpenedAt: {
+      type: Date,
+      required: false,
+      default: null,
+    },
+    lastOpenedAt: {
+      type: Date,
+      required: false,
+      default: null,
+    },
+    openCount: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   { timestamps: true },

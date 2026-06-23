@@ -36,6 +36,7 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
 import { authenticateToken } from "./middlewares/authMiddleware";
 import { canAccessFile } from "./utils/fileOwnership";
+import { recordPayrollDocumentOpenForWorker } from "./modules/payroll/services/payroll-open-evidence.service";
 import {
   resolveUploadFilePath,
   validateSecureUploadFilename,
@@ -240,6 +241,23 @@ app.get("/api/files/:filename", authenticateToken, async (req, res) => {
     resourceType: "file",
     resourceId: filename,
   });
+
+  // P1.3: Record payroll open evidence for worker access.
+  // Fire-and-forget: does not delay the file response.
+  // Admins viewing payroll files are excluded (only worker opens count).
+  // Scoped by companyId + workerId — no cross-tenant access possible.
+  if (
+    req.userRole === "worker" &&
+    req.companyId &&
+    mongoose.Types.ObjectId.isValid(req.companyId)
+  ) {
+    void recordPayrollDocumentOpenForWorker(
+      filename,
+      req.userId as string,
+      req.companyId,
+    ).catch(() => undefined);
+  }
+
   res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) {
       emitAuditLog(AUDIT_EVENT.FILE_ACCESS_DENIED, "error", {
