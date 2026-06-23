@@ -7,6 +7,11 @@ import { emitWorkdaySummariesChanged } from "../modules/workday/utils/workdayEve
 import { emitMechanicsIssuesChanged } from "../modules/mechanics/utils/mechanicsEvents";
 import { dispatchPraemienManualPendingChanged } from "../modules/praemien/utils/praemienManualPendingEvents";
 import { emitAdminDashboardCountsRefresh } from "../modules/admin-dashboard/utils/adminDashboardCountsEvents";
+import {
+  emitAuthAccountChanged,
+  emitAuthCompanyChanged,
+  emitAuthModulesChanged,
+} from "./authSessionEvents";
 import { WS_EVENTS, type WsFrame } from "./wsEvents";
 
 /**
@@ -45,6 +50,15 @@ export function dispatchWebSocketEvent(frame: WsFrame): void {
       return;
     case WS_EVENTS.ADMIN_COUNTS_CHANGED:
       emitAdminDashboardCountsRefresh();
+      return;
+    case WS_EVENTS.MODULES_CHANGED:
+      emitAuthModulesChanged();
+      return;
+    case WS_EVENTS.COMPANY_CHANGED:
+      emitAuthCompanyChanged();
+      return;
+    case WS_EVENTS.ACCOUNT_CHANGED:
+      emitAuthAccountChanged();
       return;
     default:
       return;

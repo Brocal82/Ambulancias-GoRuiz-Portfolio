@@ -18,5 +18,8 @@ export {
   voidEmitMechanicsChanged,
   voidEmitPraemienAdminSideEffects,
   voidEmitPraemienWorkerRefresh,
+  voidEmitCompanyChanged,
+  voidEmitModulesChanged,
+  voidEmitAccountChanged,
 } from "./utils/ws-notify";
 export { notifyUsers, setupWebSocketServer } from "./ws-manager";

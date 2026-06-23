@@ -1,5 +1,5 @@
 // src/context/AuthProvider.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../modules/users";
@@ -7,6 +7,11 @@ import type { Company } from "../modules/companies/domain/types";
 import { getTokenExpiration } from "../utils/jwtUtils";
 import { toastT } from "../utils/toast";
 import axios from "../api/axios";
+import {
+  subscribeAuthAccountChanged,
+  subscribeAuthCompanyChanged,
+  subscribeAuthModulesChanged,
+} from "../utils/authSessionEvents";
 
 interface Props {
   children: ReactNode;
@@ -41,6 +46,16 @@ export const AuthProvider = ({ children }: Props) => {
 
   // ✅ Estado clave
   const [isAuthReady, setIsAuthReady] = useState(false);
+
+  const tokenRef = useRef<string | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  const roleRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    tokenRef.current = token;
+    userIdRef.current = userId;
+    roleRef.current = role;
+  }, [token, userId, role]);
 
   /**
    * Inicialización: leer sessionStorage rápido
@@ -122,9 +137,12 @@ export const AuthProvider = ({ children }: Props) => {
   /**
    * Refrescar usuario sin bloquear la app
    */
-  const refreshUser = async (id: string, _tkn: string) => {
+  const refreshUser = useCallback(async (id?: string, _tkn?: string) => {
+    const targetId = id ?? userIdRef.current;
+    if (!targetId) return;
+
     try {
-      const res = await axios.get<User>(`/users/${id}`);
+      const res = await axios.get<User>(`/users/${targetId}`);
 
       const freshUser: User = res.data;
       setUser(freshUser);
@@ -136,7 +154,7 @@ export const AuthProvider = ({ children }: Props) => {
         "response" in error &&
         (error as { response?: { status?: number } }).response?.status;
 
-      if (status === 401 || status === 403) {
+      if (status === 401 || status === 403 || status === 404) {
         console.error("❌ Error al refrescar usuario:", error);
         setToken(null);
         setUserId(null);
@@ -148,14 +166,19 @@ export const AuthProvider = ({ children }: Props) => {
 
       console.error("❌ Error al refrescar usuario (sesión conservada):", error);
     }
-  };
+  }, []);
 
   /**
    * Refresco de enabledModules desde /api/companies/me.
    * Llamado en background; nunca bloquea el render ni isAuthReady.
    * Superadmin no tiene companyId → 403 esperado → se ignora silenciosamente.
    */
-  const refreshModules = async (_tkn: string) => {
+  const refreshModules = useCallback(async (_tkn?: string): Promise<"ok" | "unauthorized"> => {
+    if (roleRef.current === "superadmin") {
+      setCompanyPraemienConfigReady(true);
+      return "ok";
+    }
+
     try {
       const res = await axios.get<Company>("/companies/me");
       const modules: string[] = Array.isArray(res.data.enabledModules)
@@ -181,13 +204,22 @@ export const AuthProvider = ({ children }: Props) => {
         setPraemienModeEffectiveFrom(null);
         sessionStorage.removeItem("companyPraemienEffectiveFrom");
       }
-    } catch {
-      // Superadmin gets 403 here — expected. Network errors are silent.
-      // enabledModules stays at its current value (null or cached).
+      return "ok";
+    } catch (error: unknown) {
+      const status =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        (error as { response?: { status?: number } }).response?.status;
+
+      if (status === 401 || status === 403 || status === 404) {
+        return "unauthorized";
+      }
+      return "ok";
     } finally {
       setCompanyPraemienConfigReady(true);
     }
-  };
+  }, []);
 
   /**
    * Aviso antes de que expire el token
@@ -266,7 +298,7 @@ export const AuthProvider = ({ children }: Props) => {
   /**
    * Logout
    */
-  const logout = () => {
+  const logout = useCallback(() => {
     setToken(null);
     setUserId(null);
     setRole(null);
@@ -278,7 +310,42 @@ export const AuthProvider = ({ children }: Props) => {
 
     sessionStorage.clear();
     window.location.href = "/";
-  };
+  }, []);
+
+  /**
+   * Realtime session sync via websocket (modules/company/account changed).
+   * Window-focus refresh remains as HTTP fallback.
+   */
+  useEffect(() => {
+    if (!token) return;
+
+    const handleModulesChanged = () => {
+      if (roleRef.current === "superadmin") return;
+      void refreshModules();
+    };
+
+    const handleCompanyChanged = async () => {
+      if (roleRef.current === "superadmin") return;
+      const result = await refreshModules();
+      if (result === "unauthorized") {
+        logout();
+      }
+    };
+
+    const handleAccountChanged = () => {
+      void refreshUser();
+    };
+
+    const unsubModules = subscribeAuthModulesChanged(handleModulesChanged);
+    const unsubCompany = subscribeAuthCompanyChanged(handleCompanyChanged);
+    const unsubAccount = subscribeAuthAccountChanged(handleAccountChanged);
+
+    return () => {
+      unsubModules();
+      unsubCompany();
+      unsubAccount();
+    };
+  }, [token, refreshModules, refreshUser, logout]);
 
   return (
     <AuthContext.Provider
@@ -294,6 +361,10 @@ export const AuthProvider = ({ children }: Props) => {
         isAuthReady,
         login,
         logout,
+        refreshModules: async () => {
+          await refreshModules();
+        },
+        refreshUser: () => refreshUser(),
       }}
     >
       {children}

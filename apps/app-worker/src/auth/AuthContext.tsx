@@ -37,6 +37,7 @@ type AuthContextValue = {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshCompanyModules: () => Promise<"ok" | "unauthorized">;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -60,16 +61,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return "none";
   };
 
-  const loadCompanyModules = async (authToken?: string) => {
+  const loadCompanyModules = useCallback(async (authToken?: string): Promise<"ok" | "unauthorized"> => {
     try {
       const modules = await getMyCompanyModules(authToken);
       setEnabledModules(modules);
       setScheduleSource(resolveScheduleSource(modules));
-    } catch (_error) {
+      return "ok";
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403 || error.status === 404)
+      ) {
+        return "unauthorized";
+      }
       setEnabledModules([]);
       setScheduleSource("none");
+      return "ok";
     }
-  };
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -86,14 +95,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthError(undefined);
   }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (!user) return;
-    const freshUser = await getUserById(user._id);
-    setUser(freshUser);
-    if (token) {
-      await saveSession(token, JSON.stringify(freshUser));
+    try {
+      const freshUser = await getUserById(user._id);
+      setUser(freshUser);
+      if (token) {
+        await saveSession(token, JSON.stringify(freshUser));
+      }
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403 || error.status === 404)
+      ) {
+        await logout();
+      }
     }
-  };
+  }, [user, token, logout]);
+
+  const refreshCompanyModules = useCallback(async () => {
+    return loadCompanyModules(tokenRef.current ?? undefined);
+  }, [loadCompanyModules]);
 
   const login = async (credentials: LoginCredentials) => {
     setAuthError(undefined);
@@ -171,8 +193,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       refreshProfile,
+      refreshCompanyModules,
     }),
-    [isHydrating, token, user, enabledModules, scheduleSource, authError],
+    [isHydrating, token, user, enabledModules, scheduleSource, authError, refreshProfile, refreshCompanyModules],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

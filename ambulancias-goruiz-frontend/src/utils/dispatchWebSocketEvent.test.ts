@@ -9,6 +9,17 @@ import { emitSickLeavesChanged } from "../modules/sick/utils/sickEvents";
 import { emitAppointmentsChanged } from "../modules/appointments/utils/appointmentEvents";
 import { emitMechanicsIssuesChanged } from "../modules/mechanics/utils/mechanicsEvents";
 import { dispatchPraemienManualPendingChanged } from "../modules/praemien/utils/praemienManualPendingEvents";
+import {
+  emitAuthAccountChanged,
+  emitAuthCompanyChanged,
+  emitAuthModulesChanged,
+} from "./authSessionEvents";
+
+vi.mock("./authSessionEvents", () => ({
+  emitAuthModulesChanged: vi.fn(),
+  emitAuthCompanyChanged: vi.fn(),
+  emitAuthAccountChanged: vi.fn(),
+}));
 
 vi.mock("../modules/diensts/utils/dienstEvents", () => ({
   emitDienstsChanged: vi.fn(),
@@ -86,11 +97,23 @@ describe("dispatchWebSocketEvent", () => {
     expect(dispatchPraemienManualPendingChanged).toHaveBeenCalledTimes(1);
   });
 
+  it("maps session sync events to auth refresh emitters", () => {
+    dispatchWebSocketEvent({ event: WS_EVENTS.MODULES_CHANGED });
+    dispatchWebSocketEvent({ event: WS_EVENTS.COMPANY_CHANGED });
+    dispatchWebSocketEvent({ event: WS_EVENTS.ACCOUNT_CHANGED });
+    expect(emitAuthModulesChanged).toHaveBeenCalledTimes(1);
+    expect(emitAuthCompanyChanged).toHaveBeenCalledTimes(1);
+    expect(emitAuthAccountChanged).toHaveBeenCalledTimes(1);
+  });
+
   it("ignores unknown events", () => {
     dispatchWebSocketEvent({ event: "unknown_event" });
     expect(emitDienstsChanged).not.toHaveBeenCalled();
     expect(emitWorkdaySummariesChanged).not.toHaveBeenCalled();
     expect(emitAdminDashboardCountsRefresh).not.toHaveBeenCalled();
     expect(dispatchPraemienManualPendingChanged).not.toHaveBeenCalled();
+    expect(emitAuthModulesChanged).not.toHaveBeenCalled();
+    expect(emitAuthCompanyChanged).not.toHaveBeenCalled();
+    expect(emitAuthAccountChanged).not.toHaveBeenCalled();
   });
 });

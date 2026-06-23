@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { env } from "../../../config/env";
+import Company from "../../companies/models/company.model";
 import User from "../../users/models/user.model";
 import UserSessionState from "../../users/models/user-session-state.model";
 
@@ -28,9 +29,24 @@ export async function authenticateWsToken(token: string): Promise<WsAuthResult> 
       return { ok: false, reason: "No userId" };
     }
 
-    const userDoc = await User.findById(userId).select("isActive").lean();
+    const userDoc = await User.findById(userId)
+      .select("isActive companyId role")
+      .lean();
     if (!userDoc || userDoc.isActive !== true) {
       return { ok: false, reason: "User inactive" };
+    }
+
+    if (userDoc.role !== "superadmin" && userDoc.companyId) {
+      const company = await Company.findOne({
+        _id: userDoc.companyId,
+        isActive: true,
+        $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+      })
+        .select("_id")
+        .lean();
+      if (!company) {
+        return { ok: false, reason: "Company inactive" };
+      }
     }
 
     const sessionState = await UserSessionState.findOne({ userId })
