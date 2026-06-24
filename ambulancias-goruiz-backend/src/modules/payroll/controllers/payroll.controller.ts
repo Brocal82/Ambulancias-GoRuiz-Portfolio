@@ -11,6 +11,7 @@ import {
   voidEmitPayrollChangedToWorkers,
   voidEmitPayrollChangedToAdmins,
 } from "../../notifications/utils/ws-notify";
+import { getPayrollReadinessForCompany } from "../services/payroll-readiness.service";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Duplicate detection helper (Phase 8a)
@@ -1261,5 +1262,35 @@ export async function invalidatePayrollDocument(
   } catch (err) {
     console.error("[payroll] invalidatePayrollDocument error:", err);
     res.status(500).json({ message: "Error al invalidar el documento" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/payroll/readiness
+// Admin only. Phase 1 — visibility only (no validation or enforcement).
+// Returns summary counters for payroll identity readiness in the admin's company.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPayrollReadiness(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const companyResult = requireCompanyForAdmin(req);
+    if (!companyResult.ok) {
+      res
+        .status(companyResult.statusCode)
+        .json({ message: companyResult.message });
+      return;
+    }
+
+    const summary = await getPayrollReadinessForCompany(
+      companyResult.companyId,
+    );
+    res.status(200).json(summary);
+  } catch (err) {
+    console.error("[payroll] getPayrollReadiness error:", err);
+    res
+      .status(500)
+      .json({ message: "Error al obtener el estado de preparación de nóminas" });
   }
 }

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useModules } from "../../../hooks/useModules";
 import { MODULE_KEYS } from "../../../constants/modules";
+import PayrollReadinessPanel from "../components/PayrollReadinessPanel";
 
 const AdminPayrollModuleHubPage = () => {
   const baseCard =
@@ -14,6 +15,10 @@ const AdminPayrollModuleHubPage = () => {
         <h1 className="text-2xl font-bold text-center">
           Nóminas y documentos
         </h1>
+      </div>
+
+      <div className="max-w-5xl mx-auto mb-6">
+        <PayrollReadinessPanel />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto">

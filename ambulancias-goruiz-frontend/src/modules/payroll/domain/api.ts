@@ -9,6 +9,7 @@ import type {
   BatchUploadResponse,
   CoverageCheckResponse,
   CoverageYearSummaryResponse,
+  PayrollReadinessResponse,
 } from "./types";
 
 /** Admin: list all payroll documents scoped to their company. */
@@ -94,6 +95,12 @@ export const getPayrollCoverageYearSummary = async (
       params: { year },
     },
   );
+  return data;
+};
+
+/** Admin: payroll identity readiness summary (Phase 1 — visibility only). */
+export const getPayrollReadiness = async (): Promise<PayrollReadinessResponse> => {
+  const { data } = await api.get<PayrollReadinessResponse>("/payroll/readiness");
   return data;
 };
 

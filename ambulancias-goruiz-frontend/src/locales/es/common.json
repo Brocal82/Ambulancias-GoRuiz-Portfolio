@@ -1266,6 +1266,22 @@
                 "noData": "No hay datos para la prämie actual."
             }
         },
+        "payroll": {
+            "readiness": {
+                "title": "Preparación de nóminas",
+                "loading": "Cargando preparación de nóminas…",
+                "loadError": "No se pudo cargar la preparación de nóminas.",
+                "status": {
+                    "READY": "LISTO",
+                    "WARNING": "AVISO"
+                },
+                "metrics": {
+                    "payrollWorkers": "Trabajadores de nómina:",
+                    "missingEmployeeNumbers": "Números de empleado faltantes:",
+                    "duplicateEmployeeNumbers": "Números de empleado duplicados:"
+                }
+            }
+        },
         "mechanics": {
             "navToAmbulances": "Gestionar ambulancias",
             "navToChiefHome": "Volver al panel del jefe",
