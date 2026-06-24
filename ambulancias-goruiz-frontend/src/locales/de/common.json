@@ -1261,6 +1261,22 @@
                 "noData": "Keine Daten für die aktuelle Prämie."
             }
         },
+        "payroll": {
+            "readiness": {
+                "title": "Lohnabrechnungs-Bereitschaft",
+                "loading": "Lohnabrechnungs-Bereitschaft wird geladen…",
+                "loadError": "Lohnabrechnungs-Bereitschaft konnte nicht geladen werden.",
+                "status": {
+                    "READY": "BEREIT",
+                    "WARNING": "WARNUNG"
+                },
+                "metrics": {
+                    "payrollWorkers": "Lohnabrechnungs-Mitarbeiter:",
+                    "missingEmployeeNumbers": "Fehlende Mitarbeiternummern:",
+                    "duplicateEmployeeNumbers": "Doppelte Mitarbeiternummern:"
+                }
+            }
+        },
         "mechanics": {
             "navToAmbulances": "Rettungswagen verwalten",
             "navToChiefHome": "Zurück zum Leitenden-Panel",

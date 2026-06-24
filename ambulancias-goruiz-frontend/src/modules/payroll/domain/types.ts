@@ -172,6 +172,16 @@ export interface CoverageYearSummaryResponse {
   months: CoverageYearMonthItem[];
 }
 
+/** Response from GET /api/payroll/readiness (Phase 1 — visibility only). */
+export type PayrollReadinessStatus = "READY" | "WARNING";
+
+export interface PayrollReadinessResponse {
+  payrollWorkers: number;
+  missingEmployeeNumbers: number;
+  duplicateEmployeeNumbers: number;
+  readiness: PayrollReadinessStatus;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**

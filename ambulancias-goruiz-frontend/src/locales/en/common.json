@@ -1266,6 +1266,22 @@
                 "noData": "No data for the current prämie."
             }
         },
+        "payroll": {
+            "readiness": {
+                "title": "Payroll Readiness",
+                "loading": "Loading payroll readiness…",
+                "loadError": "Could not load payroll readiness.",
+                "status": {
+                    "READY": "READY",
+                    "WARNING": "WARNING"
+                },
+                "metrics": {
+                    "payrollWorkers": "Payroll Workers:",
+                    "missingEmployeeNumbers": "Missing Employee Numbers:",
+                    "duplicateEmployeeNumbers": "Duplicate Employee Numbers:"
+                }
+            }
+        },
         "mechanics": {
             "navToAmbulances": "Manage ambulances",
             "navToChiefHome": "Back to chief dashboard",

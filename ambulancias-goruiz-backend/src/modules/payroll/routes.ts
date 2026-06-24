@@ -15,6 +15,7 @@ import {
   listMyPayrollDocuments,
   checkPayrollCoverage,
   getPayrollCoverageYearSummary,
+  getPayrollReadiness,
 } from "./controllers/payroll.controller";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
 
@@ -79,6 +80,16 @@ router.get(
   requireModule(MODULE_KEYS.PAYROLL),
   authorizeRole("admin"),
   getPayrollCoverageYearSummary,
+);
+
+// Admin: payroll identity readiness summary (Phase 1 — visibility only)
+// GET /api/payroll/readiness
+router.get(
+  "/readiness",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PAYROLL),
+  authorizeRole("admin"),
+  getPayrollReadiness,
 );
 
 router.get(

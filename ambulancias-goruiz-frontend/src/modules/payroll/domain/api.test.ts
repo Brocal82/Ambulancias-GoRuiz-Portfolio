@@ -9,6 +9,7 @@ import {
   listMyPayrollDocuments,
   checkPayrollCoverage,
   getPayrollCoverageYearSummary,
+  getPayrollReadiness,
 } from "./api";
 
 vi.mock("../../../api/axios", () => ({
@@ -83,5 +84,11 @@ describe("payroll domain api", () => {
     expect(api.get).toHaveBeenCalledWith("/payroll/coverage/year", {
       params: { year: 2025 },
     });
+  });
+
+  it("getPayrollReadiness usa GET /payroll/readiness", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: {} });
+    await getPayrollReadiness();
+    expect(api.get).toHaveBeenCalledWith("/payroll/readiness");
   });
 });
