@@ -33,3 +33,12 @@ export {
   sanitizeRecoveryMetadata,
   sanitizeRecoverySnapshot,
 } from "./utils/sanitize-recovery-snapshot.helper";
+export { detectAbsenceInconsistencies } from "./services/absence-cleanup-detection.service";
+export { repairAbsenceInconsistency } from "./services/absence-cleanup-repair.service";
+export type {
+  AbsenceInconsistency,
+  AbsenceType,
+  DetectAbsenceInconsistenciesInput,
+  RepairAbsenceInconsistencyInput,
+  RepairResult,
+} from "./types/absence-cleanup.types";
