@@ -108,18 +108,22 @@ function verifyWorkdaySummaryTenant(
   summaryCompanyId: mongoose.Types.ObjectId | null | undefined,
   adminCompanyId: string,
 ): void {
-  if (summaryCompanyId != null) {
-    if (String(summaryCompanyId) !== adminCompanyId) {
-      throw new OperationalRecoveryError(
-        "WorkdaySummary does not belong to your company",
-        403,
-      );
-    }
-    return;
+  if (summaryCompanyId == null) {
+    // Reject legacy null-companyId summaries — no safe tenant boundary can be
+    // established without cross-checking the driver/medic user records.
+    // TODO Phase 3.x: relax by verifying driver.companyId === adminCompanyId for
+    // legacy data access if a migration path is required.
+    throw new OperationalRecoveryError(
+      "WorkdaySummary has no company scope (legacy record). Cannot be corrected via this API.",
+      403,
+    );
   }
-  // Legacy null-companyId summary: allow with a scoped warning.
-  // TODO Phase 3.x: add driver/medic companyId cross-check for stricter isolation
-  // of legacy null-companyId summaries.
+  if (String(summaryCompanyId) !== adminCompanyId) {
+    throw new OperationalRecoveryError(
+      "WorkdaySummary does not belong to your company",
+      403,
+    );
+  }
 }
 
 // ── Snapshot helpers ─────────────────────────────────────────────────────────

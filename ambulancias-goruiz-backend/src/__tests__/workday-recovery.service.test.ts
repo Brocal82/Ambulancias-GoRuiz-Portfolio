@@ -96,8 +96,10 @@ describe("createWorkdaySummaryCorrection", () => {
   });
 
   afterEach(async () => {
-    await WorkdaySummary.collection.deleteMany({});
-    await WorkdaySummaryCorrection.collection.deleteMany({});
+    // Scoped cleanup: only delete this suite's fixture docs (date "2026-06-01")
+    // to avoid interfering with concurrent HTTP test workers sharing the same DB.
+    await WorkdaySummary.deleteMany({ date: "2026-06-01" });
+    await WorkdaySummaryCorrection.deleteMany({ date: "2026-06-01" });
     await OperationalRecoveryEvent.collection.deleteMany({});
   });
 
@@ -516,8 +518,8 @@ describe("getEffectiveWorkdaySummary", () => {
   });
 
   afterEach(async () => {
-    await WorkdaySummary.collection.deleteMany({});
-    await WorkdaySummaryCorrection.collection.deleteMany({});
+    await WorkdaySummary.deleteMany({ date: "2026-06-01" });
+    await WorkdaySummaryCorrection.deleteMany({ date: "2026-06-01" });
     await OperationalRecoveryEvent.collection.deleteMany({});
   });
 
