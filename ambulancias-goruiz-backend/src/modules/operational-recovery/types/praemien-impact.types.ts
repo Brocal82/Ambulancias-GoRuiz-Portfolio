@@ -35,6 +35,17 @@ export interface CreatePraemienImpactResolutionResult {
   alreadyExisted: boolean;
 }
 
+// ── listPraemienImpactResolutions ────────────────────────────────────────────
+
+export interface ListPraemienImpactResolutionsInput {
+  companyId: string;
+  /** Filter by status. Defaults to "pending" when omitted. */
+  status?: string;
+  workerId?: string;
+  year?: number;
+  month?: number;
+}
+
 // ── getActivePraemienImpact ───────────────────────────────────────────────────
 
 export interface GetActivePraemienImpactInput {

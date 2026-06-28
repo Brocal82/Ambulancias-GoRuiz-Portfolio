@@ -76,6 +76,8 @@ export interface IPraemienImpactResolution extends Document {
   resolvedBy?: Types.ObjectId;
   /** When the terminal transition occurred. */
   resolvedAt?: Date;
+  /** Note provided by the admin when transitioning to a terminal status. */
+  note?: string;
   /** Linked OperationalRecoveryEvent for this resolution lifecycle event. */
   recoveryEventId?: Types.ObjectId;
   createdAt: Date;
@@ -132,6 +134,7 @@ const praemienImpactResolutionSchema = new Schema<IPraemienImpactResolution>(
       default: undefined,
     },
     resolvedAt: { type: Date, default: undefined },
+    note: { type: String, trim: true, default: undefined },
     recoveryEventId: {
       type: Schema.Types.ObjectId,
       ref: "OperationalRecoveryEvent",

@@ -79,6 +79,7 @@ export type {
 export {
   createPraemienImpactResolution,
   getActivePraemienImpact,
+  listPraemienImpactResolutions,
   resolvePraemienImpact,
   parseDateToYearMonth,
 } from "./services/praemien-impact-resolution.service";
@@ -86,6 +87,7 @@ export type {
   CreatePraemienImpactResolutionInput,
   CreatePraemienImpactResolutionResult,
   GetActivePraemienImpactInput,
+  ListPraemienImpactResolutionsInput,
   ResolvePraemienImpactInput,
   ResolvePraemienImpactResult,
   ResolvableStatus,

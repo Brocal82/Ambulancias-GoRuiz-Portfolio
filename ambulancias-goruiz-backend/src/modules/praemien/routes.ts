@@ -26,10 +26,18 @@ import {
   adminPostManualDailyReject,
   adminPostManualDailyReopen,
 } from "./controllers/praemien-manual-daily-admin.controller";
+import {
+  listImpactResolutionsHandler,
+  getOneImpactResolutionHandler,
+  patchImpactResolutionHandler,
+} from "./controllers/praemien-impact-resolution.controller";
 import { authenticateToken } from "../../middlewares/authMiddleware";
 import { authorizeRole } from "../../middlewares/roleMiddleware";
 import { requireModule } from "../../middlewares/requireModule";
+import { validateObjectId } from "../../middlewares/validateObjectId";
+import { validateBody } from "../../middlewares/validateBody";
 import { MODULE_KEYS } from "../companies/constants/modules.constants";
+import { patchImpactResolutionBodySchema } from "./schemas/praemien-impact-resolution.schema";
 
 const router = Router();
 
@@ -167,6 +175,35 @@ router.post(
   requireModule(MODULE_KEYS.PRAEMIEN),
   authorizeRole("admin"),
   adminPostManualDailyReopen,
+);
+
+// ── Phase 3.4.2: Praemien Impact Resolution review (admin only) ───────────────
+
+router.get(
+  "/impact-resolutions",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  listImpactResolutionsHandler,
+);
+
+router.get(
+  "/impact-resolutions/:id",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  validateObjectId("id"),
+  getOneImpactResolutionHandler,
+);
+
+router.patch(
+  "/impact-resolutions/:id",
+  authenticateToken,
+  requireModule(MODULE_KEYS.PRAEMIEN),
+  authorizeRole("admin"),
+  validateObjectId("id"),
+  validateBody(patchImpactResolutionBodySchema),
+  patchImpactResolutionHandler,
 );
 
 export default router;

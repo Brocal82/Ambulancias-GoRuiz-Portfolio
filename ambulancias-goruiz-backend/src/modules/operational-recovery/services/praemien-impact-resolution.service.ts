@@ -34,6 +34,7 @@ import type {
   CreatePraemienImpactResolutionInput,
   CreatePraemienImpactResolutionResult,
   GetActivePraemienImpactInput,
+  ListPraemienImpactResolutionsInput,
   ResolvePraemienImpactInput,
   ResolvePraemienImpactResult,
 } from "../types/praemien-impact.types";
@@ -271,6 +272,38 @@ export async function createPraemienImpactResolution(
 }
 
 /**
+ * Lists PraemienImpactResolutions for a company with optional filters.
+ *
+ * Default status filter: "pending" (open month resolutions awaiting review).
+ * All results are strictly scoped by the admin's companyId.
+ */
+export async function listPraemienImpactResolutions(
+  input: ListPraemienImpactResolutionsInput,
+): Promise<IPraemienImpactResolution[]> {
+  const companyId = requireValidObjectId(input.companyId, "companyId");
+
+  const query: Record<string, unknown> = {
+    companyId: new mongoose.Types.ObjectId(companyId),
+    status: input.status ?? PRAEMIEN_RESOLUTION_STATUS.PENDING,
+  };
+
+  if (input.workerId) {
+    const workerId = requireValidObjectId(input.workerId, "workerId");
+    query.workerId = new mongoose.Types.ObjectId(workerId);
+  }
+
+  if (input.year !== undefined) {
+    query.year = Number(input.year);
+  }
+
+  if (input.month !== undefined) {
+    query.month = Number(input.month);
+  }
+
+  return PraemienImpactResolution.find(query).sort({ createdAt: -1 });
+}
+
+/**
  * Returns active (PENDING) PraemienImpactResolutions for a correction or summary.
  *
  * All results are scoped by companyId.
@@ -359,15 +392,18 @@ export async function resolvePraemienImpact(
   const now = new Date();
 
   // ── 5. Apply transition ───────────────────────────────────────────────────
+  const updateFields: Record<string, unknown> = {
+    status: input.newStatus,
+    resolvedBy: new mongoose.Types.ObjectId(actorUserId),
+    resolvedAt: now,
+  };
+  if (input.note) {
+    updateFields.note = input.note.trim();
+  }
+
   await PraemienImpactResolution.updateOne(
     { _id: resolution._id },
-    {
-      $set: {
-        status: input.newStatus,
-        resolvedBy: new mongoose.Types.ObjectId(actorUserId),
-        resolvedAt: now,
-      },
-    },
+    { $set: updateFields },
   );
 
   // ── 6. Determine audit action type ────────────────────────────────────────
