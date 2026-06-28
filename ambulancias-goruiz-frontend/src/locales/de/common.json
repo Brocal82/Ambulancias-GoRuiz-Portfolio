@@ -1259,6 +1259,61 @@
                 "levelPrefix": "Stufe:",
                 "average": "Durchschnitt: {{avg}} Patienten/Tag",
                 "noData": "Keine Daten für die aktuelle Prämie."
+            },
+            "impactResolution": {
+                "panelTitle": "Abgeschlossener Monat — Prämien-Überprüfung",
+                "loading": "Ausstehende Einträge werden geladen...",
+                "loadError": "Ausstehende Überprüfungen konnten nicht geladen werden",
+                "th": {
+                    "worker": "Mitarbeiter",
+                    "month": "Monat",
+                    "original": "Original",
+                    "corrected": "Korrigiert",
+                    "delta": "Delta",
+                    "reason": "Grund",
+                    "status": "Status",
+                    "actions": "Aktionen"
+                },
+                "reviewButton": "Überprüfen",
+                "viewWorkday": "Korrigierten Arbeitstag anzeigen",
+                "noValue": "—",
+                "status": {
+                    "pending": "Ausstehend",
+                    "ignored": "Ignoriert",
+                    "adjusted": "Angepasst",
+                    "blocked": "Blockiert",
+                    "recalculated": "Neuberechnet"
+                },
+                "modal": {
+                    "title": "Prämien-Auswirkung überprüfen",
+                    "worker": "Mitarbeiter",
+                    "month": "Monat",
+                    "original": "Originalwert",
+                    "corrected": "Korrigierter Wert",
+                    "delta": "Delta",
+                    "reason": "Grund",
+                    "currentStatus": "Aktueller Status",
+                    "existingNote": "Vorhandene Notiz",
+                    "newStatus": "Lösung",
+                    "note": "Notiz",
+                    "notePlaceholder": "Beschreiben Sie, wie dies behandelt wurde...",
+                    "noteRequired": "Notiz ist erforderlich",
+                    "save": "Lösung speichern",
+                    "cancel": "Abbrechen",
+                    "saving": "Wird gespeichert...",
+                    "saveError": "Lösung konnte nicht gespeichert werden",
+                    "alreadyResolved": "Dieser Eintrag wurde bereits von einem anderen Administrator gelöst.",
+                    "statusOptions": {
+                        "ignored": "Ignoriert — keine Aktion erforderlich",
+                        "adjusted": "Angepasst — manuell korrigiert",
+                        "blocked": "Blockiert — Zeitraum abgeschlossen"
+                    }
+                },
+                "toast": {
+                    "ignored": "Lösung als ignoriert markiert",
+                    "adjusted": "Lösung als angepasst markiert",
+                    "blocked": "Lösung blockiert"
+                }
             }
         },
         "payroll": {

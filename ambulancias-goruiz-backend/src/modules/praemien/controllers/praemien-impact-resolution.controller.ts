@@ -20,9 +20,20 @@ import {
   OperationalRecoveryError,
 } from "../../operational-recovery";
 import PraemienImpactResolution from "../../operational-recovery/models/praemien-impact-resolution.model";
+import User from "../../users/models/user.model";
 import { voidEmitPraemienAdminSideEffects } from "../../notifications";
 import { toPraemienImpactResolutionDTO } from "../dto/praemien-impact-resolution.dto";
 import type { ResolvableStatus } from "../../operational-recovery/types/praemien-impact.types";
+
+// ── Worker name helpers ───────────────────────────────────────────────────────
+
+async function buildWorkerNameMap(workerIds: string[]): Promise<Map<string, string>> {
+  if (workerIds.length === 0) return new Map();
+  const users = await User.find({ _id: { $in: workerIds } })
+    .select("name lastName")
+    .lean<{ _id: mongoose.Types.ObjectId; name: string; lastName: string }[]>();
+  return new Map(users.map((u) => [String(u._id), `${u.name} ${u.lastName}`]));
+}
 
 // ── Error handling ────────────────────────────────────────────────────────────
 
@@ -65,7 +76,12 @@ export const listImpactResolutionsHandler = async (
       month: req.query.month !== undefined ? Number(req.query.month) : undefined,
     });
 
-    res.status(200).json(resolutions.map(toPraemienImpactResolutionDTO));
+    const uniqueWorkerIds = [...new Set(resolutions.map((r) => String(r.workerId)))];
+    const nameMap = await buildWorkerNameMap(uniqueWorkerIds);
+
+    res.status(200).json(
+      resolutions.map((r) => toPraemienImpactResolutionDTO(r, nameMap.get(String(r.workerId)))),
+    );
   } catch (error) {
     handleRecoveryError(error, res, "[PraemienImpact] GET collection:");
   }
@@ -103,7 +119,10 @@ export const getOneImpactResolutionHandler = async (
       return;
     }
 
-    res.status(200).json(toPraemienImpactResolutionDTO(resolution));
+    const nameMap = await buildWorkerNameMap([String(resolution.workerId)]);
+    res.status(200).json(
+      toPraemienImpactResolutionDTO(resolution, nameMap.get(String(resolution.workerId))),
+    );
   } catch (error) {
     handleRecoveryError(error, res, "[PraemienImpact] GET detail:");
   }
@@ -154,7 +173,10 @@ export const patchImpactResolutionHandler = async (
 
     voidEmitPraemienAdminSideEffects(companyResult.companyId);
 
-    res.status(200).json(toPraemienImpactResolutionDTO(result.resolution));
+    const nameMap = await buildWorkerNameMap([String(result.resolution.workerId)]);
+    res.status(200).json(
+      toPraemienImpactResolutionDTO(result.resolution, nameMap.get(String(result.resolution.workerId))),
+    );
   } catch (error) {
     handleRecoveryError(error, res, "[PraemienImpact] PATCH:");
   }

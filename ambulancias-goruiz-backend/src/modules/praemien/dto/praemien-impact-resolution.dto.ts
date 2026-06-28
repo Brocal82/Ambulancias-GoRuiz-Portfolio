@@ -14,8 +14,10 @@ import type { PraemienResolutionStatus } from "../../operational-recovery/models
 export interface PraemienImpactResolutionDTO {
   id: string;
   status: PraemienResolutionStatus;
-  /** Worker whose praemien may be affected. */
+  /** Worker whose praemien may be affected — ObjectId as string. */
   workerId: string;
+  /** Resolved display name of the worker (name + lastName). */
+  workerName?: string;
   year: number;
   month: number;
   beforeValue: number | undefined;
@@ -37,11 +39,13 @@ export interface PraemienImpactResolutionDTO {
 
 export function toPraemienImpactResolutionDTO(
   doc: IPraemienImpactResolution,
+  workerName?: string,
 ): PraemienImpactResolutionDTO {
   return {
     id: String(doc._id),
     status: doc.status,
     workerId: String(doc.workerId),
+    workerName: workerName ?? undefined,
     year: doc.year,
     month: doc.month,
     beforeValue: doc.beforeValue,

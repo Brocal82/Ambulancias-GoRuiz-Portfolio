@@ -1264,6 +1264,61 @@
                 "levelPrefix": "Level:",
                 "average": "Average: {{avg}} patients/day",
                 "noData": "No data for the current prämie."
+            },
+            "impactResolution": {
+                "panelTitle": "Closed Month Praemien Review",
+                "loading": "Loading pending items...",
+                "loadError": "Failed to load pending reviews",
+                "th": {
+                    "worker": "Worker",
+                    "month": "Month",
+                    "original": "Original",
+                    "corrected": "Corrected",
+                    "delta": "Delta",
+                    "reason": "Reason",
+                    "status": "Status",
+                    "actions": "Actions"
+                },
+                "reviewButton": "Review",
+                "viewWorkday": "View corrected Workday",
+                "noValue": "—",
+                "status": {
+                    "pending": "Pending",
+                    "ignored": "Ignored",
+                    "adjusted": "Adjusted",
+                    "blocked": "Blocked",
+                    "recalculated": "Recalculated"
+                },
+                "modal": {
+                    "title": "Review Praemien Impact",
+                    "worker": "Worker",
+                    "month": "Month",
+                    "original": "Original value",
+                    "corrected": "Corrected value",
+                    "delta": "Delta",
+                    "reason": "Reason",
+                    "currentStatus": "Current status",
+                    "existingNote": "Existing note",
+                    "newStatus": "Resolution",
+                    "note": "Note",
+                    "notePlaceholder": "Describe how this was handled...",
+                    "noteRequired": "Note is required",
+                    "save": "Save resolution",
+                    "cancel": "Cancel",
+                    "saving": "Saving...",
+                    "saveError": "Failed to save resolution",
+                    "alreadyResolved": "This item was already resolved by another admin.",
+                    "statusOptions": {
+                        "ignored": "Ignored — no action needed",
+                        "adjusted": "Adjusted — manually corrected",
+                        "blocked": "Blocked — period is closed"
+                    }
+                },
+                "toast": {
+                    "ignored": "Resolution marked as ignored",
+                    "adjusted": "Resolution marked as adjusted",
+                    "blocked": "Resolution blocked"
+                }
             }
         },
         "payroll": {

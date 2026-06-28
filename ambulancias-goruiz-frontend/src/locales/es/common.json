@@ -1264,6 +1264,61 @@
                 "levelPrefix": "Nivel:",
                 "average": "Media: {{avg}} pacientes/día",
                 "noData": "No hay datos para la prämie actual."
+            },
+            "impactResolution": {
+                "panelTitle": "Revisión de Prämien — Mes Cerrado",
+                "loading": "Cargando elementos pendientes...",
+                "loadError": "Error al cargar revisiones pendientes",
+                "th": {
+                    "worker": "Trabajador",
+                    "month": "Mes",
+                    "original": "Original",
+                    "corrected": "Corregido",
+                    "delta": "Delta",
+                    "reason": "Motivo",
+                    "status": "Estado",
+                    "actions": "Acciones"
+                },
+                "reviewButton": "Revisar",
+                "viewWorkday": "Ver Jornada corregida",
+                "noValue": "—",
+                "status": {
+                    "pending": "Pendiente",
+                    "ignored": "Ignorado",
+                    "adjusted": "Ajustado",
+                    "blocked": "Bloqueado",
+                    "recalculated": "Recalculado"
+                },
+                "modal": {
+                    "title": "Revisar Impacto en Prämien",
+                    "worker": "Trabajador",
+                    "month": "Mes",
+                    "original": "Valor original",
+                    "corrected": "Valor corregido",
+                    "delta": "Delta",
+                    "reason": "Motivo",
+                    "currentStatus": "Estado actual",
+                    "existingNote": "Nota existente",
+                    "newStatus": "Resolución",
+                    "note": "Nota",
+                    "notePlaceholder": "Describe cómo se resolvió...",
+                    "noteRequired": "La nota es obligatoria",
+                    "save": "Guardar resolución",
+                    "cancel": "Cancelar",
+                    "saving": "Guardando...",
+                    "saveError": "Error al guardar la resolución",
+                    "alreadyResolved": "Este elemento ya fue resuelto por otro administrador.",
+                    "statusOptions": {
+                        "ignored": "Ignorado — sin acción necesaria",
+                        "adjusted": "Ajustado — corregido manualmente",
+                        "blocked": "Bloqueado — período cerrado"
+                    }
+                },
+                "toast": {
+                    "ignored": "Resolución marcada como ignorada",
+                    "adjusted": "Resolución marcada como ajustada",
+                    "blocked": "Resolución bloqueada"
+                }
             }
         },
         "payroll": {
