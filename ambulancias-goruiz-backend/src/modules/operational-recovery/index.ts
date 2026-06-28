@@ -64,3 +64,29 @@ export type {
   GetEffectiveWorkdaySummaryInput,
   OriginalWorkdayValues,
 } from "./types/workday-recovery.types";
+
+// Phase 3.4.1 — Praemien Impact Resolution
+export {
+  default as PraemienImpactResolution,
+  PRAEMIEN_RESOLUTION_STATUS,
+  PRAEMIEN_RESOLUTION_STATUSES,
+  PRAEMIEN_RESOLUTION_TERMINAL_STATUSES,
+} from "./models/praemien-impact-resolution.model";
+export type {
+  IPraemienImpactResolution,
+  PraemienResolutionStatus,
+} from "./models/praemien-impact-resolution.model";
+export {
+  createPraemienImpactResolution,
+  getActivePraemienImpact,
+  resolvePraemienImpact,
+  parseDateToYearMonth,
+} from "./services/praemien-impact-resolution.service";
+export type {
+  CreatePraemienImpactResolutionInput,
+  CreatePraemienImpactResolutionResult,
+  GetActivePraemienImpactInput,
+  ResolvePraemienImpactInput,
+  ResolvePraemienImpactResult,
+  ResolvableStatus,
+} from "./types/praemien-impact.types";

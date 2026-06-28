@@ -11,7 +11,8 @@
  *   - Every correction writes an immutable OperationalRecoveryEvent.
  *   - Multi-tenant: every lookup and write is scoped by the admin's companyId.
  *
- * TODO Phase 3.4: propagate praemienImpact to monthly Praemien recalculation.
+ * Phase 3.4.1: createPraemienImpactResolution is called when praemienImpact = "possible".
+ * TODO Phase 3.4.2: propagate recalculated status once MonthlyPraemie recalculation is wired.
  * TODO Phase 3.4: propagate payrollImpact to payroll pipeline when impact != "none".
  */
 import mongoose from "mongoose";
@@ -31,6 +32,7 @@ import {
 } from "../constants/operational-recovery.constants";
 import type { PayrollImpact, PraemienImpact } from "../constants/operational-recovery.constants";
 import { recordRecoveryEvent, OperationalRecoveryError } from "./operational-recovery.service";
+import { createPraemienImpactResolution, parseDateToYearMonth } from "./praemien-impact-resolution.service";
 import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 import type {
   CreateWorkdaySummaryCorrectionInput,
@@ -430,7 +432,34 @@ export async function createWorkdaySummaryCorrection(
     );
   }
 
-  // ── 11. Build effective summary ───────────────────────────────────────────
+  // ── 11. Create PraemienImpactResolution when praemienImpact = "possible" ────
+  // Phase 3.4.1: one resolution per worker. Failures are non-fatal.
+  if (praemienImpact === "possible" && workerIds.length > 0) {
+    const { year, month } = parseDateToYearMonth(summary.date);
+    for (const wid of workerIds) {
+      createPraemienImpactResolution({
+        companyId,
+        workerId: String(wid),
+        year,
+        month,
+        relatedWorkdaySummaryId: workdaySummaryId,
+        relatedWorkdaySummaryCorrectionId: String(correction._id),
+        beforeValue: prevEffectiveValues.totalEffectivePatients,
+        afterValue: newEffectiveValues.totalEffectivePatients,
+        reason: input.correctionReason.trim(),
+        actorUserId,
+        actorRole: input.actorRole,
+      }).catch((err: unknown) => {
+        console.error(
+          "[WorkdayRecovery] Failed to create PraemienImpactResolution for worker",
+          String(wid),
+          err,
+        );
+      });
+    }
+  }
+
+  // ── 12. Build effective summary ───────────────────────────────────────────
   const refreshedCorrection = (await WorkdaySummaryCorrection.findById(
     correction._id,
   )) as IWorkdaySummaryCorrection;
