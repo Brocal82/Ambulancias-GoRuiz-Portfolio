@@ -30,6 +30,7 @@ import excelPlanningRoutes from "./modules/excel-planning/routes";
 import supportAccessRoutes from "./modules/support-access/routes";
 import adminDashboardRoutes from "./modules/admin-dashboard/routes";
 import { notificationsRoutes } from "./modules/notifications";
+import operationalRecoveryRoutes from "./modules/operational-recovery/routes";
 import { openApiRoutes } from "./openapi/docs.routes";
 
 import { errorHandler } from "./middlewares/errorHandler";
@@ -160,6 +161,7 @@ app.use("/api/excel-planning", excelPlanningRoutes);
 app.use("/api/support-access", supportAccessRoutes);
 app.use("/api/admin", adminDashboardRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/operational-recovery", operationalRecoveryRoutes);
 
 app.get("/api/files/:filename", authenticateToken, async (req, res) => {
   const auditContext = buildAuditContextFromRequest(req);

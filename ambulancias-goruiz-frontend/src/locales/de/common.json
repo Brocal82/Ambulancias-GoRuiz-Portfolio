@@ -1728,7 +1728,19 @@
                 "swapWeekNotPermitted": "❌ Tausch nicht möglich: Ein Mitglied kann die Zielrolle nicht übernehmen (unvereinbare Rolle oder abgelaufener P-Schein).",
                 "considerSwap": "⚠️ Der Fahrer hat einen abgelaufenen P-Schein, kann aber als Sanitäter arbeiten. Rollenwechsel (⇅) empfohlen.",
                 "assignOneAria": "Einen Mitarbeiter für die ganze Woche zuweisen",
-                "legendCantDrive": "Darf nicht fahren, P-Schein abgelaufen"
+                "legendCantDrive": "Darf nicht fahren, P-Schein abgelaufen",
+                "operationalHealth": {
+                    "never": "Nicht gescannt",
+                    "outdated": "Scan veraltet",
+                    "healthy": "Kein Befund",
+                    "warning_one": "1 Inkonsistenz",
+                    "warning_other": "{{count}} Inkonsistenzen",
+                    "scan": "Scannen",
+                    "scanning": "Scanne…",
+                    "scanError": "Scan-Fehler. Bitte erneut versuchen.",
+                    "repairError": "Reparaturfehler. Bitte erneut versuchen.",
+                    "repairSuccess": "Reparatur abgeschlossen"
+                }
             },
             "assignTeamModal": {
                 "title": "Team der Woche zuweisen",

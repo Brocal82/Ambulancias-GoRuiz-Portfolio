@@ -62,6 +62,14 @@ import {
   normalizeAmbulanceIdToString,
   toFlexibleFromDienstAssignment,
 } from "../assignments";
+import { OperationalHealthBadge } from "../components/OperationalHealthBadge";
+import type { HealthStatus } from "../components/OperationalHealthBadge";
+import { AbsenceCleanupScanModal } from "../components/AbsenceCleanupScanModal";
+import {
+  scanAbsenceInconsistencies,
+  repairAbsenceInconsistencies,
+} from "../domain/absenceCleanupApi";
+import type { AbsenceInconsistency, RepairItem } from "../domain/absenceCleanupApi";
 
 function shouldShowWeeklyTeamSummary(
   resp: Awaited<ReturnType<typeof assignTeamToWeek>>,
@@ -879,6 +887,15 @@ const AdminPage = () => {
     {},
   );
 
+  // ── Operational Health (Absence Cleanup Monitor) ────────────────────────────
+  const [healthStatus, setHealthStatus] = useState<HealthStatus>("never");
+  const [healthCount, setHealthCount] = useState(0);
+  const [lastScannedAt, setLastScannedAt] = useState<Date | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
+  const [scanModalOpen, setScanModalOpen] = useState(false);
+  const [scanResults, setScanResults] = useState<AbsenceInconsistency[]>([]);
+
   const { token } = useAuth();
   const { hasModule } = useModules();
   const ambulancesModuleOn = hasModule(MODULE_KEYS.AMBULANCES);
@@ -917,19 +934,82 @@ const AdminPage = () => {
   const fetchDienstsRef = useRef(fetchDiensts);
   fetchDienstsRef.current = fetchDiensts;
 
-  useDienstsChanged(() => void fetchDienstsRef.current?.());
+  // Mark health badge as outdated when diensts change externally.
+  useDienstsChanged(() => {
+    void fetchDienstsRef.current?.();
+    setHealthStatus((prev) => (prev === "never" ? "never" : "outdated"));
+  });
 
   useEffect(() => {
     fetchDiensts();
   }, [fetchDiensts]);
 
+  const handleScan = useCallback(async () => {
+    if (!token || isScanning) return;
+    setIsScanning(true);
+    try {
+      const data = await scanAbsenceInconsistencies(token);
+      setScanResults(data.inconsistencies);
+      setLastScannedAt(new Date(data.scannedAt));
+      setHealthCount(data.inconsistencies.length);
+      setHealthStatus(data.inconsistencies.length > 0 ? "warning" : "healthy");
+      setScanModalOpen(true);
+    } catch {
+      toastT.error("Error al escanear. Inténtalo de nuevo.");
+    } finally {
+      setIsScanning(false);
+    }
+  }, [token, isScanning]);
+
+  const handleRepair = useCallback(
+    async (items: RepairItem[]) => {
+      if (!token) return;
+      setIsRepairing(true);
+      try {
+        await repairAbsenceInconsistencies(token, items);
+        toastT.success("Reparación completada");
+        // Refetch diensts
+        await fetchDienstsRef.current?.();
+        emitDienstsChanged();
+        // Re-run scan for updated state
+        const data = await scanAbsenceInconsistencies(token);
+        setScanResults(data.inconsistencies);
+        setLastScannedAt(new Date(data.scannedAt));
+        setHealthCount(data.inconsistencies.length);
+        setHealthStatus(data.inconsistencies.length > 0 ? "warning" : "healthy");
+      } catch {
+        toastT.error("Error al reparar. Inténtalo de nuevo.");
+      } finally {
+        setIsRepairing(false);
+      }
+    },
+    [token],
+  );
+
   const weekStartKeys = getWeekStartsBerlin(3);
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-semibold tracking-tight text-slate-900 text-center mb-4">
-        {t("pages.diensts.adminPage.title")}
-      </h2>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+          {t("pages.diensts.adminPage.title")}
+        </h2>
+        <OperationalHealthBadge
+          status={healthStatus}
+          inconsistencyCount={healthCount}
+          lastScannedAt={lastScannedAt}
+          isScanning={isScanning}
+          onScan={handleScan}
+        />
+      </div>
+
+      <AbsenceCleanupScanModal
+        isOpen={scanModalOpen}
+        onClose={() => setScanModalOpen(false)}
+        inconsistencies={scanResults}
+        isRepairing={isRepairing}
+        onRepair={handleRepair}
+      />
 
       {isInitialLoading ? (
         <div className="mb-6 rounded-xl bg-white ring-1 ring-slate-200 p-4 text-sm text-slate-600">

@@ -1733,7 +1733,19 @@
                 "swapWeekNotPermitted": "❌ No se puede intercambiar: uno de los miembros no puede desempeñar el rol destino (rol no compatible o P-Schein caducado).",
                 "considerSwap": "⚠️ El conductor tiene el P-Schein caducado, pero puede trabajar como sanitario. Considere intercambiar roles (⇅).",
                 "assignOneAria": "Asignar un usuario a toda la semana",
-                "legendCantDrive": "No puede conducir, P-Schein caducado"
+                "legendCantDrive": "No puede conducir, P-Schein caducado",
+                "operationalHealth": {
+                    "never": "Sin escanear",
+                    "outdated": "Escaneo desactualizado",
+                    "healthy": "Sin incidencias",
+                    "warning_one": "1 inconsistencia",
+                    "warning_other": "{{count}} inconsistencias",
+                    "scan": "Escanear",
+                    "scanning": "Escaneando…",
+                    "scanError": "Error al escanear. Inténtalo de nuevo.",
+                    "repairError": "Error al reparar. Inténtalo de nuevo.",
+                    "repairSuccess": "Reparación completada"
+                }
             },
             "assignTeamModal": {
                 "title": "Asignar Team a la semana",

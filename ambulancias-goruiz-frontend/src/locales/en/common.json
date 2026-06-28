@@ -1733,7 +1733,19 @@
                 "swapWeekNotPermitted": "❌ Cannot swap: one of the members cannot perform the target role (incompatible role or expired P-Schein).",
                 "considerSwap": "⚠️ The driver’s P-Schein is expired, but they can still work as a medic. Consider swapping roles (⇅).",
                 "assignOneAria": "Assign a worker for the whole week",
-                "legendCantDrive": "Cannot drive, P-Schein expired"
+                "legendCantDrive": "Cannot drive, P-Schein expired",
+                "operationalHealth": {
+                    "never": "Not scanned",
+                    "outdated": "Scan outdated",
+                    "healthy": "Healthy",
+                    "warning_one": "1 inconsistency",
+                    "warning_other": "{{count}} inconsistencies",
+                    "scan": "Scan",
+                    "scanning": "Scanning…",
+                    "scanError": "Error scanning. Please try again.",
+                    "repairError": "Error repairing. Please try again.",
+                    "repairSuccess": "Repair completed"
+                }
             },
             "assignTeamModal": {
                 "title": "Assign Team to week",
