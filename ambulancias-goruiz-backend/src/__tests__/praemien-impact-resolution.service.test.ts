@@ -40,6 +40,7 @@
 import mongoose from "mongoose";
 import { env } from "../config/env";
 import WorkdaySummary from "../modules/workday-summary/models/workday-summary.model";
+import MonthlyPraemie from "../modules/praemien/models/monthly-praemie.model";
 import {
   WorkdaySummaryCorrection,
   OperationalRecoveryEvent,
@@ -132,6 +133,7 @@ describe("PraemienImpactResolution service", () => {
     await WorkdaySummary.deleteMany({ date: FIXTURE_DATE });
     await WorkdaySummaryCorrection.deleteMany({ date: FIXTURE_DATE });
     await PraemienImpactResolution.collection.deleteMany({});
+    await MonthlyPraemie.deleteMany({ year: 2026, month: { $in: [6, 7] } });
     await OperationalRecoveryEvent.collection.deleteMany({
       entityType: "PRAEMIE",
     });
@@ -631,11 +633,11 @@ describe("PraemienImpactResolution service", () => {
     });
   });
 
-  // ── Integration with workday-recovery.service ──────────────────────────────
+  // ── Integration with workday-recovery.service (Monthly snapshot guard) ────
 
-  describe("integration: createWorkdaySummaryCorrection triggers resolution", () => {
-    it("creates PraemienImpactResolution when praemienImpact=possible", async () => {
-      const companyId = makeObjectId();
+  describe("integration: MonthlyPraemie snapshot guard", () => {
+    /** Creates a WorkdaySummary with driver + medic for the given company. */
+    async function makeSummaryWithWorkers(companyId: mongoose.Types.ObjectId) {
       const driver = makeObjectId();
       const medic = makeObjectId();
       const summary = await WorkdaySummary.create({
@@ -644,48 +646,193 @@ describe("PraemienImpactResolution service", () => {
         driver,
         medic,
       });
+      return { summary, driver, medic };
+    }
 
-      await createWorkdaySummaryCorrection({
+    /** Creates a saved MonthlyPraemie snapshot (closed month). */
+    async function makeSavedPraemie(opts: {
+      companyId: mongoose.Types.ObjectId;
+      userId: mongoose.Types.ObjectId;
+      year: number;
+      month: number;
+    }) {
+      return MonthlyPraemie.create({
+        userId: opts.userId,
+        companyId: opts.companyId,
+        year: opts.year,
+        month: opts.month,
+        averagePatients: 5,
+        premieLevel: "gold",
+        snapshotSource: "automatic",
+      });
+    }
+
+    async function makeCorrection(
+      companyId: mongoose.Types.ObjectId,
+      summaryId: string,
+      praemienImpact: "none" | "possible",
+    ) {
+      return createWorkdaySummaryCorrection({
         companyId: String(companyId),
-        workdaySummaryId: String(summary._id),
+        workdaySummaryId: summaryId,
         actorUserId: makeObjectId().toString(),
         actorRole: "admin",
         correctedTotalEffectivePatients: 6,
-        correctionReason: "Integration test",
-        praemienImpact: RECOVERY_PRAEMIEN_IMPACT.POSSIBLE,
+        correctionReason: "Test correction",
+        praemienImpact,
         payrollImpact: RECOVERY_PAYROLL_IMPACT.NONE,
       });
+    }
 
-      // Allow async resolution creation to settle
+    // Test 1 — praemienImpact=possible + NO MonthlyPraemie → no resolution
+    it("does NOT create resolution when praemienImpact=possible and no MonthlyPraemie exists (open month)", async () => {
+      const companyId = makeObjectId();
+      const { summary } = await makeSummaryWithWorkers(companyId);
+
+      await makeCorrection(companyId, String(summary._id), "possible");
       await new Promise((r) => setTimeout(r, 200));
+
+      const resolutions = await PraemienImpactResolution.find({ companyId });
+      expect(resolutions).toHaveLength(0);
+    });
+
+    // Test 2 — praemienImpact=possible + MonthlyPraemie EXISTS → resolution created
+    it("creates resolution when praemienImpact=possible and saved MonthlyPraemie exists (closed month)", async () => {
+      const companyId = makeObjectId();
+      const { summary, driver, medic } = await makeSummaryWithWorkers(companyId);
+
+      // Create saved snapshots for both workers
+      await makeSavedPraemie({ companyId, userId: driver, year: 2026, month: 7 });
+      await makeSavedPraemie({ companyId, userId: medic, year: 2026, month: 7 });
+
+      await makeCorrection(companyId, String(summary._id), "possible");
+      await new Promise((r) => setTimeout(r, 300));
 
       const resolutions = await PraemienImpactResolution.find({ companyId });
       expect(resolutions.length).toBeGreaterThanOrEqual(1);
       expect(resolutions.every((r) => r.status === PRAEMIEN_RESOLUTION_STATUS.PENDING)).toBe(true);
     });
 
-    it("does NOT create PraemienImpactResolution when praemienImpact=none", async () => {
+    // Test 3 — praemienImpact=none + MonthlyPraemie EXISTS → no resolution
+    it("does NOT create resolution when praemienImpact=none even if MonthlyPraemie exists", async () => {
       const companyId = makeObjectId();
-      const summary = await WorkdaySummary.create({
-        ...makeSummaryFixture(),
-        companyId,
-      });
+      const { summary, driver, medic } = await makeSummaryWithWorkers(companyId);
 
-      await createWorkdaySummaryCorrection({
-        companyId: String(companyId),
-        workdaySummaryId: String(summary._id),
-        actorUserId: makeObjectId().toString(),
-        actorRole: "admin",
-        correctedTotalEffectivePatients: 6,
-        correctionReason: "Impact none test",
-        praemienImpact: RECOVERY_PRAEMIEN_IMPACT.NONE,
-        payrollImpact: RECOVERY_PAYROLL_IMPACT.NONE,
-      });
+      await makeSavedPraemie({ companyId, userId: driver, year: 2026, month: 7 });
+      await makeSavedPraemie({ companyId, userId: medic, year: 2026, month: 7 });
 
+      await makeCorrection(companyId, String(summary._id), "none");
       await new Promise((r) => setTimeout(r, 200));
 
       const resolutions = await PraemienImpactResolution.find({ companyId });
       expect(resolutions).toHaveLength(0);
+    });
+
+    // Test 4 — MonthlyPraemie from ANOTHER company → no resolution
+    it("does NOT create resolution when MonthlyPraemie belongs to a different company", async () => {
+      const companyA = makeObjectId();
+      const companyB = makeObjectId();
+      const { summary, driver } = await makeSummaryWithWorkers(companyA);
+
+      // Save praemie under companyB instead of companyA
+      await makeSavedPraemie({ companyId: companyB, userId: driver, year: 2026, month: 7 });
+
+      await makeCorrection(companyA, String(summary._id), "possible");
+      await new Promise((r) => setTimeout(r, 200));
+
+      const resolutions = await PraemienImpactResolution.find({ companyId: companyA });
+      expect(resolutions).toHaveLength(0);
+    });
+
+    // Test 5 — MonthlyPraemie for ANOTHER worker → no resolution for that worker
+    it("does NOT create resolution when MonthlyPraemie exists for a different worker", async () => {
+      const companyId = makeObjectId();
+      const { summary, driver } = await makeSummaryWithWorkers(companyId);
+      const unrelatedWorker = makeObjectId();
+
+      // Save praemie for an unrelated worker, not for driver or medic
+      await makeSavedPraemie({ companyId, userId: unrelatedWorker, year: 2026, month: 7 });
+
+      await makeCorrection(companyId, String(summary._id), "possible");
+      await new Promise((r) => setTimeout(r, 200));
+
+      const resolutions = await PraemienImpactResolution.find({ companyId });
+      expect(resolutions).toHaveLength(0);
+
+      // The driver-specific praemie is indeed absent
+      const driverPraemie = await MonthlyPraemie.findOne({ userId: driver, year: 2026, month: 7 });
+      expect(driverPraemie).toBeNull();
+    });
+
+    // Test 6 — MonthlyPraemie for ANOTHER month → no resolution
+    it("does NOT create resolution when MonthlyPraemie exists for a different month", async () => {
+      const companyId = makeObjectId();
+      const { summary, driver, medic } = await makeSummaryWithWorkers(companyId);
+
+      // Save praemie for month 6, not month 7 (which is the summary's month)
+      await MonthlyPraemie.create({
+        userId: driver,
+        companyId,
+        year: 2026,
+        month: 6,
+        averagePatients: 5,
+        premieLevel: "gold",
+      });
+      await MonthlyPraemie.create({
+        userId: medic,
+        companyId,
+        year: 2026,
+        month: 6,
+        averagePatients: 5,
+        premieLevel: "gold",
+      });
+
+      await makeCorrection(companyId, String(summary._id), "possible");
+      await new Promise((r) => setTimeout(r, 200));
+
+      const resolutions = await PraemienImpactResolution.find({ companyId });
+      expect(resolutions).toHaveLength(0);
+    });
+
+    // Test 7 — Correction still succeeds even when resolution cannot be created
+    it("Workday correction succeeds even when no MonthlyPraemie exists", async () => {
+      const companyId = makeObjectId();
+      const { summary } = await makeSummaryWithWorkers(companyId);
+
+      // No MonthlyPraemie — resolution check will silently skip
+      const result = await makeCorrection(companyId, String(summary._id), "possible");
+
+      expect(result.correction).toBeDefined();
+      expect(result.effective).toBeDefined();
+      // Resolution was skipped but the correction stands
+      const corrections = await WorkdaySummaryCorrection.find({
+        originalSummaryId: summary._id,
+      });
+      expect(corrections).toHaveLength(1);
+    });
+
+    // Test 8 — MonthlyPraemie is NEVER mutated
+    it("MonthlyPraemie values are not mutated by the correction flow", async () => {
+      const companyId = makeObjectId();
+      const { summary, driver } = await makeSummaryWithWorkers(companyId);
+
+      const praemie = await makeSavedPraemie({
+        companyId,
+        userId: driver,
+        year: 2026,
+        month: 7,
+      });
+      const praemieIdBefore = String(praemie._id);
+      const averagePatientsBefore = praemie.averagePatients;
+      const premieLevelBefore = praemie.premieLevel;
+
+      await makeCorrection(companyId, String(summary._id), "possible");
+      await new Promise((r) => setTimeout(r, 200));
+
+      const praemieAfter = await MonthlyPraemie.findById(praemieIdBefore);
+      expect(praemieAfter).not.toBeNull();
+      expect(praemieAfter!.averagePatients).toBe(averagePatientsBefore);
+      expect(praemieAfter!.premieLevel).toBe(premieLevelBefore);
     });
   });
 });

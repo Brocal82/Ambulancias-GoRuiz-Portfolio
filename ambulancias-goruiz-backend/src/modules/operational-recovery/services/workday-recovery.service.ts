@@ -11,7 +11,9 @@
  *   - Every correction writes an immutable OperationalRecoveryEvent.
  *   - Multi-tenant: every lookup and write is scoped by the admin's companyId.
  *
- * Phase 3.4.1: createPraemienImpactResolution is called when praemienImpact = "possible".
+ * Phase 3.4.1: createPraemienImpactResolution is called when praemienImpact = "possible"
+ *   AND a saved MonthlyPraemie snapshot already exists for the worker/period.
+ *   Open months (no saved snapshot) are skipped — praemien are still live/dynamic.
  * TODO Phase 3.4.2: propagate recalculated status once MonthlyPraemie recalculation is wired.
  * TODO Phase 3.4: propagate payrollImpact to payroll pipeline when impact != "none".
  */
@@ -33,6 +35,7 @@ import {
 import type { PayrollImpact, PraemienImpact } from "../constants/operational-recovery.constants";
 import { recordRecoveryEvent, OperationalRecoveryError } from "./operational-recovery.service";
 import { createPraemienImpactResolution, parseDateToYearMonth } from "./praemien-impact-resolution.service";
+import MonthlyPraemie from "../../praemien/models/monthly-praemie.model";
 import { MODULE_KEYS } from "../../companies/constants/modules.constants";
 import type {
   CreateWorkdaySummaryCorrectionInput,
@@ -433,29 +436,44 @@ export async function createWorkdaySummaryCorrection(
   }
 
   // ── 11. Create PraemienImpactResolution when praemienImpact = "possible" ────
-  // Phase 3.4.1: one resolution per worker. Failures are non-fatal.
+  // Only when a saved MonthlyPraemie snapshot already exists for the worker/period.
+  // Open months (no snapshot) are skipped — praemien are still live/dynamic.
+  // Failures are non-fatal: the correction is already committed.
   if (praemienImpact === "possible" && workerIds.length > 0) {
     const { year, month } = parseDateToYearMonth(summary.date);
     for (const wid of workerIds) {
-      createPraemienImpactResolution({
-        companyId,
-        workerId: String(wid),
+      MonthlyPraemie.findOne({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        userId: wid,
         year,
         month,
-        relatedWorkdaySummaryId: workdaySummaryId,
-        relatedWorkdaySummaryCorrectionId: String(correction._id),
-        beforeValue: prevEffectiveValues.totalEffectivePatients,
-        afterValue: newEffectiveValues.totalEffectivePatients,
-        reason: input.correctionReason.trim(),
-        actorUserId,
-        actorRole: input.actorRole,
-      }).catch((err: unknown) => {
-        console.error(
-          "[WorkdayRecovery] Failed to create PraemienImpactResolution for worker",
-          String(wid),
-          err,
-        );
-      });
+      })
+        .then((savedPraemie) => {
+          if (!savedPraemie) {
+            // Open month — praemien are still live. No resolution needed.
+            return null;
+          }
+          return createPraemienImpactResolution({
+            companyId,
+            workerId: String(wid),
+            year,
+            month,
+            relatedWorkdaySummaryId: workdaySummaryId,
+            relatedWorkdaySummaryCorrectionId: String(correction._id),
+            beforeValue: prevEffectiveValues.totalEffectivePatients,
+            afterValue: newEffectiveValues.totalEffectivePatients,
+            reason: input.correctionReason.trim(),
+            actorUserId,
+            actorRole: input.actorRole,
+          });
+        })
+        .catch((err: unknown) => {
+          console.error(
+            "[WorkdayRecovery] Failed to create PraemienImpactResolution for worker",
+            String(wid),
+            err,
+          );
+        });
     }
   }
 
