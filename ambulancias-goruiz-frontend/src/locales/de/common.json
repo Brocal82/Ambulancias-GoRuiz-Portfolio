@@ -1977,7 +1977,49 @@
                         "partial": "Teilabschluss"
                     },
                     "effectivePatients_one": "{{count}} effektiver Patient",
-                    "effectivePatients_other": "{{count}} effektive Patienten"
+                    "effectivePatients_other": "{{count}} effektive Patienten",
+                    "correction": {
+                        "badge": "Korrigiert",
+                        "button": "Arbeitstag korrigieren",
+                        "dialogTitle": "Arbeitstag-Zusammenfassung korrigieren",
+                        "dialogSubtitle": "Korrigierte Werte überschreiben die Berichte. Die Originaldaten bleiben erhalten.",
+                        "fields": {
+                            "correctedFinalKm": "Korrigierte End-KM",
+                            "correctedTotalDienstKm": "Korrigierte Gesamt-Dienst-KM",
+                            "correctedTotalEffectivePatients": "Korrigierte effektive Patienten",
+                            "correctedTotalRealTrips": "Korrigierte tatsächliche Fahrten",
+                            "correctionReason": "Korrekturgrund",
+                            "correctionNote": "Notiz (optional)",
+                            "praemienImpact": "Auswirkung auf Prämien",
+                            "payrollImpact": "Auswirkung auf Gehalt"
+                        },
+                        "impact": {
+                            "none": "Keine",
+                            "possible": "Möglich"
+                        },
+                        "preview": {
+                            "title": "Vorschau",
+                            "original": "Original",
+                            "corrected": "Korrigiert",
+                            "difference": "Differenz",
+                            "finalKm": "End-KM",
+                            "totalDienstKm": "Dienst-KM",
+                            "effectivePatients": "Effektive Patienten",
+                            "realTrips": "Tatsächliche Fahrten"
+                        },
+                        "save": "Korrektur speichern",
+                        "cancel": "Abbrechen",
+                        "reasonRequired": "Grund ist erforderlich",
+                        "atLeastOneField": "Mindestens einen korrigierten Wert eingeben",
+                        "correctedSection": {
+                            "title": "Aktive Korrektur",
+                            "reason": "Grund",
+                            "note": "Notiz",
+                            "correctedAt": "Korrigiert am",
+                            "praemienImpact": "Auswirkung auf Prämien",
+                            "payrollImpact": "Auswirkung auf Gehalt"
+                        }
+                    }
                 }
             }
         },
@@ -2130,7 +2172,10 @@
             "final": {
                 "finalKmRequired": "📏 Bitte die End-Kilometer eingeben.",
                 "issueRegistered": "🛠️ Störung erfasst. Du kannst jetzt den kompletter Abschluss senden."
-            }
+            },
+            "correctionSaved": "✅ Korrektur erfolgreich gespeichert.",
+            "correctionError": "❌ Korrektur konnte nicht gespeichert werden.",
+            "correctionLoadError": "❌ Effektive Werte konnten nicht geladen werden."
         },
         "appointments": {
             "loadError": "❌ Fehler beim Laden der Termine.",

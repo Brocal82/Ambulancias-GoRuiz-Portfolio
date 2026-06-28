@@ -1982,7 +1982,49 @@
                         "partial": "Parcial"
                     },
                     "effectivePatients_one": "{{count}} paciente efectivo",
-                    "effectivePatients_other": "{{count}} pacientes efectivos"
+                    "effectivePatients_other": "{{count}} pacientes efectivos",
+                    "correction": {
+                        "badge": "Corregido",
+                        "button": "Corregir Jornada",
+                        "dialogTitle": "Corregir Resumen de Jornada",
+                        "dialogSubtitle": "Los valores corregidos reemplazan lo que aparece en los informes. Los datos originales se conservan.",
+                        "fields": {
+                            "correctedFinalKm": "KM Final Corregido",
+                            "correctedTotalDienstKm": "KM Dienst Total Corregido",
+                            "correctedTotalEffectivePatients": "Pacientes Efectivos Corregidos",
+                            "correctedTotalRealTrips": "Traslados Reales Corregidos",
+                            "correctionReason": "Motivo de la corrección",
+                            "correctionNote": "Nota (opcional)",
+                            "praemienImpact": "Impacto en primas",
+                            "payrollImpact": "Impacto en nómina"
+                        },
+                        "impact": {
+                            "none": "Ninguno",
+                            "possible": "Posible"
+                        },
+                        "preview": {
+                            "title": "Vista previa",
+                            "original": "Original",
+                            "corrected": "Corregido",
+                            "difference": "Diferencia",
+                            "finalKm": "KM Final",
+                            "totalDienstKm": "KM Dienst",
+                            "effectivePatients": "Pacientes efectivos",
+                            "realTrips": "Traslados reales"
+                        },
+                        "save": "Guardar corrección",
+                        "cancel": "Cancelar",
+                        "reasonRequired": "El motivo es obligatorio",
+                        "atLeastOneField": "Introduce al menos un valor corregido",
+                        "correctedSection": {
+                            "title": "Corrección activa",
+                            "reason": "Motivo",
+                            "note": "Nota",
+                            "correctedAt": "Corregido el",
+                            "praemienImpact": "Impacto en primas",
+                            "payrollImpact": "Impacto en nómina"
+                        }
+                    }
                 }
             }
         },
@@ -2135,7 +2177,10 @@
             "final": {
                 "finalKmRequired": "📏 Introduce los kilómetros finales.",
                 "issueRegistered": "🛠️ Avería registrada. Ahora puedes enviar el cierre final."
-            }
+            },
+            "correctionSaved": "✅ Corrección guardada correctamente.",
+            "correctionError": "❌ No se pudo guardar la corrección.",
+            "correctionLoadError": "❌ No se pudieron cargar los valores efectivos."
         },
         "appointments": {
             "loadError": "❌ Error al cargar citas.",

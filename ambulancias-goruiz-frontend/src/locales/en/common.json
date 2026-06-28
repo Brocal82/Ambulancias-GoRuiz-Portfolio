@@ -1982,7 +1982,49 @@
                         "partial": "Partial"
                     },
                     "effectivePatients_one": "{{count}} effective patient",
-                    "effectivePatients_other": "{{count}} effective patients"
+                    "effectivePatients_other": "{{count}} effective patients",
+                    "correction": {
+                        "badge": "Corrected",
+                        "button": "Correct Workday",
+                        "dialogTitle": "Correct Workday Summary",
+                        "dialogSubtitle": "Corrected values override what appears in reports. The original data is preserved.",
+                        "fields": {
+                            "correctedFinalKm": "Corrected Final KM",
+                            "correctedTotalDienstKm": "Corrected Total Dienst KM",
+                            "correctedTotalEffectivePatients": "Corrected Effective Patients",
+                            "correctedTotalRealTrips": "Corrected Real Trips",
+                            "correctionReason": "Reason for correction",
+                            "correctionNote": "Note (optional)",
+                            "praemienImpact": "Bonus impact",
+                            "payrollImpact": "Payroll impact"
+                        },
+                        "impact": {
+                            "none": "None",
+                            "possible": "Possible"
+                        },
+                        "preview": {
+                            "title": "Preview",
+                            "original": "Original",
+                            "corrected": "Corrected",
+                            "difference": "Difference",
+                            "finalKm": "Final KM",
+                            "totalDienstKm": "Dienst KM",
+                            "effectivePatients": "Effective patients",
+                            "realTrips": "Real trips"
+                        },
+                        "save": "Save correction",
+                        "cancel": "Cancel",
+                        "reasonRequired": "Reason is required",
+                        "atLeastOneField": "Enter at least one corrected value",
+                        "correctedSection": {
+                            "title": "Active correction",
+                            "reason": "Reason",
+                            "note": "Note",
+                            "correctedAt": "Corrected at",
+                            "praemienImpact": "Bonus impact",
+                            "payrollImpact": "Payroll impact"
+                        }
+                    }
                 }
             }
         },
@@ -2135,7 +2177,10 @@
             "final": {
                 "finalKmRequired": "📏 Enter the final kilometers.",
                 "issueRegistered": "🛠️ Issue recorded. You can now send the Final closure."
-            }
+            },
+            "correctionSaved": "✅ Correction saved successfully.",
+            "correctionError": "❌ Could not save the correction.",
+            "correctionLoadError": "❌ Could not load effective values."
         },
         "appointments": {
             "loadError": "❌ Failed to load appointments.",
