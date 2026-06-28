@@ -42,3 +42,25 @@ export type {
   RepairAbsenceInconsistencyInput,
   RepairResult,
 } from "./types/absence-cleanup.types";
+
+// Phase 3.1 — Workday Recovery
+export {
+  default as WorkdaySummaryCorrection,
+  CORRECTION_STATUS,
+  CORRECTION_STATUSES,
+} from "./models/workday-summary-correction.model";
+export type {
+  IWorkdaySummaryCorrection,
+  CorrectionStatus,
+} from "./models/workday-summary-correction.model";
+export {
+  createWorkdaySummaryCorrection,
+  getEffectiveWorkdaySummary,
+} from "./services/workday-recovery.service";
+export type {
+  CreateWorkdaySummaryCorrectionInput,
+  CreateWorkdaySummaryCorrectionResult,
+  EffectiveWorkdaySummary,
+  GetEffectiveWorkdaySummaryInput,
+  OriginalWorkdayValues,
+} from "./types/workday-recovery.types";
