@@ -403,9 +403,12 @@ export async function createWorkdaySummaryCorrection(
       afterSummary: afterSnapshot,
       changedFields: changedFields.length > 0 ? changedFields : undefined,
       metadata: {
-        source: "workday_recovery",
+        source: input.recoveryMetadataSource ?? "workday_recovery",
         correctionId: String(correction._id),
         supersededPreviousCorrection: superseded,
+        ...(input.relatedTripCorrectionId
+          ? { tripCorrectionId: input.relatedTripCorrectionId }
+          : {}),
       },
       severity: RECOVERY_SEVERITY.WARNING,
       relatedWorkdaySummaryId: workdaySummaryId,

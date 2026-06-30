@@ -2074,6 +2074,67 @@
                             "praemienImpact": "Auswirkung auf Prämien",
                             "payrollImpact": "Auswirkung auf Gehalt"
                         }
+                    },
+                    "tripRecovery": {
+                        "badges": {
+                            "corrected": "Korrigiert",
+                            "voided": "Storniert",
+                            "forgotten": "Vergessen"
+                        },
+                        "actions": {
+                            "correct": "Korrigieren",
+                            "void": "Stornieren",
+                            "addForgotten": "Vergessene Fahrt hinzufügen"
+                        },
+                        "table": {
+                            "status": "Status",
+                            "trip": "Fahrt",
+                            "countsTrip": "Zählt",
+                            "actions": "Aktionen",
+                            "empty": "Keine Fahrten"
+                        },
+                        "dialog": {
+                            "titleCorrect": "Fahrt korrigieren",
+                            "titleVoid": "Fahrt stornieren",
+                            "titleForgotten": "Vergessene Fahrt hinzufügen",
+                            "subtitle": "Änderungen gelten für effektive operative Werte. Vor dem Speichern Vorschau anzeigen.",
+                            "cancel": "Abbrechen",
+                            "save": "Korrektur speichern",
+                            "reasonRequired": "Grund ist erforderlich",
+                            "previewError": "Vorschau konnte nicht geladen werden",
+                            "externalStale": "Dieser Arbeitstag wurde anderswo aktualisiert. Bitte erneut Vorschau anzeigen.",
+                            "context": {
+                                "date": "Datum",
+                                "dienst": "Dienst",
+                                "ambulance": "Ambulanz",
+                                "workers": "Mitarbeiter",
+                                "trip": "Fahrt"
+                            }
+                        },
+                        "fields": {
+                            "countsTrip": "Zählt als Fahrt",
+                            "wasCancelled": "Storniert",
+                            "cancelledAtPickup": "Storniert bei Abholung",
+                            "kmStart": "KM Start",
+                            "kmEnd": "KM Ende",
+                            "timeWarning": "Alarmzeit",
+                            "timeAtHome": "Ankunft Zuhause",
+                            "timePickup": "Abholzeit",
+                            "timeArrival": "Ankunftszeit",
+                            "timeEnd": "Endzeit",
+                            "reason": "Grund (erforderlich)",
+                            "note": "Notiz (optional)",
+                            "praemienImpact": "Auswirkung auf Prämien"
+                        },
+                        "preview": {
+                            "title": "Vorschau",
+                            "button": "Auswirkung anzeigen",
+                            "outOfDate": "Vorschau veraltet. Bitte erneut Vorschau anzeigen.",
+                            "tripTitle": "Effektive Fahrt",
+                            "workdayTitle": "Effektiver Arbeitstag",
+                            "countsTrip": "countsTrip: {{count}}",
+                            "skipped": "Arbeitstag-Projektion übersprungen: {{reason}}"
+                        }
                     }
                 }
             }
@@ -2230,7 +2291,9 @@
             },
             "correctionSaved": "✅ Korrektur erfolgreich gespeichert.",
             "correctionError": "❌ Korrektur konnte nicht gespeichert werden.",
-            "correctionLoadError": "❌ Effektive Werte konnten nicht geladen werden."
+            "correctionLoadError": "❌ Effektive Werte konnten nicht geladen werden.",
+            "tripCorrectionSaved": "✅ Fahrtkorrektur erfolgreich gespeichert.",
+            "tripCorrectionError": "❌ Fahrtkorrektur konnte nicht gespeichert werden."
         },
         "appointments": {
             "loadError": "❌ Fehler beim Laden der Termine.",

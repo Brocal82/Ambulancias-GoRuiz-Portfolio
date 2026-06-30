@@ -29,6 +29,7 @@ export const FORBIDDEN_RECOVERY_KEYS = new Set([
 
 const ALLOWED_SNAPSHOT_FIELDS: Record<RecoveryEntityType, readonly string[]> = {
   [RECOVERY_ENTITY_TYPE.TRIP]: [
+    // Legacy fields (kept for backward compatibility with older events)
     "status",
     "tripNumber",
     "startTime",
@@ -36,6 +37,24 @@ const ALLOWED_SNAPSHOT_FIELDS: Record<RecoveryEntityType, readonly string[]> = {
     "vehicleId",
     "workerCount",
     "isVoided",
+    // Phase 4.1 — operational trip fields used in correction events
+    "date",
+    "assignmentId",
+    "countsTrip",
+    "wasCancelled",
+    "cancelledAtPickup",
+    "kmStart",
+    "kmEnd",
+    "timeWarning",
+    "timeAtHome",
+    "timePickup",
+    "timeArrival",
+    "timeEnd",
+    "correctionType",
+    "isEffectivelyVoided",
+    "driver",
+    "medic",
+    "sentInSummary",
   ],
   [RECOVERY_ENTITY_TYPE.WORKDAY_SUMMARY]: [
     // Legacy fields (kept for backward compatibility with older events)

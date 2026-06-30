@@ -17,6 +17,12 @@ vi.mock("../domain/workdayRecoveryApi", () => ({
   createWorkdayCorrection: vi.fn(),
 }));
 
+vi.mock("../domain/tripRecoveryApi", () => ({
+  getEffectiveTripsForWorkdaySummary: vi.fn(),
+  previewTripCorrection: vi.fn(),
+  createTripCorrection: vi.fn(),
+}));
+
 vi.mock("../../../utils/toast", () => ({
   toastT: {
     success: vi.fn(),
@@ -35,6 +41,7 @@ vi.mock("./ReviewSummary", () => ({
 
 vi.mock("../utils/workdayEvents", () => ({
   emitWorkdaySummariesChanged: vi.fn(),
+  subscribeWorkdaySummariesChanged: vi.fn(() => () => {}),
 }));
 
 // Must come after mocks
@@ -42,6 +49,7 @@ import {
   getEffectiveWorkdaySummary,
   createWorkdayCorrection,
 } from "../domain/workdayRecoveryApi";
+import { getEffectiveTripsForWorkdaySummary } from "../domain/tripRecoveryApi";
 import { toastT } from "../../../utils/toast";
 import { emitWorkdaySummariesChanged } from "../utils/workdayEvents";
 import WorkdayCorrectionDialog from "./WorkdayCorrectionDialog";
@@ -496,6 +504,14 @@ describe("AdminWorkdaySummaryGroupContent — correction UI visibility", () => {
     vi.mocked(getEffectiveWorkdaySummary).mockResolvedValue(
       makeEffectiveResponse(),
     );
+    vi.mocked(getEffectiveTripsForWorkdaySummary).mockResolvedValue({
+      workdaySummaryId: SUMMARY_ID,
+      assignmentId: "assign-1",
+      date: "2026-06-10",
+      workerIds: [],
+      effectiveTripCount: 0,
+      trips: [],
+    });
   });
 
   afterEach(() => {

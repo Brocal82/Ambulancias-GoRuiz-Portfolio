@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import StatusBadge from "../../../components/common/StatusBadge";
@@ -9,8 +9,22 @@ import {
   getEffectiveWorkdaySummary,
   type EffectiveWorkdaySummaryResponse,
 } from "../domain/workdayRecoveryApi";
+import {
+  getEffectiveTripsForWorkdaySummary,
+  type EffectiveTripsListResponse,
+  type EffectiveTripDTO,
+} from "../domain/tripRecoveryApi";
+import { useWorkdaySummariesChanged } from "../hooks/useWorkdaySummariesChanged";
 import { emitWorkdaySummariesChanged } from "../utils/workdayEvents";
+import EffectiveTripsTable, {
+  formatTripLabel,
+  type TripRecoveryRowAction,
+} from "./EffectiveTripsTable";
 import ReviewSummary from "./ReviewSummary";
+import TripRecoveryDialog, {
+  type TripRecoveryDialogMode,
+  type TripRecoveryContext,
+} from "./TripRecoveryDialog";
 import WorkdayCorrectionDialog from "./WorkdayCorrectionDialog";
 
 function resolveSummarySubmittedAt(
@@ -55,6 +69,26 @@ function mapSummaryToAssignedDay(summary: WorkdaySummary): AssignedDayFull {
   };
 }
 
+function formatWorkerName(
+  p: AssignedDayFull["driver"],
+  fallback: string,
+): string {
+  if (!p) return fallback;
+  if (typeof p === "string") return p;
+  const last = p?.lastName ?? "";
+  const first = p?.name ?? "";
+  const full = [last, first].filter(Boolean).join(", ");
+  return full || fallback;
+}
+
+type OpenTripRecovery = {
+  summaryId: string;
+  mode: TripRecoveryDialogMode;
+  originalTripId?: string;
+  initialValues?: EffectiveTripDTO["values"];
+  tripLabel?: string;
+};
+
 type Props = {
   summaries: WorkdaySummary[];
   compact?: boolean;
@@ -71,9 +105,21 @@ export default function AdminWorkdaySummaryGroupContent({
   const [effectiveMap, setEffectiveMap] = useState<
     Record<string, EffectiveWorkdaySummaryResponse>
   >({});
+  const [effectiveTripsMap, setEffectiveTripsMap] = useState<
+    Record<string, EffectiveTripsListResponse>
+  >({});
+  const [effectiveTripsLoading, setEffectiveTripsLoading] = useState<
+    Record<string, boolean>
+  >({});
   const [openCorrectionForId, setOpenCorrectionForId] = useState<string | null>(
     null,
   );
+  const [openTripRecovery, setOpenTripRecovery] =
+    useState<OpenTripRecovery | null>(null);
+  const [externalStaleSignal, setExternalStaleSignal] = useState(0);
+
+  const openTripRecoveryRef = useRef(openTripRecovery);
+  openTripRecoveryRef.current = openTripRecovery;
 
   const sorted = useMemo(() => {
     return [...summaries].sort((a, b) => {
@@ -101,6 +147,18 @@ export default function AdminWorkdaySummaryGroupContent({
       .catch(() => {});
   }, []);
 
+  const fetchEffectiveTripsForId = useCallback((id: string) => {
+    setEffectiveTripsLoading((prev) => ({ ...prev, [id]: true }));
+    getEffectiveTripsForWorkdaySummary(id)
+      .then((data) =>
+        setEffectiveTripsMap((prev) => ({ ...prev, [id]: data })),
+      )
+      .catch(() => {})
+      .finally(() =>
+        setEffectiveTripsLoading((prev) => ({ ...prev, [id]: false })),
+      );
+  }, []);
+
   useEffect(() => {
     if (!finalSummaryIds) return;
     let cancelled = false;
@@ -111,21 +169,92 @@ export default function AdminWorkdaySummaryGroupContent({
           if (!cancelled) setEffectiveMap((prev) => ({ ...prev, [id]: data }));
         })
         .catch(() => {});
+      setEffectiveTripsLoading((prev) => ({ ...prev, [id]: true }));
+      getEffectiveTripsForWorkdaySummary(id)
+        .then((data) => {
+          if (!cancelled)
+            setEffectiveTripsMap((prev) => ({ ...prev, [id]: data }));
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled)
+            setEffectiveTripsLoading((prev) => ({ ...prev, [id]: false }));
+        });
     }
     return () => {
       cancelled = true;
     };
   }, [finalSummaryIds]);
 
+  const refreshFinalSummaryData = useCallback(
+    (summaryId: string) => {
+      fetchEffectiveForId(summaryId);
+      fetchEffectiveTripsForId(summaryId);
+    },
+    [fetchEffectiveForId, fetchEffectiveTripsForId],
+  );
+
+  const handleWorkdaySummariesChanged = useCallback(() => {
+    if (!finalSummaryIds) return;
+    for (const id of finalSummaryIds.split(",")) {
+      if (!id) continue;
+      refreshFinalSummaryData(id);
+    }
+    if (openTripRecoveryRef.current) {
+      setExternalStaleSignal((n) => n + 1);
+    }
+  }, [finalSummaryIds, refreshFinalSummaryData]);
+
+  useWorkdaySummariesChanged(handleWorkdaySummariesChanged);
+
   const handleCorrectionSaved = useCallback(
     (savedSummaryId: string) => {
-      fetchEffectiveForId(savedSummaryId);
+      refreshFinalSummaryData(savedSummaryId);
       emitWorkdaySummariesChanged();
     },
-    [fetchEffectiveForId],
+    [refreshFinalSummaryData],
+  );
+
+  const handleTripRecoverySaved = useCallback(
+    (savedSummaryId: string) => {
+      refreshFinalSummaryData(savedSummaryId);
+      emitWorkdaySummariesChanged();
+    },
+    [refreshFinalSummaryData],
+  );
+
+  const buildRecoveryContext = useCallback(
+    (
+      summary: WorkdaySummary,
+      assignedDay: AssignedDayFull,
+      ambulanceNumber: string,
+    ): TripRecoveryContext => ({
+      workdayDate: summary.date,
+      dienstNumber: assignedDay.dienstNumber,
+      ambulanceNumber,
+      driverName: formatWorkerName(
+        assignedDay.driver,
+        t("pages.workday.reviewSummary.labels.deletedUser"),
+      ),
+      medicName: formatWorkerName(
+        assignedDay.medic,
+        t("pages.workday.reviewSummary.labels.deletedUser"),
+      ),
+    }),
+    [t],
   );
 
   if (sorted.length === 0) return null;
+
+  const openRecoverySummary = openTripRecovery
+    ? sorted.find((s) => s._id === openTripRecovery.summaryId)
+    : undefined;
+  const openRecoveryAssignedDay = openRecoverySummary
+    ? mapSummaryToAssignedDay(openRecoverySummary)
+    : undefined;
+  const openRecoveryAmbulance =
+    openRecoverySummary?.ambulanceNumber ??
+    t("pages.workday.common.unknownAmbulance", "Ambulancia desconocida");
 
   return (
     <>
@@ -149,16 +278,47 @@ export default function AdminWorkdaySummaryGroupContent({
             summary.ambulanceNumber ??
             t("pages.workday.common.unknownAmbulance", "Ambulancia desconocida");
 
-          const initialKm = summary.initialKm;
-          const finalKm = summary.finalKm ?? summary.initialKm;
-
           const effectiveData =
             summary.isFinalClosure && summaryId
               ? effectiveMap[summaryId]
               : undefined;
+
+          const displayInitialKm = summary.initialKm;
+          const displayFinalKm =
+            effectiveData?.effective?.finalKm ??
+            summary.finalKm ??
+            summary.initialKm;
+          const displayTotalEffectivePatients =
+            effectiveData?.effective?.totalEffectivePatients ??
+            summary.totalEffectivePatients;
+
           const hasCorrectedValues =
             effectiveData?.effective?.hasCorrectedValues === true;
           const activeCorrection = effectiveData?.effective?.activeCorrection;
+
+          const effectiveTrips =
+            summary.isFinalClosure && summaryId
+              ? effectiveTripsMap[summaryId]?.trips ?? []
+              : [];
+          const tripsLoading =
+            summary.isFinalClosure && summaryId
+              ? effectiveTripsLoading[summaryId] === true
+              : false;
+
+          function openRowRecovery(
+            action: TripRecoveryRowAction,
+            trip: EffectiveTripDTO,
+            index: number,
+          ) {
+            if (!summaryId) return;
+            setOpenTripRecovery({
+              summaryId,
+              mode: action,
+              originalTripId: trip.tripKey,
+              initialValues: trip.values,
+              tripLabel: formatTripLabel(trip, index),
+            });
+          }
 
           return (
             <div
@@ -216,7 +376,6 @@ export default function AdminWorkdaySummaryGroupContent({
                 </div>
               ) : null}
 
-              {/* Corrected values section — only for final summaries with an active correction */}
               {summary.isFinalClosure && hasCorrectedValues && activeCorrection ? (
                 <div
                   className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-3 space-y-2 text-[12px]"
@@ -228,7 +387,6 @@ export default function AdminWorkdaySummaryGroupContent({
                     )}
                   </div>
 
-                  {/* Corrected values grid */}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-700">
                     {activeCorrection.correctedFinalKm !== undefined ? (
                       <div>
@@ -285,7 +443,6 @@ export default function AdminWorkdaySummaryGroupContent({
                     ) : null}
                   </div>
 
-                  {/* Reason */}
                   <div className="text-slate-700">
                     <span className="text-[11px] text-slate-500 font-medium">
                       {t(
@@ -296,7 +453,6 @@ export default function AdminWorkdaySummaryGroupContent({
                     {activeCorrection.correctionReason}
                   </div>
 
-                  {/* Note (if present) */}
                   {activeCorrection.correctionNote ? (
                     <div className="text-slate-600 italic">
                       <span className="text-[11px] text-slate-500 font-medium not-italic">
@@ -309,7 +465,6 @@ export default function AdminWorkdaySummaryGroupContent({
                     </div>
                   ) : null}
 
-                  {/* Date/time + impact */}
                   <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
                     <span>
                       {t(
@@ -344,17 +499,45 @@ export default function AdminWorkdaySummaryGroupContent({
                 <ReviewSummary
                   assignedDay={assignedDay}
                   ambulanceNumber={ambulanceNumber}
-                  initialKm={initialKm}
-                  finalKm={finalKm}
-                  trips={[...summary.trips].sort((a, b) =>
-                    a.timeWarning.localeCompare(b.timeWarning),
-                  )}
+                  initialKm={displayInitialKm}
+                  finalKm={displayFinalKm ?? displayInitialKm}
+                  trips={
+                    summary.isFinalClosure
+                      ? []
+                      : [...summary.trips].sort((a, b) =>
+                          a.timeWarning.localeCompare(b.timeWarning),
+                        )
+                  }
                   dense
                   showPraemieColumn={praemienWorkdayUiActive}
                   totalEffectivePatients={
                     praemienWorkdayUiActive
-                      ? summary.totalEffectivePatients
+                      ? displayTotalEffectivePatients
                       : null
+                  }
+                  hideTripTable={summary.isFinalClosure}
+                  tripTableReplacement={
+                    summary.isFinalClosure && summaryId ? (
+                      <EffectiveTripsTable
+                        trips={effectiveTrips}
+                        loading={tripsLoading}
+                        dense
+                        showRecoveryControls
+                        onRowAction={(action, trip) => {
+                          const index = effectiveTrips.findIndex(
+                            (t) => t.tripKey === trip.tripKey,
+                          );
+                          openRowRecovery(action, trip, index >= 0 ? index : 0);
+                        }}
+                        onAddForgotten={() => {
+                          if (!summaryId) return;
+                          setOpenTripRecovery({
+                            summaryId,
+                            mode: "forgotten",
+                          });
+                        }}
+                      />
+                    ) : undefined
                   }
                 />
               </div>
@@ -369,6 +552,27 @@ export default function AdminWorkdaySummaryGroupContent({
           isOpen={true}
           onClose={() => setOpenCorrectionForId(null)}
           onSaved={handleCorrectionSaved}
+        />
+      ) : null}
+
+      {openTripRecovery && openRecoverySummary && openRecoveryAssignedDay ? (
+        <TripRecoveryDialog
+          isOpen={true}
+          mode={openTripRecovery.mode}
+          workdaySummaryId={openTripRecovery.summaryId}
+          originalTripId={openTripRecovery.originalTripId}
+          initialValues={openTripRecovery.initialValues}
+          context={{
+            ...buildRecoveryContext(
+              openRecoverySummary,
+              openRecoveryAssignedDay,
+              openRecoveryAmbulance,
+            ),
+            tripLabel: openTripRecovery.tripLabel,
+          }}
+          externalStaleSignal={externalStaleSignal}
+          onClose={() => setOpenTripRecovery(null)}
+          onSaved={handleTripRecoverySaved}
         />
       ) : null}
     </>

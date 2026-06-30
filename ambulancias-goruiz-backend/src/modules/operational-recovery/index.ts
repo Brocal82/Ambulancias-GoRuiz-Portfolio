@@ -92,3 +92,55 @@ export type {
   ResolvePraemienImpactResult,
   ResolvableStatus,
 } from "./types/praemien-impact.types";
+
+// Phase 4.1 — Trip Recovery
+export {
+  default as TripCorrection,
+  TRIP_CORRECTION_TYPE,
+  TRIP_CORRECTION_TYPES,
+  TRIP_CORRECTION_STATUS,
+  TRIP_CORRECTION_STATUSES,
+} from "./models/trip-correction.model";
+export type {
+  ITripCorrection,
+  TripCorrectionType,
+  TripCorrectionStatus,
+} from "./models/trip-correction.model";
+export {
+  createTripCorrection,
+  getEffectiveTrip,
+  getEffectiveTripsForWorkday,
+  previewTripCorrection,
+} from "./services/trip-recovery.service";
+export {
+  previewTripCorrectionFromApi,
+  createTripCorrectionFromApi,
+  getEffectiveTripsByWorkdaySummary,
+} from "./services/trip-recovery-api.service";
+export {
+  projectEffectiveTripAggregates,
+  sumProjectableTripKm,
+} from "./services/effective-trip-projection.service";
+export {
+  projectTripCorrectionToWorkday,
+  previewTripWorkdayProjection,
+} from "./services/trip-workday-projection.service";
+export { validateTripWorkdayProjectionFeasibility } from "./services/trip-workday-projection.service";
+export type {
+  CreateTripCorrectionInput,
+  CreateTripCorrectionResult,
+  EffectiveTrip,
+  EffectiveTripsForWorkdayResult,
+  GetEffectiveTripInput,
+  GetEffectiveTripsForWorkdayInput,
+  TripOperationalValues,
+} from "./types/trip-recovery.types";
+export type {
+  ProjectableEffectiveTrip,
+  EffectiveTripProjectionContext,
+  EffectiveTripProjectionResult,
+} from "./types/effective-trip-projection.types";
+export type {
+  ProjectTripCorrectionToWorkdayInput,
+  TripWorkdayProjectionResult,
+} from "./types/trip-workday-projection.types";

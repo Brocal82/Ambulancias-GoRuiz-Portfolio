@@ -2079,6 +2079,67 @@
                             "praemienImpact": "Bonus impact",
                             "payrollImpact": "Payroll impact"
                         }
+                    },
+                    "tripRecovery": {
+                        "badges": {
+                            "corrected": "Corrected",
+                            "voided": "Voided",
+                            "forgotten": "Forgotten"
+                        },
+                        "actions": {
+                            "correct": "Correct",
+                            "void": "Void",
+                            "addForgotten": "Add forgotten trip"
+                        },
+                        "table": {
+                            "status": "Status",
+                            "trip": "Trip",
+                            "countsTrip": "Counts",
+                            "actions": "Actions",
+                            "empty": "No trips"
+                        },
+                        "dialog": {
+                            "titleCorrect": "Correct Trip",
+                            "titleVoid": "Void Trip",
+                            "titleForgotten": "Add Forgotten Trip",
+                            "subtitle": "Changes apply to effective operational values. Preview before saving.",
+                            "cancel": "Cancel",
+                            "save": "Save correction",
+                            "reasonRequired": "Reason is required",
+                            "previewError": "Could not load preview",
+                            "externalStale": "This workday was updated elsewhere. Preview again before saving.",
+                            "context": {
+                                "date": "Date",
+                                "dienst": "Dienst",
+                                "ambulance": "Ambulance",
+                                "workers": "Workers",
+                                "trip": "Trip"
+                            }
+                        },
+                        "fields": {
+                            "countsTrip": "Counts as trip",
+                            "wasCancelled": "Cancelled",
+                            "cancelledAtPickup": "Cancelled at pickup",
+                            "kmStart": "KM start",
+                            "kmEnd": "KM end",
+                            "timeWarning": "Warning time",
+                            "timeAtHome": "Home arrival",
+                            "timePickup": "Pickup time",
+                            "timeArrival": "Arrival time",
+                            "timeEnd": "End time",
+                            "reason": "Reason (required)",
+                            "note": "Note (optional)",
+                            "praemienImpact": "Bonus impact"
+                        },
+                        "preview": {
+                            "title": "Preview",
+                            "button": "Preview impact",
+                            "outOfDate": "Preview out of date. Please preview again.",
+                            "tripTitle": "Effective trip",
+                            "workdayTitle": "Effective workday",
+                            "countsTrip": "countsTrip: {{count}}",
+                            "skipped": "Workday projection skipped: {{reason}}"
+                        }
                     }
                 }
             }
@@ -2235,7 +2296,9 @@
             },
             "correctionSaved": "✅ Correction saved successfully.",
             "correctionError": "❌ Could not save the correction.",
-            "correctionLoadError": "❌ Could not load effective values."
+            "correctionLoadError": "❌ Could not load effective values.",
+            "tripCorrectionSaved": "✅ Trip correction saved successfully.",
+            "tripCorrectionError": "❌ Could not save the trip correction."
         },
         "appointments": {
             "loadError": "❌ Failed to load appointments.",
