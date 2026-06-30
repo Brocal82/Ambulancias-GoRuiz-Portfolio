@@ -116,6 +116,56 @@ async function createSummaryAndCorrection(companyId: mongoose.Types.ObjectId) {
   return { summary, correction, driver, medic };
 }
 
+async function createAdditionalCorrection(
+  companyId: mongoose.Types.ObjectId,
+  summary: { _id: unknown; assignmentId: string },
+  driver: mongoose.Types.ObjectId,
+  medic: mongoose.Types.ObjectId,
+  overrides: Record<string, unknown> = {},
+) {
+  return WorkdaySummaryCorrection.create({
+    originalSummaryId: summary._id,
+    companyId,
+    assignmentId: summary.assignmentId,
+    date: FIXTURE_DATE,
+    workerIds: [driver, medic],
+    correctedTotalEffectivePatients: 7,
+    correctionReason: "Second correction",
+    correctedBy: makeObjectId(),
+    correctedAt: new Date(),
+    praemienImpact: "possible",
+    payrollImpact: "none",
+    status: CORRECTION_STATUS.ACTIVE,
+    ...overrides,
+  });
+}
+
+async function createPraemienResolutionForWorker(opts: {
+  companyId: mongoose.Types.ObjectId;
+  workerId: mongoose.Types.ObjectId;
+  summaryId: string;
+  correctionId: string;
+  beforeValue?: number;
+  afterValue?: number;
+  reason?: string;
+  year?: number;
+  month?: number;
+}) {
+  return createPraemienImpactResolution({
+    companyId: String(opts.companyId),
+    workerId: String(opts.workerId),
+    year: opts.year ?? 2026,
+    month: opts.month ?? 7,
+    relatedWorkdaySummaryId: opts.summaryId,
+    relatedWorkdaySummaryCorrectionId: opts.correctionId,
+    beforeValue: opts.beforeValue,
+    afterValue: opts.afterValue,
+    reason: opts.reason ?? "Correction reason",
+    actorUserId: makeObjectId().toString(),
+    actorRole: "admin",
+  });
+}
+
 // ── Suite ─────────────────────────────────────────────────────────────────────
 
 describe("PraemienImpactResolution service", () => {
@@ -231,8 +281,11 @@ describe("PraemienImpactResolution service", () => {
       expect(String(second.resolution._id)).toBe(String(first.resolution._id));
 
       const count = await PraemienImpactResolution.countDocuments({
-        relatedWorkdaySummaryCorrectionId: correction._id,
+        companyId,
         workerId: driver,
+        year: 2026,
+        month: 7,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
       });
       expect(count).toBe(1);
     });
@@ -833,6 +886,292 @@ describe("PraemienImpactResolution service", () => {
       expect(praemieAfter).not.toBeNull();
       expect(praemieAfter!.averagePatients).toBe(averagePatientsBefore);
       expect(praemieAfter!.premieLevel).toBe(premieLevelBefore);
+    });
+  });
+
+  // ── Phase 4.5.1 — pending coalescing hardening ─────────────────────────────
+
+  describe("Phase 4.5.1 — pending coalescing", () => {
+    it("updates existing pending resolution for same worker/month instead of creating duplicate", async () => {
+      const companyId = makeObjectId();
+      const { summary, correction, driver, medic } =
+        await createSummaryAndCorrection(companyId);
+      const correction2 = await createAdditionalCorrection(
+        companyId,
+        summary,
+        driver,
+        medic,
+      );
+
+      const first = await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+        beforeValue: 4,
+        afterValue: 6,
+        reason: "First correction",
+      });
+
+      const second = await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction2._id),
+        beforeValue: 6,
+        afterValue: 8,
+        reason: "Second correction",
+      });
+
+      expect(first.alreadyExisted).toBe(false);
+      expect(second.alreadyExisted).toBe(true);
+      expect(second.coalesced).toBe(true);
+      expect(String(second.resolution._id)).toBe(String(first.resolution._id));
+      expect(String(second.resolution.relatedWorkdaySummaryCorrectionId)).toBe(
+        String(correction2._id),
+      );
+      expect(second.resolution.afterValue).toBe(8);
+      expect(second.resolution.delta).toBe(2);
+
+      const pendingCount = await PraemienImpactResolution.countDocuments({
+        companyId,
+        workerId: driver,
+        year: 2026,
+        month: 7,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
+      });
+      expect(pendingCount).toBe(1);
+    });
+
+    it("creates a new pending resolution when prior resolution is terminal", async () => {
+      const companyId = makeObjectId();
+      const { summary, correction, driver, medic } =
+        await createSummaryAndCorrection(companyId);
+      const correction2 = await createAdditionalCorrection(
+        companyId,
+        summary,
+        driver,
+        medic,
+      );
+      const actorUserId = makeObjectId().toString();
+
+      const first = await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+      });
+
+      await resolvePraemienImpact({
+        companyId: String(companyId),
+        resolutionId: String(first.resolution._id),
+        newStatus: "ignored",
+        actorUserId,
+        actorRole: "admin",
+        note: "Dismissed",
+      });
+
+      const second = await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction2._id),
+        beforeValue: 6,
+        afterValue: 9,
+        reason: "New operational fact",
+      });
+
+      expect(second.alreadyExisted).toBe(false);
+      expect(second.coalesced).toBe(false);
+      expect(String(second.resolution._id)).not.toBe(String(first.resolution._id));
+
+      const pendingCount = await PraemienImpactResolution.countDocuments({
+        companyId,
+        workerId: driver,
+        year: 2026,
+        month: 7,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
+      });
+      expect(pendingCount).toBe(1);
+
+      const terminal = await PraemienImpactResolution.findById(first.resolution._id);
+      expect(terminal?.status).toBe(PRAEMIEN_RESOLUTION_STATUS.IGNORED);
+    });
+
+    it("creates separate pending resolutions for different workers", async () => {
+      const companyId = makeObjectId();
+      const { summary, correction, driver, medic } =
+        await createSummaryAndCorrection(companyId);
+
+      await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+      });
+      await createPraemienResolutionForWorker({
+        companyId,
+        workerId: medic,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+      });
+
+      const pendingCount = await PraemienImpactResolution.countDocuments({
+        companyId,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
+      });
+      expect(pendingCount).toBe(2);
+    });
+
+    it("creates separate pending resolutions for different months", async () => {
+      const companyId = makeObjectId();
+      const { summary, correction, driver } =
+        await createSummaryAndCorrection(companyId);
+
+      await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+        month: 7,
+      });
+      await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+        month: 6,
+      });
+
+      const pendingCount = await PraemienImpactResolution.countDocuments({
+        companyId,
+        workerId: driver,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
+      });
+      expect(pendingCount).toBe(2);
+    });
+
+    it("creates separate pending resolutions for different companies", async () => {
+      const companyA = makeObjectId();
+      const companyB = makeObjectId();
+      const { summary: summaryA, correction: correctionA, driver: driverA } =
+        await createSummaryAndCorrection(companyA);
+      const { summary: summaryB, correction: correctionB, driver: driverB } =
+        await createSummaryAndCorrection(companyB);
+
+      await createPraemienResolutionForWorker({
+        companyId: companyA,
+        workerId: driverA,
+        summaryId: String(summaryA._id),
+        correctionId: String(correctionA._id),
+      });
+      await createPraemienResolutionForWorker({
+        companyId: companyB,
+        workerId: driverB,
+        summaryId: String(summaryB._id),
+        correctionId: String(correctionB._id),
+      });
+
+      const pendingA = await PraemienImpactResolution.countDocuments({
+        companyId: companyA,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
+      });
+      const pendingB = await PraemienImpactResolution.countDocuments({
+        companyId: companyB,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
+      });
+      expect(pendingA).toBe(1);
+      expect(pendingB).toBe(1);
+    });
+
+    it("does not mutate MonthlyPraemie when coalescing pending resolution", async () => {
+      const companyId = makeObjectId();
+      const { summary, correction, driver, medic } =
+        await createSummaryAndCorrection(companyId);
+      const correction2 = await createAdditionalCorrection(
+        companyId,
+        summary,
+        driver,
+        medic,
+      );
+
+      const praemie = await MonthlyPraemie.create({
+        userId: driver,
+        companyId,
+        year: 2026,
+        month: 7,
+        averagePatients: 5,
+        premieLevel: "gold",
+        snapshotSource: "automatic",
+      });
+
+      await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+        beforeValue: 4,
+        afterValue: 6,
+      });
+      await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction2._id),
+        beforeValue: 6,
+        afterValue: 8,
+      });
+
+      const praemieAfter = await MonthlyPraemie.findById(praemie._id);
+      expect(praemieAfter!.averagePatients).toBe(5);
+      expect(praemieAfter!.premieLevel).toBe("gold");
+    });
+
+    it("appends OperationalRecoveryEvent when coalescing pending resolution", async () => {
+      const companyId = makeObjectId();
+      const { summary, correction, driver, medic } =
+        await createSummaryAndCorrection(companyId);
+      const correction2 = await createAdditionalCorrection(
+        companyId,
+        summary,
+        driver,
+        medic,
+      );
+
+      const first = await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction._id),
+      });
+
+      await createPraemienResolutionForWorker({
+        companyId,
+        workerId: driver,
+        summaryId: String(summary._id),
+        correctionId: String(correction2._id),
+        beforeValue: 6,
+        afterValue: 8,
+      });
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      const createdEvent = await OperationalRecoveryEvent.findOne({
+        entityType: "PRAEMIE",
+        entityId: String(first.resolution._id),
+        action: "PRAEMIEN_RESOLUTION_CREATED",
+      });
+      const coalescedEvent = await OperationalRecoveryEvent.findOne({
+        entityType: "PRAEMIE",
+        entityId: String(first.resolution._id),
+        action: "PRAEMIEN_RESOLUTION_COALESCED",
+      });
+
+      expect(createdEvent).not.toBeNull();
+      expect(coalescedEvent).not.toBeNull();
+      expect(String(coalescedEvent!.metadata?.correctionId)).toBe(
+        String(correction2._id),
+      );
     });
   });
 });

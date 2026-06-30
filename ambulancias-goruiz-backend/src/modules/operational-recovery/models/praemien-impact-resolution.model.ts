@@ -12,6 +12,10 @@
  * This model does NOT replace MonthlyPraemie.
  * It only answers: "What is the current operational resolution state?"
  *
+ * Pending identity (Phase 4.5.1):
+ *   At most one ACTIVE pending resolution per (companyId, workerId, year, month).
+ *   Subsequent corrections coalesce into the existing pending record.
+ *
  * Lifecycle:
  *   pending       → correction arrived with praemienImpact=possible, awaiting review
  *   ignored       → admin reviewed and dismissed (no recalculation needed)
