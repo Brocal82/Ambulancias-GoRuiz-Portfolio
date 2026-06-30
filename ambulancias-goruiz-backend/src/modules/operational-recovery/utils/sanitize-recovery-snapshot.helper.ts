@@ -38,12 +38,20 @@ const ALLOWED_SNAPSHOT_FIELDS: Record<RecoveryEntityType, readonly string[]> = {
     "isVoided",
   ],
   [RECOVERY_ENTITY_TYPE.WORKDAY_SUMMARY]: [
+    // Legacy fields (kept for backward compatibility with older events)
     "status",
-    "date",
     "workerId",
     "totalHours",
     "shiftStatus",
     "isClosed",
+    // Phase 3.1 — actual WorkdaySummary model fields used in correction events
+    "date",
+    "isFinalClosure",
+    "isReviewed",
+    "finalKm",
+    "totalDienstKm",
+    "totalEffectivePatients",
+    "totalRealTrips",
   ],
   [RECOVERY_ENTITY_TYPE.DIENST_ASSIGNMENT]: [
     "assignmentId",

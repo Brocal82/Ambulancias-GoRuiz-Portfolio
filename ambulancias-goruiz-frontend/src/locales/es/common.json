@@ -1264,6 +1264,61 @@
                 "levelPrefix": "Nivel:",
                 "average": "Media: {{avg}} pacientes/día",
                 "noData": "No hay datos para la prämie actual."
+            },
+            "impactResolution": {
+                "panelTitle": "Revisión de Prämien — Mes Cerrado",
+                "loading": "Cargando elementos pendientes...",
+                "loadError": "Error al cargar revisiones pendientes",
+                "th": {
+                    "worker": "Trabajador",
+                    "month": "Mes",
+                    "original": "Original",
+                    "corrected": "Corregido",
+                    "delta": "Delta",
+                    "reason": "Motivo",
+                    "status": "Estado",
+                    "actions": "Acciones"
+                },
+                "reviewButton": "Revisar",
+                "viewWorkday": "Ver Jornada corregida",
+                "noValue": "—",
+                "status": {
+                    "pending": "Pendiente",
+                    "ignored": "Ignorado",
+                    "adjusted": "Ajustado",
+                    "blocked": "Bloqueado",
+                    "recalculated": "Recalculado"
+                },
+                "modal": {
+                    "title": "Revisar Impacto en Prämien",
+                    "worker": "Trabajador",
+                    "month": "Mes",
+                    "original": "Valor original",
+                    "corrected": "Valor corregido",
+                    "delta": "Delta",
+                    "reason": "Motivo",
+                    "currentStatus": "Estado actual",
+                    "existingNote": "Nota existente",
+                    "newStatus": "Resolución",
+                    "note": "Nota",
+                    "notePlaceholder": "Describe cómo se resolvió...",
+                    "noteRequired": "La nota es obligatoria",
+                    "save": "Guardar resolución",
+                    "cancel": "Cancelar",
+                    "saving": "Guardando...",
+                    "saveError": "Error al guardar la resolución",
+                    "alreadyResolved": "Este elemento ya fue resuelto por otro administrador.",
+                    "statusOptions": {
+                        "ignored": "Ignorado — sin acción necesaria",
+                        "adjusted": "Ajustado — corregido manualmente",
+                        "blocked": "Bloqueado — período cerrado"
+                    }
+                },
+                "toast": {
+                    "ignored": "Resolución marcada como ignorada",
+                    "adjusted": "Resolución marcada como ajustada",
+                    "blocked": "Resolución bloqueada"
+                }
             }
         },
         "payroll": {
@@ -1982,7 +2037,49 @@
                         "partial": "Parcial"
                     },
                     "effectivePatients_one": "{{count}} paciente efectivo",
-                    "effectivePatients_other": "{{count}} pacientes efectivos"
+                    "effectivePatients_other": "{{count}} pacientes efectivos",
+                    "correction": {
+                        "badge": "Corregido",
+                        "button": "Corregir Jornada",
+                        "dialogTitle": "Corregir Resumen de Jornada",
+                        "dialogSubtitle": "Los valores corregidos reemplazan lo que aparece en los informes. Los datos originales se conservan.",
+                        "fields": {
+                            "correctedFinalKm": "KM Final Corregido",
+                            "correctedTotalDienstKm": "KM Dienst Total Corregido",
+                            "correctedTotalEffectivePatients": "Pacientes Efectivos Corregidos",
+                            "correctedTotalRealTrips": "Traslados Reales Corregidos",
+                            "correctionReason": "Motivo de la corrección",
+                            "correctionNote": "Nota (opcional)",
+                            "praemienImpact": "Impacto en primas",
+                            "payrollImpact": "Impacto en nómina"
+                        },
+                        "impact": {
+                            "none": "Ninguno",
+                            "possible": "Posible"
+                        },
+                        "preview": {
+                            "title": "Vista previa",
+                            "original": "Original",
+                            "corrected": "Corregido",
+                            "difference": "Diferencia",
+                            "finalKm": "KM Final",
+                            "totalDienstKm": "KM Dienst",
+                            "effectivePatients": "Pacientes efectivos",
+                            "realTrips": "Traslados reales"
+                        },
+                        "save": "Guardar corrección",
+                        "cancel": "Cancelar",
+                        "reasonRequired": "El motivo es obligatorio",
+                        "atLeastOneField": "Introduce al menos un valor corregido",
+                        "correctedSection": {
+                            "title": "Corrección activa",
+                            "reason": "Motivo",
+                            "note": "Nota",
+                            "correctedAt": "Corregido el",
+                            "praemienImpact": "Impacto en primas",
+                            "payrollImpact": "Impacto en nómina"
+                        }
+                    }
                 }
             }
         },
@@ -2135,7 +2232,10 @@
             "final": {
                 "finalKmRequired": "📏 Introduce los kilómetros finales.",
                 "issueRegistered": "🛠️ Avería registrada. Ahora puedes enviar el cierre final."
-            }
+            },
+            "correctionSaved": "✅ Corrección guardada correctamente.",
+            "correctionError": "❌ No se pudo guardar la corrección.",
+            "correctionLoadError": "❌ No se pudieron cargar los valores efectivos."
         },
         "appointments": {
             "loadError": "❌ Error al cargar citas.",

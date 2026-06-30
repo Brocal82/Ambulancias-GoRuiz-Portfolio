@@ -42,3 +42,53 @@ export type {
   RepairAbsenceInconsistencyInput,
   RepairResult,
 } from "./types/absence-cleanup.types";
+
+// Phase 3.1 — Workday Recovery
+export {
+  default as WorkdaySummaryCorrection,
+  CORRECTION_STATUS,
+  CORRECTION_STATUSES,
+} from "./models/workday-summary-correction.model";
+export type {
+  IWorkdaySummaryCorrection,
+  CorrectionStatus,
+} from "./models/workday-summary-correction.model";
+export {
+  createWorkdaySummaryCorrection,
+  getEffectiveWorkdaySummary,
+} from "./services/workday-recovery.service";
+export type {
+  CreateWorkdaySummaryCorrectionInput,
+  CreateWorkdaySummaryCorrectionResult,
+  EffectiveWorkdaySummary,
+  GetEffectiveWorkdaySummaryInput,
+  OriginalWorkdayValues,
+} from "./types/workday-recovery.types";
+
+// Phase 3.4.1 — Praemien Impact Resolution
+export {
+  default as PraemienImpactResolution,
+  PRAEMIEN_RESOLUTION_STATUS,
+  PRAEMIEN_RESOLUTION_STATUSES,
+  PRAEMIEN_RESOLUTION_TERMINAL_STATUSES,
+} from "./models/praemien-impact-resolution.model";
+export type {
+  IPraemienImpactResolution,
+  PraemienResolutionStatus,
+} from "./models/praemien-impact-resolution.model";
+export {
+  createPraemienImpactResolution,
+  getActivePraemienImpact,
+  listPraemienImpactResolutions,
+  resolvePraemienImpact,
+  parseDateToYearMonth,
+} from "./services/praemien-impact-resolution.service";
+export type {
+  CreatePraemienImpactResolutionInput,
+  CreatePraemienImpactResolutionResult,
+  GetActivePraemienImpactInput,
+  ListPraemienImpactResolutionsInput,
+  ResolvePraemienImpactInput,
+  ResolvePraemienImpactResult,
+  ResolvableStatus,
+} from "./types/praemien-impact.types";
