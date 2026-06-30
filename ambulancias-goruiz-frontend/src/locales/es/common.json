@@ -2079,6 +2079,67 @@
                             "praemienImpact": "Impacto en primas",
                             "payrollImpact": "Impacto en nómina"
                         }
+                    },
+                    "tripRecovery": {
+                        "badges": {
+                            "corrected": "Corregido",
+                            "voided": "Anulado",
+                            "forgotten": "Olvidado"
+                        },
+                        "actions": {
+                            "correct": "Corregir",
+                            "void": "Anular",
+                            "addForgotten": "Añadir traslado olvidado"
+                        },
+                        "table": {
+                            "status": "Estado",
+                            "trip": "Traslado",
+                            "countsTrip": "Cuenta",
+                            "actions": "Acciones",
+                            "empty": "Sin traslados"
+                        },
+                        "dialog": {
+                            "titleCorrect": "Corregir traslado",
+                            "titleVoid": "Anular traslado",
+                            "titleForgotten": "Añadir traslado olvidado",
+                            "subtitle": "Los cambios aplican a los valores operativos efectivos. Previsualiza antes de guardar.",
+                            "cancel": "Cancelar",
+                            "save": "Guardar corrección",
+                            "reasonRequired": "El motivo es obligatorio",
+                            "previewError": "No se pudo cargar la vista previa",
+                            "externalStale": "Esta jornada se actualizó en otro lugar. Previsualiza de nuevo antes de guardar.",
+                            "context": {
+                                "date": "Fecha",
+                                "dienst": "Dienst",
+                                "ambulance": "Ambulancia",
+                                "workers": "Trabajadores",
+                                "trip": "Traslado"
+                            }
+                        },
+                        "fields": {
+                            "countsTrip": "Cuenta como traslado",
+                            "wasCancelled": "Cancelado",
+                            "cancelledAtPickup": "Cancelado en recogida",
+                            "kmStart": "KM inicio",
+                            "kmEnd": "KM fin",
+                            "timeWarning": "Hora aviso",
+                            "timeAtHome": "Llegada domicilio",
+                            "timePickup": "Hora recogida",
+                            "timeArrival": "Hora llegada",
+                            "timeEnd": "Hora libre",
+                            "reason": "Motivo (obligatorio)",
+                            "note": "Nota (opcional)",
+                            "praemienImpact": "Impacto en primas"
+                        },
+                        "preview": {
+                            "title": "Vista previa",
+                            "button": "Previsualizar impacto",
+                            "outOfDate": "Vista previa desactualizada. Previsualiza de nuevo.",
+                            "tripTitle": "Traslado efectivo",
+                            "workdayTitle": "Jornada efectiva",
+                            "countsTrip": "countsTrip: {{count}}",
+                            "skipped": "Proyección de jornada omitida: {{reason}}"
+                        }
                     }
                 }
             }
@@ -2235,7 +2296,9 @@
             },
             "correctionSaved": "✅ Corrección guardada correctamente.",
             "correctionError": "❌ No se pudo guardar la corrección.",
-            "correctionLoadError": "❌ No se pudieron cargar los valores efectivos."
+            "correctionLoadError": "❌ No se pudieron cargar los valores efectivos.",
+            "tripCorrectionSaved": "✅ Corrección de traslado guardada correctamente.",
+            "tripCorrectionError": "❌ No se pudo guardar la corrección del traslado."
         },
         "appointments": {
             "loadError": "❌ Error al cargar citas.",

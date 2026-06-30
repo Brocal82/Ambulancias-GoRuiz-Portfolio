@@ -22,6 +22,10 @@ interface Props {
     showPraemieColumn?: boolean;
     /** When set with showPraemieColumn, adds Total Prämie column in header. */
     totalEffectivePatients?: number | null;
+    /** When true, hides the default trip table (e.g. replaced by effective trips). */
+    hideTripTable?: boolean;
+    /** Custom trip table content rendered inside the card when hideTripTable is true. */
+    tripTableReplacement?: React.ReactNode;
 }
 
 const ReviewSummary: React.FC<Props> = ({
@@ -34,6 +38,8 @@ const ReviewSummary: React.FC<Props> = ({
     dense = false,
     showPraemieColumn = true,
     totalEffectivePatients = null,
+    hideTripTable = false,
+    tripTableReplacement,
 }) => {
     const { t } = useTranslation();
     const [praemienRules, setPraemienRules] = useState<PraemienRuleConfig | null>(null);
@@ -177,6 +183,9 @@ const ReviewSummary: React.FC<Props> = ({
                     </div>
                 )}
 
+                {hideTripTable ? (
+                    tripTableReplacement ?? null
+                ) : (
                 <div className={tableScroll}>
                     <table className={`w-full table-auto ${tableText}`}>
                     <thead
@@ -328,6 +337,7 @@ const ReviewSummary: React.FC<Props> = ({
                     </tbody>
                 </table>
                 </div>
+                )}
             </div>
         </div>
     );

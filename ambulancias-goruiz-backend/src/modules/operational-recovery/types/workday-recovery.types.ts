@@ -30,6 +30,11 @@ export interface CreateWorkdaySummaryCorrectionInput {
   // ── Impact flags ──────────────────────────────────────────────────────────
   praemienImpact: PraemienImpact;
   payrollImpact: PayrollImpact;
+
+  /** Optional audit metadata source (defaults to workday_recovery). */
+  recoveryMetadataSource?: string;
+  /** When projected from Trip Recovery. */
+  relatedTripCorrectionId?: string;
 }
 
 export interface GetEffectiveWorkdaySummaryInput {
