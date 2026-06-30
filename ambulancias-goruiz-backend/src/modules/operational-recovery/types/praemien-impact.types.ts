@@ -31,8 +31,10 @@ export interface CreatePraemienImpactResolutionInput {
 
 export interface CreatePraemienImpactResolutionResult {
   resolution: IPraemienImpactResolution;
-  /** True when a PENDING resolution already existed and was returned as-is. */
+  /** True when a PENDING resolution already existed (returned or coalesced). */
   alreadyExisted: boolean;
+  /** True when an existing PENDING resolution was updated with newer effective state. */
+  coalesced?: boolean;
 }
 
 // ── listPraemienImpactResolutions ────────────────────────────────────────────

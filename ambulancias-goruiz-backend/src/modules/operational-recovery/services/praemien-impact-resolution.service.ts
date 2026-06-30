@@ -12,7 +12,7 @@
  *   - Does NOT recalculate Praemien.
  *   - Does NOT touch Payroll.
  *   - Strict multi-tenant: every query scoped by companyId; no legacy null fallback.
- *   - One PENDING resolution per (companyId, workerId, correctionId) — idempotent create.
+ *   - One PENDING resolution per (companyId, workerId, year, month) — coalesced create.
  *   - Terminal resolutions cannot be resolved again.
  *   - Every lifecycle transition records an immutable OperationalRecoveryEvent.
  */
@@ -148,6 +148,82 @@ function verifyWorkerInCorrection(
   }
 }
 
+function computeDelta(
+  beforeValue: number | undefined,
+  afterValue: number | undefined,
+): number | undefined {
+  if (beforeValue !== undefined && afterValue !== undefined) {
+    return afterValue - beforeValue;
+  }
+  return undefined;
+}
+
+function pendingResolutionMatchesInput(
+  existing: IPraemienImpactResolution,
+  input: CreatePraemienImpactResolutionInput,
+  correctionId: string,
+  summaryId: string,
+  delta: number | undefined,
+): boolean {
+  return (
+    String(existing.relatedWorkdaySummaryCorrectionId) === correctionId &&
+    String(existing.relatedWorkdaySummaryId) === summaryId &&
+    existing.reason === input.reason.trim() &&
+    existing.beforeValue === input.beforeValue &&
+    existing.afterValue === input.afterValue &&
+    existing.delta === delta
+  );
+}
+
+async function recordPraemienResolutionRecoveryEvent(params: {
+  companyId: string;
+  resolutionId: string;
+  workerId: string;
+  summaryId: string;
+  correctionId: string;
+  year: number;
+  month: number;
+  reason: string;
+  actorUserId: string;
+  actorRole: string;
+  action: RecoveryActionType;
+  previousCorrectionId?: string;
+}): Promise<mongoose.Types.ObjectId | undefined> {
+  try {
+    const recoveryEvent = await recordRecoveryEvent({
+      companyId: params.companyId,
+      moduleKey: MODULE_KEYS.WORKDAY,
+      entityType: RECOVERY_ENTITY_TYPE.PRAEMIE,
+      entityId: params.resolutionId,
+      entityLabel: `PraemienImpactResolution for worker ${params.workerId} (${params.year}-${String(params.month).padStart(2, "0")})`,
+      action: params.action,
+      actorUserId: params.actorUserId,
+      actorRole: params.actorRole,
+      reason: params.reason,
+      metadata: {
+        correctionId: params.correctionId,
+        previousCorrectionId: params.previousCorrectionId,
+        summaryId: params.summaryId,
+        workerId: params.workerId,
+        year: params.year,
+        month: params.month,
+        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
+      },
+      severity: RECOVERY_SEVERITY.INFO,
+      relatedWorkdaySummaryId: params.summaryId,
+      relatedWorkerId: params.workerId,
+    });
+    return recoveryEvent._id as mongoose.Types.ObjectId;
+  } catch (eventErr) {
+    console.error(
+      "[PraemienImpact] Failed to record OperationalRecoveryEvent for resolution",
+      params.resolutionId,
+      eventErr,
+    );
+    return undefined;
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -156,8 +232,12 @@ function verifyWorkerInCorrection(
  * IMPORTANT: Only call this when `praemienImpact = "possible"`.
  * Callers should NOT call this when `praemienImpact = "none"`.
  *
- * Idempotent: if a PENDING resolution already exists for the same
- * (companyId, workerId, correctionId), it is returned as-is.
+ * Idempotent / coalescing (Phase 4.5.1):
+ *   - At most one PENDING resolution per (companyId, workerId, year, month).
+ *   - If a pending resolution exists, it is updated with the newest effective state
+ *     instead of creating a duplicate.
+ *   - Exact duplicate calls (same correction + values) return the existing record.
+ *   - Terminal resolutions are never reopened; a new pending is created instead.
  *
  * Multi-tenant: validates that the correction belongs to the admin's company
  * and that the worker is in the correction's workerIds.
@@ -191,25 +271,92 @@ export async function createPraemienImpactResolution(
   verifyCorrectionTenant(correction.companyId, companyId);
   verifyWorkerInCorrection(correction.workerIds, workerId);
 
-  // ── 3. Idempotency: check for existing PENDING resolution ─────────────────
-  const existing = await PraemienImpactResolution.findOne({
+  const delta = computeDelta(input.beforeValue, input.afterValue);
+
+  // ── 3. Coalesce into existing PENDING resolution for worker/month ─────────
+  const existingPending = await PraemienImpactResolution.findOne({
     companyId: new mongoose.Types.ObjectId(companyId),
     workerId: new mongoose.Types.ObjectId(workerId),
-    relatedWorkdaySummaryCorrectionId: new mongoose.Types.ObjectId(correctionId),
+    year: input.year,
+    month: input.month,
     status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
   });
 
-  if (existing) {
-    return { resolution: existing, alreadyExisted: true };
+  if (existingPending) {
+    if (
+      pendingResolutionMatchesInput(
+        existingPending,
+        input,
+        correctionId,
+        summaryId,
+        delta,
+      )
+    ) {
+      return {
+        resolution: existingPending,
+        alreadyExisted: true,
+        coalesced: false,
+      };
+    }
+
+    const previousCorrectionId = String(
+      existingPending.relatedWorkdaySummaryCorrectionId,
+    );
+
+    const updateFields: Record<string, unknown> = {
+      relatedWorkdaySummaryId: new mongoose.Types.ObjectId(summaryId),
+      relatedWorkdaySummaryCorrectionId: new mongoose.Types.ObjectId(correctionId),
+      reason: input.reason.trim(),
+    };
+    if (input.beforeValue !== undefined) {
+      updateFields.beforeValue = input.beforeValue;
+    }
+    if (input.afterValue !== undefined) {
+      updateFields.afterValue = input.afterValue;
+    }
+    if (delta !== undefined) {
+      updateFields.delta = delta;
+    }
+
+    await PraemienImpactResolution.updateOne(
+      { _id: existingPending._id },
+      { $set: updateFields },
+    );
+
+    const recoveryEventId = await recordPraemienResolutionRecoveryEvent({
+      companyId,
+      resolutionId: String(existingPending._id),
+      workerId,
+      summaryId,
+      correctionId,
+      year: input.year,
+      month: input.month,
+      reason: input.reason.trim(),
+      actorUserId,
+      actorRole: input.actorRole,
+      action: RECOVERY_ACTION_TYPE.PRAEMIEN_RESOLUTION_COALESCED,
+      previousCorrectionId,
+    });
+
+    if (recoveryEventId) {
+      await PraemienImpactResolution.updateOne(
+        { _id: existingPending._id },
+        { $set: { recoveryEventId } },
+      );
+    }
+
+    const refreshed = (await PraemienImpactResolution.findById(
+      existingPending._id,
+    )) as IPraemienImpactResolution;
+
+    return {
+      resolution: refreshed,
+      alreadyExisted: true,
+      coalesced: true,
+    };
   }
 
-  // ── 4. Compute delta if before/after provided ─────────────────────────────
-  let delta: number | undefined;
-  if (input.beforeValue !== undefined && input.afterValue !== undefined) {
-    delta = input.afterValue - input.beforeValue;
-  }
-
-  // ── 5. Create resolution ──────────────────────────────────────────────────
+  // ── 4. Create resolution ──────────────────────────────────────────────────
   const resolution = await PraemienImpactResolution.create({
     companyId: new mongoose.Types.ObjectId(companyId),
     workerId: new mongoose.Types.ObjectId(workerId),
@@ -224,51 +371,34 @@ export async function createPraemienImpactResolution(
     reason: input.reason.trim(),
   });
 
-  // ── 6. Record immutable audit event ───────────────────────────────────────
-  try {
-    const recoveryEvent = await recordRecoveryEvent({
-      companyId,
-      moduleKey: MODULE_KEYS.WORKDAY,
-      entityType: RECOVERY_ENTITY_TYPE.PRAEMIE,
-      entityId: String(resolution._id),
-      entityLabel: `PraemienImpactResolution for worker ${workerId} (${input.year}-${String(input.month).padStart(2, "0")})`,
-      action: RECOVERY_ACTION_TYPE.PRAEMIEN_RESOLUTION_CREATED,
-      actorUserId,
-      actorRole: input.actorRole,
-      reason: input.reason.trim(),
-      metadata: {
-        correctionId,
-        summaryId,
-        workerId,
-        year: input.year,
-        month: input.month,
-        status: PRAEMIEN_RESOLUTION_STATUS.PENDING,
-      },
-      severity: RECOVERY_SEVERITY.INFO,
-      relatedWorkdaySummaryId: summaryId,
-      relatedWorkerId: workerId,
-    });
+  // ── 5. Record immutable audit event ───────────────────────────────────────
+  const recoveryEventId = await recordPraemienResolutionRecoveryEvent({
+    companyId,
+    resolutionId: String(resolution._id),
+    workerId,
+    summaryId,
+    correctionId,
+    year: input.year,
+    month: input.month,
+    reason: input.reason.trim(),
+    actorUserId,
+    actorRole: input.actorRole,
+    action: RECOVERY_ACTION_TYPE.PRAEMIEN_RESOLUTION_CREATED,
+  });
 
+  if (recoveryEventId) {
     await PraemienImpactResolution.updateOne(
       { _id: resolution._id },
-      { $set: { recoveryEventId: recoveryEvent._id } },
+      { $set: { recoveryEventId } },
     );
-    (resolution as IPraemienImpactResolution).recoveryEventId =
-      recoveryEvent._id as mongoose.Types.ObjectId;
-  } catch (eventErr) {
-    // Audit event failure does not roll back the resolution.
-    console.error(
-      "[PraemienImpact] Failed to record OperationalRecoveryEvent for resolution",
-      String(resolution._id),
-      eventErr,
-    );
+    (resolution as IPraemienImpactResolution).recoveryEventId = recoveryEventId;
   }
 
   const refreshed = (await PraemienImpactResolution.findById(
     resolution._id,
   )) as IPraemienImpactResolution;
 
-  return { resolution: refreshed, alreadyExisted: false };
+  return { resolution: refreshed, alreadyExisted: false, coalesced: false };
 }
 
 /**
