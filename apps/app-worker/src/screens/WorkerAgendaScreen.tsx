@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -378,6 +379,15 @@ export function WorkerAgendaScreen({
     prevAgendaWsTrigger.current = agendaWsTrigger;
     void loadAgenda({ silent: true });
   }, [agendaWsTrigger]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void loadAgenda({ silent: true });
+      }
+    });
+    return () => subscription.remove();
+  }, [scheduleSource, weekStart]);
 
   useEffect(() => {
     void loadAgenda();

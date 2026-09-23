@@ -1,6 +1,7 @@
 import { File, Paths } from "expo-file-system";
+import { EncodingType, getContentUriAsync, readAsStringAsync } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
-import { Linking } from "react-native";
+import { Linking, Platform } from "react-native";
 
 import { ENV } from "../config/env";
 import {
@@ -10,6 +11,19 @@ import {
   shouldUseAuthenticatedFileRoute,
 } from "../utils/secureFileRouting";
 import { getAuthBearerToken, notifyUnauthorizedIfStatus } from "./http";
+
+export type PdfViewerPayload = {
+  title: string;
+  base64: string;
+};
+
+let pdfViewerHandler: ((payload: PdfViewerPayload) => void) | null = null;
+
+export function registerPdfViewerHandler(
+  handler: ((payload: PdfViewerPayload) => void) | null,
+): void {
+  pdfViewerHandler = handler;
+}
 
 function sanitizeFilenameForCache(filename: string): string {
   return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -41,6 +55,29 @@ export function filenameFromUrlOrPath(rawUrl: string): string | null {
 /** @deprecated Prefer buildPublicUploadCandidates or resolvePublicImageUrl. */
 export function buildPublicFileCandidates(rawUrl: string): string[] {
   return buildPublicUploadCandidates(rawUrl, ENV.apiBaseUrl);
+}
+
+async function openDownloadedFile(fileUri: string): Promise<boolean> {
+  if (Platform.OS === "android") {
+    try {
+      const contentUri = await getContentUriAsync(fileUri);
+      await Linking.openURL(contentUri);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  if (Platform.OS === "ios") {
+    try {
+      await Linking.openURL(fileUri);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 async function probePublicImageCandidate(url: string): Promise<boolean> {
@@ -77,6 +114,23 @@ export async function resolvePublicImageUrl(rawUrl: string): Promise<string | nu
   return null;
 }
 
+function isNativeWebViewAvailable(): boolean {
+  try {
+    require("react-native-webview");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function openPdfInAppViewer(filename: string, fileUri: string): Promise<boolean> {
+  if (!pdfViewerHandler || !isNativeWebViewAvailable()) return false;
+
+  const base64 = await readAsStringAsync(fileUri, { encoding: EncodingType.Base64 });
+  pdfViewerHandler({ title: filename, base64 });
+  return true;
+}
+
 export async function downloadAndOpenAuthenticatedFile(filename: string): Promise<void> {
   const token = await getAuthBearerToken();
   if (!token) {
@@ -104,18 +158,34 @@ export async function downloadAndOpenAuthenticatedFile(filename: string): Promis
   destFile.write(new Uint8Array(arrayBuffer));
 
   const mimeType = guessMimeType(filename);
+
+  if (mimeType === "application/pdf") {
+    const openedInApp = await openPdfInAppViewer(filename, destFile.uri);
+    if (openedInApp) return;
+
+    const opened = await openDownloadedFile(destFile.uri);
+    if (opened) return;
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(destFile.uri, {
+        mimeType,
+        UTI: "com.adobe.pdf",
+        dialogTitle: "Abrir archivo",
+      });
+      return;
+    }
+
+    throw new Error("No se pudo abrir el PDF. Recompila la app con: npx expo run:android");
+  }
+
+  const opened = await openDownloadedFile(destFile.uri);
+  if (opened) return;
+
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(destFile.uri, {
       mimeType,
-      UTI: mimeType === "application/pdf" ? "com.adobe.pdf" : undefined,
       dialogTitle: "Abrir archivo",
     });
-    return;
-  }
-
-  const canOpen = await Linking.canOpenURL(destFile.uri);
-  if (canOpen) {
-    await Linking.openURL(destFile.uri);
     return;
   }
 

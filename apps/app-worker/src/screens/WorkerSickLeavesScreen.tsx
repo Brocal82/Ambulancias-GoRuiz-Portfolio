@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Modal,
   Pressable,
   ScrollView,
@@ -25,19 +26,15 @@ import {
   SickLeaveItem,
   SickLeaveStatus,
 } from "../services/sickLeaves";
-
-function dateOnly(value: string): string {
-  const trimmed = (value ?? "").trim();
-  const direct = /^(\d{4}-\d{2}-\d{2})$/.exec(trimmed);
-  if (direct) return direct[1] ?? trimmed;
-  const iso = /^(\d{4}-\d{2}-\d{2})T/.exec(trimmed);
-  if (iso) return iso[1] ?? trimmed;
-  return trimmed;
-}
+import {
+  calendarDateFromApi,
+  inclusiveCalendarDayCount,
+} from "../utils/calendarDate";
 
 function parseDayKey(day: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
-  const [y, m, d] = day.split("-").map(Number);
+  const normalized = calendarDateFromApi(day);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return null;
+  const [y, m, d] = normalized.split("-").map(Number);
   const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
   if (Number.isNaN(dt.getTime())) return null;
   return dt;
@@ -47,17 +44,6 @@ function formatDateLabel(day: string): string {
   const parsed = parseDayKey(day);
   if (!parsed) return day;
   return parsed.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function calcDays(start: string, end: string): number {
-  const startDt = parseDayKey(start);
-  const endDt = parseDayKey(end);
-  if (!startDt || !endDt) return 0;
-  startDt.setHours(0, 0, 0, 0);
-  endDt.setHours(0, 0, 0, 0);
-  const diff = endDt.getTime() - startDt.getTime();
-  if (diff < 0) return 0;
-  return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
 }
 
 function isPastDay(day: string): boolean {
@@ -146,6 +132,15 @@ export function WorkerSickLeavesScreen({ wsTrigger }: { wsTrigger?: number }) {
 
   useEffect(() => {
     void loadAll();
+  }, [loadAll]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void loadAll(true);
+      }
+    });
+    return () => subscription.remove();
   }, [loadAll]);
 
   const prevWsTrigger = useRef(wsTrigger);
@@ -322,8 +317,8 @@ export function WorkerSickLeavesScreen({ wsTrigger }: { wsTrigger?: number }) {
   };
 
   const validateCreate = (): { ok: true; start: string; end: string } | { ok: false } => {
-    const start = selectedStart ? dateOnly(selectedStart) : "";
-    const end = dateOnly(selectedEnd ?? selectedStart ?? "");
+    const start = selectedStart ? calendarDateFromApi(selectedStart) : "";
+    const end = calendarDateFromApi(selectedEnd ?? selectedStart ?? "");
     if (!start || !end) {
       Alert.alert("Datos incompletos", "Selecciona un rango en el calendario.");
       return { ok: false };
@@ -602,9 +597,9 @@ export function WorkerSickLeavesScreen({ wsTrigger }: { wsTrigger?: number }) {
               <Text style={styles.emptyText}>Todavía no tienes solicitudes de baja.</Text>
             ) : (
               items.map((item) => {
-                const start = dateOnly(item.startDate);
-                const end = dateOnly(item.endDate);
-                const days = calcDays(start, end);
+                const start = calendarDateFromApi(item.startDate);
+                const end = calendarDateFromApi(item.endDate);
+                const days = inclusiveCalendarDayCount(start, end);
                 const tone = statusStyle(item.status);
                 const hasNote = Boolean(item.note?.trim());
                 const loadingThis = uploadingId === item._id;

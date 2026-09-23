@@ -1,5 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Notifications from "expo-notifications";
 
 Notifications.setNotificationHandler({
@@ -12,15 +13,18 @@ Notifications.setNotificationHandler({
 });
 
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
+import { SecurePdfViewerHost } from "./src/components/SecurePdfViewerHost";
 import { AdminBlockedScreen } from "./src/screens/AdminBlockedScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { WorkerTabsShell } from "./src/screens/WorkerTabsShell";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -54,14 +58,16 @@ function AppContent() {
       {isAuthenticated && user?.role !== "worker" ? (
         <AdminBlockedScreen onLogout={logout} />
       ) : isAuthenticated && user ? (
-        <WorkerTabsShell
-          user={user}
-          enabledModules={enabledModules}
-          scheduleSource={scheduleSource}
-          onLogout={logout}
-          onRefreshProfile={refreshProfile}
-          onRefreshCompanyModules={refreshCompanyModules}
-        />
+        <SecurePdfViewerHost>
+          <WorkerTabsShell
+            user={user}
+            enabledModules={enabledModules}
+            scheduleSource={scheduleSource}
+            onLogout={logout}
+            onRefreshProfile={refreshProfile}
+            onRefreshCompanyModules={refreshCompanyModules}
+          />
+        </SecurePdfViewerHost>
       ) : (
         <LoginScreen onLogin={login} errorMessage={authError} />
       )}

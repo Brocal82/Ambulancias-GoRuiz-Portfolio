@@ -1047,13 +1047,18 @@ export async function checkPayrollCoverage(
 
     // ── 2. Confirmed payroll documents for the exact period ───────────────────
     // "Confirmed" = manual or matched, always has a non-null workerId.
+    // Legacy Phase 1 docs may omit matchStatus while workerId is set — treat as confirmed.
     const coveredDocs = (await PayrollDocument.find({
       companyId: companyOid,
       year,
       month,
-      matchStatus: { $in: ["manual", "matched"] },
       workerId: { $ne: null },
       deletedAt: null,
+      $or: [
+        { matchStatus: { $in: ["manual", "matched"] } },
+        { matchStatus: { $exists: false } },
+        { matchStatus: null },
+      ],
     })
       .select("workerId")
       .lean()) as Array<{ workerId: unknown }>;

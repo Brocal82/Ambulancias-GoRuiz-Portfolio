@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Modal,
   Pressable,
   ScrollView,
@@ -273,6 +274,15 @@ export function WorkerVacationsScreen({ wsTrigger }: { wsTrigger?: number }) {
 
   useEffect(() => {
     void loadAll();
+  }, [loadAll]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void loadAll({ silent: true });
+      }
+    });
+    return () => subscription.remove();
   }, [loadAll]);
 
   const prevWsTrigger = useRef(wsTrigger);

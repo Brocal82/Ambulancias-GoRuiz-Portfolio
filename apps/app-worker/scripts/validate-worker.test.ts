@@ -10,7 +10,11 @@ import { MODULE_KEYS } from "../src/types/auth.js";
 import { buildClosureTripRefs } from "../src/utils/closurePayload.js";
 import { resolveInitialDocumentsTab } from "../src/utils/documentsTab.js";
 import { countUnreadMessages } from "../src/utils/messageBadge.js";
-import { resolvePushNavigationTarget } from "../src/utils/notificationNavigation.js";
+import { resolvePushNavigationTarget, pushRefreshTabFromData } from "../src/utils/notificationNavigation.js";
+import {
+  calendarDateFromApi,
+  inclusiveCalendarDayCount,
+} from "../src/utils/calendarDate.js";
 import {
   isVerifiedPublicImageFilename,
   shouldUseAuthenticatedFileRoute,
@@ -442,6 +446,29 @@ test("payrollWsTrigger counter pattern: initial trigger is ignored, increment fi
   // Second WS event → trigger becomes 2 → fires again
   simulateTriggerEffect(2);
   assert.equal(reloadCount, 2);
+});
+
+test("calendarDateFromApi uses Europe/Berlin for ISO datetimes", () => {
+  // Berlin start of 2026-07-02 in CEST → 2026-07-01T22:00:00.000Z
+  assert.equal(calendarDateFromApi("2026-07-01T22:00:00.000Z"), "2026-07-02");
+  assert.equal(calendarDateFromApi("2026-07-02"), "2026-07-02");
+});
+
+test("inclusiveCalendarDayCount matches web sick-leave day totals", () => {
+  // Berlin 2026-07-02 .. 2026-07-03 (jue–vie)
+  assert.equal(
+    inclusiveCalendarDayCount("2026-07-01T22:00:00.000Z", "2026-07-03T21:59:59.999Z"),
+    2,
+  );
+  assert.equal(inclusiveCalendarDayCount("2026-07-02", "2026-07-03"), 2);
+});
+
+test("pushRefreshTabFromData resolves vacations screen", () => {
+  const tab = pushRefreshTabFromData(
+    { screen: "vacations", type: "vacation_updated", status: "cancelled" },
+    [MODULE_KEYS.VACATION],
+  );
+  assert.equal(tab, "vacations");
 });
 
 test("default fallback Praemien rules are preserved when config is null", () => {
