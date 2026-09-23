@@ -269,6 +269,10 @@ export default function AdminPayrollPage() {
   const [coverageTotalWorkers, setCoverageTotalWorkers] = useState<number | null>(
     null,
   );
+  const [coverageCoveredCount, setCoverageCoveredCount] = useState<number | null>(
+    null,
+  );
+  const [coverageRefreshKey, setCoverageRefreshKey] = useState(0);
 
   // ── working period context ─────────────────────────────────────────────────
   // Drives the Period Context Bar, the header summary, and the document table
@@ -406,6 +410,7 @@ export default function AdminPayrollPage() {
   useEffect(() => {
     return subscribePayrollChanged(() => {
       void fetchDocs();
+      setCoverageRefreshKey((key) => key + 1);
     });
   }, [fetchDocs]);
 
@@ -415,6 +420,7 @@ export default function AdminPayrollPage() {
     let cancelled = false;
     setCoverageMissingWorkers(null);
     setCoverageTotalWorkers(null);
+    setCoverageCoveredCount(null);
 
     void apiCheckPayrollCoverage(workingYear, workingMonth)
       .then((coverage) => {
@@ -423,18 +429,20 @@ export default function AdminPayrollPage() {
           coverage.missingWorkers.map(mapCoverageWorkerToUser),
         );
         setCoverageTotalWorkers(coverage.totalWorkers);
+        setCoverageCoveredCount(coverage.coveredCount);
       })
       .catch(() => {
         if (cancelled) return;
         // Keep existing local fallback if payroll coverage check fails.
         setCoverageMissingWorkers(null);
         setCoverageTotalWorkers(null);
+        setCoverageCoveredCount(null);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [token, workingYear, workingMonth]);
+  }, [token, workingYear, workingMonth, coverageRefreshKey]);
 
   // Initialize / sync workspace from route: /admin/payroll/month/:year/:month
   useEffect(() => {
@@ -695,7 +703,7 @@ export default function AdminPayrollPage() {
   const summaryPending = summaryCurrentDocs.filter(
     (d) => d.matchStatus === "unmatched",
   ).length;
-  const summaryCoveredWorkers = new Set(
+  const summaryCoveredWorkersFromDocs = new Set(
     summaryCurrentDocs
       .filter(
         (d) =>
@@ -704,6 +712,7 @@ export default function AdminPayrollPage() {
       )
       .map((d) => d.workerId!._id),
   ).size;
+  const summaryCoveredWorkers = coverageCoveredCount ?? summaryCoveredWorkersFromDocs;
   const assignedWorkerIdsForSummaryPeriod = new Set(
     summaryCurrentDocs
       .filter(
