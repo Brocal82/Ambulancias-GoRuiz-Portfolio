@@ -18,7 +18,7 @@ import { WorkerPraemienScreen } from "./WorkerPraemienScreen";
 import { WorkerVacationsScreen } from "./WorkerVacationsScreen";
 import { WorkerSickLeavesScreen } from "./WorkerSickLeavesScreen";
 import { WorkerAppointmentsScreen } from "./WorkerAppointmentsScreen";
-import { resolvePushNavigationTarget } from "../utils/notificationNavigation";
+import { resolvePushNavigationTarget, pushRefreshTabFromData } from "../utils/notificationNavigation";
 
 type WorkerTabKey =
   | "home"
@@ -70,25 +70,6 @@ export function WorkerTabsShell({
   /** Pantalla completa de cierre / revision desde el chip "jornada en curso". */
   const [workdayClosureOpen, setWorkdayClosureOpen] = useState(false);
 
-  const notifListenerRef = useRef<Notifications.Subscription | null>(null);
-  useEffect(() => {
-    notifListenerRef.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const data = response.notification.request.content.data as
-          | Record<string, unknown>
-          | undefined;
-        const target = resolvePushNavigationTarget(data, enabledModules);
-        if (!target) return;
-        if (target.agendaDate) {
-          setInitialAgendaDate(target.agendaDate);
-        }
-        setActiveTab(target.tab);
-      },
-    );
-    return () => {
-      notifListenerRef.current?.remove();
-    };
-  }, [enabledModules]);
   const hasWorkdayModule = enabledModules.includes(MODULE_KEYS.WORKDAY);
   const hasAgendaModule =
     enabledModules.includes(MODULE_KEYS.SCHEDULING) ||
@@ -133,6 +114,72 @@ export function WorkerTabsShell({
       // keep previous value to avoid badge flickering on transient failures
     }
   }, [hasMessagesModule]);
+
+  const bumpDataRefreshTriggers = useCallback(
+    (data: Record<string, unknown> | null | undefined) => {
+      const tab = pushRefreshTabFromData(data, enabledModules);
+      if (!tab) return;
+      switch (tab) {
+        case "agenda":
+          setAgendaWsTrigger((prev) => prev + 1);
+          break;
+        case "vacations":
+          setVacationWsTrigger((prev) => prev + 1);
+          break;
+        case "sickLeaves":
+          setSickLeaveWsTrigger((prev) => prev + 1);
+          break;
+        case "appointments":
+          setAppointmentWsTrigger((prev) => prev + 1);
+          break;
+        case "documents":
+          setDocumentsWsTrigger((prev) => prev + 1);
+          setPayrollWsTrigger((prev) => prev + 1);
+          break;
+        case "workday":
+          setWorkdayWsTrigger((prev) => prev + 1);
+          break;
+        case "messages":
+          setWsTrigger((prev) => prev + 1);
+          void refreshUnreadMessagesCount();
+          break;
+        default:
+          break;
+      }
+    },
+    [enabledModules, refreshUnreadMessagesCount],
+  );
+
+  const notifListenerRef = useRef<Notifications.Subscription | null>(null);
+  const notifReceivedRef = useRef<Notifications.Subscription | null>(null);
+  useEffect(() => {
+    notifReceivedRef.current = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        const data = notification.request.content.data as
+          | Record<string, unknown>
+          | undefined;
+        bumpDataRefreshTriggers(data);
+      },
+    );
+    notifListenerRef.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined;
+        bumpDataRefreshTriggers(data);
+        const target = resolvePushNavigationTarget(data, enabledModules);
+        if (!target) return;
+        if (target.agendaDate) {
+          setInitialAgendaDate(target.agendaDate);
+        }
+        setActiveTab(target.tab);
+      },
+    );
+    return () => {
+      notifReceivedRef.current?.remove();
+      notifListenerRef.current?.remove();
+    };
+  }, [enabledModules, bumpDataRefreshTriggers]);
 
   useEffect(() => {
     void refreshUnreadMessagesCount();

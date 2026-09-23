@@ -83,3 +83,12 @@ export function resolvePushNavigationTarget(
   const tab = tabMap[screen];
   return tab ? { tab } : null;
 }
+
+/** Maps a push payload to WS refresh triggers (foreground delivery). */
+export function pushRefreshTabFromData(
+  data: Record<string, unknown> | null | undefined,
+  enabledModules: CompanyModuleKey[],
+): WorkerTabKey | null {
+  const target = resolvePushNavigationTarget(data, enabledModules);
+  return target?.tab ?? null;
+}
