@@ -8,6 +8,10 @@
  *   COMPANY_ID=<mongoObjectId> npx ts-node scripts/seed-test-workers.ts
  *   or: npx ts-node scripts/seed-test-workers.ts <mongoObjectId>
  *
+ * Password:
+ *   Local test fixtures only. Override with SEED_WORKER_PASSWORD; otherwise a
+ *   well-known demo password is used. Refuses to run with NODE_ENV=production.
+ *
  * Idempotent:
  *   - Workers that already exist (same employeeNumber + companyId) are skipped.
  *   - Workers whose email is already taken are skipped with a warning.
@@ -25,7 +29,7 @@ const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/ambulance_db";
 
 const WORKER_COUNT = 10;
-const DEFAULT_PASSWORD = "TestWorker123!";
+const DEFAULT_PASSWORD = process.env.SEED_WORKER_PASSWORD || "TestWorker123!";
 const PAYROLL_MONTH = "2025-04";
 
 interface WorkerSeed {
@@ -48,6 +52,11 @@ function buildWorkerSeeds(): WorkerSeed[] {
 }
 
 async function seedTestWorkers(): Promise<void> {
+  if (process.env.NODE_ENV === "production") {
+    console.error("Error: seed-test-workers must not run with NODE_ENV=production.");
+    process.exit(1);
+  }
+
   const companyIdRaw = process.env.COMPANY_ID || process.argv[2];
 
   if (!companyIdRaw) {
