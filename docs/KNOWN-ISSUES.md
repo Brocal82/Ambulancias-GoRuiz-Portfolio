@@ -23,6 +23,19 @@ el mapa de clientes. El cliente recibe `open` antes de que termine ese registro.
 - **Posible solución futura:** autenticar en el evento `upgrade` del servidor HTTP (antes de
   completar el handshake) o registrar el socket antes de la autenticación y descartarlo si falla.
 
+### Rate limiting detrás de un reverse proxy (`trust proxy` no configurado)
+
+`src/app.ts` no configura `app.set("trust proxy", …)`. Detrás de un reverse proxy (como Render
+en el despliegue histórico), Express ve la IP del proxy en `req.ip`, así que **todos los clientes
+comparten el mismo contador** de `express-rate-limit`: unos pocos intentos fallidos de cualquiera
+pueden bloquear el login de todos durante la ventana configurada, y los límites por cliente no
+funcionan como se diseñaron.
+
+- **Estado:** sin corregir a propósito (proyecto archivado; el servicio alojado se retira).
+- **Antes de volver a desplegar:** configurar `trust proxy` según la topología real del proxy
+  (número de saltos o rangos de IP de confianza, nunca `true` sin más) y comprobar que `req.ip`
+  devuelve la IP del cliente. Ver `docs/RECOVERY.md`, Part B.
+
 ### Jest: crecimiento de memoria en la suite completa
 
 Con `--runInBand` la memoria crece ~150 MB por archivo y la suite completa termina en
