@@ -123,13 +123,11 @@ En producción, se recomienda servir `/uploads` desde el proxy inverso (nginx) p
 
 | Script | Descripción |
 |--------|-------------|
-| `bootstrap:superadmin` | Crea el primer superadmin del sistema |
-| `create:users` | Crea usuarios de ejemplo (dev) |
+| `bootstrap:superadmin` | Crea el primer superadmin del sistema (`EMAIL=… PASSWORD=…`) |
+| `create:superadmin` | Crea el superadmin inicial si no existe (`SUPERADMIN_PASSWORD` obligatorio, `SUPERADMIN_EMAIL` opcional) |
 | `create:hospitals` | Crea hospitales de ejemplo |
 | `create:ambulances` | Crea ambulancias de ejemplo |
-| `seed:test-workers` | Crea trabajadores de prueba para dev |
-| `delete:users` | Elimina todos los usuarios (peligroso) |
-| `delete:uploads` | Elimina uploads sin referencias en DB |
+| `seed:test-workers` | Crea trabajadores de prueba para dev (`COMPANY_ID`, `SEED_WORKER_PASSWORD` opcional) |
 | `cleanup:test-data` | Limpia datos de prueba de entorno de dev |
 
 ### Scripts de backfill (migraciones)

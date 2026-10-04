@@ -120,7 +120,10 @@ describe("session-sync ws-realtime", () => {
     const otherCompanyWs = await connectWs(port, workerBToken);
 
     const workerMsgPromise = waitForWsMessage(workerWs);
-    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(() => "unexpected");
+    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(
+      () => "unexpected",
+      () => "no-message", // timeout esperado: evita un rejection sin manejar tras el test
+    );
 
     await updateCompany(companyAId, {
       enabledModules: [MODULE_KEYS.SCHEDULING, MODULE_KEYS.MESSAGES, MODULE_KEYS.WORKDAY],
@@ -173,7 +176,10 @@ describe("session-sync ws-realtime", () => {
     const otherCompanyWs = await connectWs(port, workerBToken);
 
     const workerMsgPromise = waitForWsMessage(workerWs);
-    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(() => "unexpected");
+    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(
+      () => "unexpected",
+      () => "no-message", // timeout esperado: evita un rejection sin manejar tras el test
+    );
 
     await updateCompany(isolated.companyId, { isActive: false } as UpdateCompanyInput);
 

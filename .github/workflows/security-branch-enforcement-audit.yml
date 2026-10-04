@@ -2,8 +2,7 @@ name: Security Branch Enforcement Audit
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 6 * * *"
+  # Daily schedule ("0 6 * * *") disabled: project archived, no ongoing changes to audit.
   pull_request:
     branches:
       - main

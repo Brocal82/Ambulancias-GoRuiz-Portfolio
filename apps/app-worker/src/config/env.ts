@@ -12,8 +12,9 @@ type ExtraConfig = {
 
 const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
 
-// Stable fallback when no env/extra is provided (development only).
-const FALLBACK_API_BASE_URL = "http://192.168.178.33:5000/api";
+// Last-resort fallback when no env/extra/hostUri is available (development only).
+// For a physical device, set EXPO_PUBLIC_API_BASE_URL (see apps/app-worker/.env.example).
+const FALLBACK_API_BASE_URL = "http://localhost:5000/api";
 
 function deriveDevApiBaseUrlFromExpoHostUri(): string | null {
   const hostUri = Constants.expoConfig?.hostUri;

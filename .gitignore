@@ -21,3 +21,6 @@ build/
 
 # playwright mcp artifacts
 .playwright-mcp/
+
+# expo cli state (if expo is ever started from the repo root)
+.expo/

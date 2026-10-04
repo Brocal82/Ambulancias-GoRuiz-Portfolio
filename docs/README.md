@@ -59,6 +59,10 @@ Para documentación específica del backend (dominio de negocio, seguridad), ver
 
 ---
 
+## Deuda técnica conocida
+
+→ [KNOWN-ISSUES.md](./KNOWN-ISSUES.md) — limitaciones y deuda técnica identificadas al archivar el proyecto.
+
 ## Documentación de seguridad (ya existente)
 
 En `ambulancias-goruiz-backend/docs/security/`:

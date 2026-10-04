@@ -38,6 +38,12 @@ apps/app-worker/
 | `npm --prefix apps/app-worker run validate` | typecheck + tests lógicos (gating, archivos, cierre) |
 | `npm run typecheck:worker` | Atajo desde la raíz del monorepo |
 
+### Desarrollo — URL de API
+
+Orden de resolución (`src/config/env.ts`): `EXPO_PUBLIC_API_BASE_URL` → `expo.extra.apiBaseUrl` → IP del ordenador de desarrollo derivada de `hostUri` de Expo (`http://<ip>:5000/api`) → `http://localhost:5000/api`.
+
+En desarrollo normalmente no hace falta configurar nada: el móvil usa la IP del servidor de Metro. Para forzar otra URL, copiar `apps/app-worker/.env.example` a `.env.local`.
+
 ### Producción — URL de API
 
 En builds de producción (`__DEV__ === false`), la app **falla al arrancar** si:

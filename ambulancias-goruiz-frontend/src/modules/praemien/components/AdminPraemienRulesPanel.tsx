@@ -773,9 +773,10 @@ function DienstTimeFields(props: {
   ruleIndex: number;
 }) {
   const { t } = useTranslation();
-  const timeError =
-    useFieldError(props.issues, props.ruleIndex, "startTime") ??
-    useFieldError(props.issues, props.ruleIndex, "startTimeTo");
+  // Both hooks must run on every render (no `??` short-circuit between hook calls).
+  const startTimeError = useFieldError(props.issues, props.ruleIndex, "startTime");
+  const startTimeToError = useFieldError(props.issues, props.ruleIndex, "startTimeTo");
+  const timeError = startTimeError ?? startTimeToError;
 
   return (
     <div>
@@ -819,9 +820,10 @@ function PickupTimeFields(props: {
   ruleIndex: number;
 }) {
   const { t } = useTranslation();
-  const timeError =
-    useFieldError(props.issues, props.ruleIndex, "pickupTime") ??
-    useFieldError(props.issues, props.ruleIndex, "pickupTimeTo");
+  // Both hooks must run on every render (no `??` short-circuit between hook calls).
+  const pickupTimeError = useFieldError(props.issues, props.ruleIndex, "pickupTime");
+  const pickupTimeToError = useFieldError(props.issues, props.ruleIndex, "pickupTimeTo");
+  const timeError = pickupTimeError ?? pickupTimeToError;
 
   return (
     <div>

@@ -198,7 +198,10 @@ describe("P2 mechanics ws-realtime", () => {
 
   it("does not deliver mechanics_changed across companies", async () => {
     const adminBWs = await connectWs(port, adminBToken);
-    const unexpected = waitForWsMessage(adminBWs).then(() => "unexpected");
+    const unexpected = waitForWsMessage(adminBWs).then(
+      () => "unexpected",
+      () => "no-message", // timeout esperado: evita un rejection sin manejar tras el test
+    );
 
     voidEmitMechanicsChanged(companyAId);
     await new Promise((r) => setTimeout(r, 50));
@@ -221,7 +224,10 @@ describe("P2 mechanics ws-realtime", () => {
     );
 
     const adminWs = await connectWs(port, companyNoMech.adminToken);
-    const unexpected = waitForWsMessage(adminWs).then(() => "unexpected");
+    const unexpected = waitForWsMessage(adminWs).then(
+      () => "unexpected",
+      () => "no-message", // timeout esperado: evita un rejection sin manejar tras el test
+    );
 
     voidEmitMechanicsChanged(companyNoMech.companyId);
     await new Promise((r) => setTimeout(r, 50));

@@ -1,12 +1,13 @@
 /**
- * One-shot bootstrap: crea el primer superadmin con credenciales fijas
+ * One-shot bootstrap: crea el primer superadmin
  * (solo entornos vacíos / de desarrollo; cambia la contraseña tras el primer login).
  *
  * Uso (desde la carpeta ambulancias-goruiz-backend):
- *   npx ts-node scripts/createSuperAdmin.ts
- *   npm run create:superadmin
+ *   SUPERADMIN_PASSWORD=<min-8-chars> npm run create:superadmin
+ *   SUPERADMIN_EMAIL=admin@example.com SUPERADMIN_PASSWORD=<min-8-chars> npx ts-node scripts/createSuperAdmin.ts
  *
  * - Usa MONGODB_URI y JWT_SECRET desde .env (misma carga que src/config/env.ts).
+ * - La contraseña se lee de SUPERADMIN_PASSWORD (obligatoria, nunca en código).
  * - Si ya existe un usuario con role "superadmin", no hace nada.
  * - Contraseña: bcrypt 10 (igual que users.service y bootstrap-superadmin).
  */
@@ -16,14 +17,16 @@ import { env } from "../src/config/env";
 import User from "../src/modules/users/models/user.model";
 
 const BCRYPT_ROUNDS = 10;
-const EMAIL = "superadmin@goruiz.com";
-const PLAIN_PASSWORD = "Admin123!";
+const EMAIL = process.env.SUPERADMIN_EMAIL || "superadmin@goruiz.com";
+const PLAIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
 
 async function run(): Promise<void> {
   const normalizedEmail = EMAIL.trim().toLowerCase();
 
-  if (PLAIN_PASSWORD.length < 8) {
-    console.error("Error interno: la contraseña no cumple longitud mínima.");
+  if (!PLAIN_PASSWORD || PLAIN_PASSWORD.length < 8) {
+    console.error(
+      "Define SUPERADMIN_PASSWORD (mínimo 8 caracteres). Ejemplo: SUPERADMIN_PASSWORD=<secreto> npm run create:superadmin",
+    );
     process.exit(1);
   }
 

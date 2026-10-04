@@ -34,6 +34,27 @@ function connectWs(port: number, token: string): Promise<WebSocket> {
   });
 }
 
+/**
+ * El servidor registra el socket tras autenticarlo de forma asíncrona (después del "open" del
+ * cliente) y procesa los cierres también de forma asíncrona. Esperar al estado del servidor evita
+ * emitir antes de que el socket nuevo esté registrado.
+ */
+async function waitForServerClientCount(
+  userId: string,
+  expected: number,
+  timeoutMs = 3000,
+): Promise<void> {
+  const start = Date.now();
+  while (__wsTestHooks.getClientCount(userId) !== expected) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(
+        `WS client count for ${userId} is ${__wsTestHooks.getClientCount(userId)}, expected ${expected}`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 function waitForWsMessage(ws: WebSocket, timeoutMs = 5000): Promise<{ event: string }> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("WS message timeout")), timeoutMs);
@@ -103,7 +124,10 @@ describe("P1 ws-realtime", () => {
     const otherCompanyWs = await connectWs(port, workerBToken);
 
     const workerMsgPromise = waitForWsMessage(workerWs);
-    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(() => "unexpected");
+    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(
+      () => "unexpected",
+      () => "no-message", // timeout esperado: evita un rejection sin manejar tras el test
+    );
 
     await notifyUsersModuleGated(
       [workerAId, workerBId],
@@ -144,7 +168,10 @@ describe("P1 ws-realtime", () => {
   });
 
   it("payload remains minimal { event } only", async () => {
+    // Sockets del test anterior pueden seguir registrados hasta que el servidor procese su cierre.
+    await waitForServerClientCount(workerAId, 0);
     const workerWs = await connectWs(port, workerAToken);
+    await waitForServerClientCount(workerAId, 1);
     const msgPromise = waitForWsMessage(workerWs);
 
     await notifyUsersModuleGated(
