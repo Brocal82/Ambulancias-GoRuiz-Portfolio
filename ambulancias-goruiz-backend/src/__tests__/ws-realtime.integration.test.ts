@@ -124,7 +124,10 @@ describe("P1 ws-realtime", () => {
     const otherCompanyWs = await connectWs(port, workerBToken);
 
     const workerMsgPromise = waitForWsMessage(workerWs);
-    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(() => "unexpected");
+    const otherMsgPromise = waitForWsMessage(otherCompanyWs).then(
+      () => "unexpected",
+      () => "no-message", // timeout esperado: evita un rejection sin manejar tras el test
+    );
 
     await notifyUsersModuleGated(
       [workerAId, workerBId],
