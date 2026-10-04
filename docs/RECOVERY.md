@@ -273,6 +273,8 @@ Only needed to make the system reachable from the internet again. Nothing here i
 
 **Production checklist:** new secrets everywhere; `SUPERADMIN_MFA_REQUIRED=true` and TOTP enrolled; at least one company admin per tenant; CORS restricted to the real web URL; database backups enabled; `uploads/` on persistent storage with backups.
 
+> **Before exposing the backend behind a reverse proxy or load balancer** (Render, Heroku-style platforms, Nginx, a CDN…): the code does **not** set Express `trust proxy`. Without it, `req.ip` is the proxy's address and all clients share the same rate-limit counters (one client can lock out every login). Configure `app.set("trust proxy", …)` for your actual proxy topology (hop count or trusted ranges, not a blanket `true`) and verify that `req.ip` returns the client IP. See [KNOWN-ISSUES.md](KNOWN-ISSUES.md).
+
 ### B.2 Redeploy the backend and the web panel
 
 1. Provision the database (B.1) and note its connection string.
