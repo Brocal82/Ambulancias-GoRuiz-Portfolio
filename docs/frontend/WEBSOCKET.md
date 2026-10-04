@@ -52,6 +52,8 @@ El servidor valida:
 
 Conexiones con token inválido se cierran inmediatamente.
 
+> **Limitación conocida:** la validación es asíncrona y el socket se registra al terminarla, después de que el cliente reciba `open`. Un evento emitido en ese intervalo no llega a ese socket. Ver [KNOWN-ISSUES.md](../KNOWN-ISSUES.md#websocket-ventana-de-registro-durante-la-autenticación).
+
 ### Mapa de conexiones
 
 ```ts
