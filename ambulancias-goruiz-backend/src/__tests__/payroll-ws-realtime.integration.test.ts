@@ -362,10 +362,12 @@ describe("Payroll ws-realtime — payroll_changed", () => {
   });
 
   it("batch upload → matched worker receives payroll_changed", async () => {
-    // Set employeeNumber so the auto-matcher can match by filename
+    // Set employeeNumber so the auto-matcher can match by filename.
+    // EMP-prefixed so the parser extracts it (a bare 4+ digit run such as the year
+    // would otherwise be taken as the employee number and never match).
     await User.updateOne(
       { _id: new mongoose.Types.ObjectId(workerAId) },
-      { $set: { employeeNumber: "BATCHTEST01" } },
+      { $set: { employeeNumber: "EMP90210" } },
     );
 
     const workerWs = await connectWs(port, workerAToken);
@@ -376,7 +378,7 @@ describe("Payroll ws-realtime — payroll_changed", () => {
       .set("Authorization", `Bearer ${adminAToken}`)
       .field("year", "2030")
       .field("month", "9")
-      .attach("payrolls", MINIMAL_PDF, { filename: "BATCHTEST01-09-2030.pdf", contentType: "application/pdf" });
+      .attach("payrolls", MINIMAL_PDF, { filename: "nomina_EMP90210_2030-09.pdf", contentType: "application/pdf" });
 
     expect(res.status).toBe(200);
     const matched = (res.body.results as Array<{ status: string; payrollId?: string }>)
@@ -385,10 +387,9 @@ describe("Payroll ws-realtime — payroll_changed", () => {
       if (m.payrollId) createdPayrollIds.push(m.payrollId);
     }
 
-    if (matched.length > 0) {
-      const frame = await msgPromise;
-      expect(frame).toEqual({ event: WS_EVENTS.PAYROLL_CHANGED });
-    }
+    expect(matched).toHaveLength(1);
+    const frame = await msgPromise;
+    expect(frame).toEqual({ event: WS_EVENTS.PAYROLL_CHANGED });
     workerWs.close();
 
     await User.updateOne(
