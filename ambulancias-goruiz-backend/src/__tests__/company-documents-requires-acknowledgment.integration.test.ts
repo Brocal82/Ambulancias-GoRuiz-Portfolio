@@ -86,7 +86,9 @@ describe("Company documents — requiresAcknowledgment (integration)", () => {
     await Company.deleteOne({ _id: companyOid });
   });
 
-  it("POST /upload/batch con 2 archivos deja requiresAcknowledgment=false aunque se envíe true", async () => {
+  // Desde 0ee60634 (hardening de subidas) el lote multi-archivo con requiresAcknowledgment=true
+  // se rechaza explícitamente (400) en vez de ignorar el flag; nunca se persiste ack en lote.
+  it("POST /upload/batch con 2 archivos y requiresAcknowledgment=true devuelve 400 y no guarda documentos", async () => {
     const { companyId, adminId } = await createTestAdminWithCompany();
     const companyOid = new mongoose.Types.ObjectId(companyId);
     const worker = await createTestWorkerInCompany(companyOid, Date.now() + 503);
@@ -105,22 +107,14 @@ describe("Company documents — requiresAcknowledgment (integration)", () => {
         contentType: "application/pdf",
       });
 
-    expect(res.status).toBe(201);
-    expect(res.body.documents).toHaveLength(2);
-    for (const d of res.body.documents as { id: string; requiresAcknowledgment?: boolean }[]) {
-      expect(d.requiresAcknowledgment).toBe(false);
-      const stored = await CompanyDocument.findById(d.id).lean();
-      expect(stored?.requiresAcknowledgment).not.toBe(true);
-    }
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/requiresAcknowledgment solo aplica/);
+    const stored = await CompanyDocument.find({
+      companyId: companyOid,
+      originalName: { $in: ["batch-a.pdf", "batch-b.pdf"] },
+    }).lean();
+    expect(stored).toHaveLength(0);
 
-    const ids = (res.body.documents as { id: string }[]).map((d) => d.id);
-    await DocumentDelivery.deleteMany({
-      documentId: { $in: ids.map((id) => new mongoose.Types.ObjectId(id)) },
-    });
-    await CompanyDocument.deleteMany({ _id: { $in: ids.map((id) => new mongoose.Types.ObjectId(id)) } });
-    for (const d of res.body.documents as { filename: string }[]) {
-      await removeTestUploadFile(d.filename);
-    }
     await User.deleteMany({
       _id: { $in: [worker._id, new mongoose.Types.ObjectId(adminId)] },
     });

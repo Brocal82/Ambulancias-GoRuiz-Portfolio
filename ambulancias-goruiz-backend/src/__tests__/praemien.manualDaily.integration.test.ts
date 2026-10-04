@@ -744,9 +744,12 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
   });
 
   it("pending-entries incluye workdayReportsTotalPraemie = parcial + final del Dienst", async () => {
+    // Modo manual desde el mes anterior: la fecha (hace 6 días) puede caer en el mes previo
+    // durante los primeros días de cada mes y la API rechaza fechas anteriores al inicio.
     const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth() + 1;
+    const prevYm0 = now.getFullYear() * 12 + now.getMonth() - 1;
+    const y = Math.floor(prevYm0 / 12);
+    const m = (prevYm0 % 12) + 1;
     await Company.updateOne(
       { _id: companyId },
       {
@@ -840,9 +843,11 @@ describe("Praemien - manual-daily (Phase 3 + 4)", () => {
       String(otherCompanyId),
     );
 
+    // Mes anterior: la fecha (hace 7 días) puede caer en el mes previo (ver test anterior).
     const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth() + 1;
+    const prevYm0 = now.getFullYear() * 12 + now.getMonth() - 1;
+    const y = Math.floor(prevYm0 / 12);
+    const m = (prevYm0 % 12) + 1;
     await Company.updateOne(
       { _id: otherCompanyId },
       {
