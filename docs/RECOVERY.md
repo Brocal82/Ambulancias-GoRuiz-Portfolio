@@ -88,14 +88,14 @@ All connection strings below use `?replicaSet=rs0`.
 ```bash
 git clone <repository-url> ambulancias-goruiz
 cd ambulancias-goruiz
-npm ci                                         # root workspace — required, see note
 npm ci --prefix ambulancias-goruiz-backend
 npm ci --prefix ambulancias-goruiz-frontend
+npm ci                                         # root workspace: mobile app + root scripts
 ```
 
-**Do not skip the root `npm ci`.** The frontend production build (`tsc -b`) also typechecks `vitest.config.ts`, which needs `@types/node`; the frontend package does not declare it and resolves it from the root `node_modules`. Without the root install, `npm run dev` works but `npm run build` fails with `Cannot find module 'node:path'`.
+The backend and the web frontend are self-contained: each installs everything it needs from its own lockfile. The root `npm ci` is only needed for the mobile app and for the root scripts (`npm run typecheck`, `npm run format`).
 
-The root `npm ci` also installs the mobile app (`apps/app-worker` is an npm workspace). **Do not run `npm ci --prefix apps/app-worker` if you want to run the mobile app**: it creates a second copy of React inside `apps/app-worker/node_modules`, and the app then crashes with `Cannot read property 'useContext' of null`. (CI does run that command, but only to typecheck.) If it happened, delete `apps/app-worker/node_modules` and run `npm ci` in the root again.
+The root `npm ci` installs the mobile app (`apps/app-worker` is an npm workspace). **Do not run `npm ci --prefix apps/app-worker` if you want to run the mobile app**: it creates a second copy of React inside `apps/app-worker/node_modules`, and the app then crashes with `Cannot read property 'useContext' of null`. (CI does run that command, but only to typecheck.) If it happened, delete `apps/app-worker/node_modules` and run `npm ci` in the root again.
 
 ### A.4 Configure the backend
 
@@ -245,7 +245,6 @@ If you have to move to a newer Node version: install, run `npm ci` in each packa
 | Team creation fails: driver/medic must have an ambulance role | Set the worker's ambulance role (A.10 step 5). |
 | Assigning a team fails with `pschein_invalid_for_date` | The driver has no valid, confirmed P-Schein for those dates (A.10 step 6). |
 | `npm ci` fails with "package.json and package-lock.json are not in sync" | Someone changed a `package.json` without its lockfile. In `apps/app-worker` use `npm install --package-lock-only --workspaces=false`. |
-| Frontend build: `Cannot find module 'node:path'` in `vitest.config.ts` | Run `npm ci` in the repository root first (A.3). |
 | `npm warn EBADENGINE` | Running a Node version other than 20.x. Usually harmless; prefer Node 20. |
 | Backend tests: `JavaScript heap out of memory` | Use `npm run test:full`, not `--runInBand`. |
 | Backend tests refuse to start | `.env.test` is missing (by design; tests never fall back to `.env`). |

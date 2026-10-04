@@ -33,6 +33,7 @@
     "@types/date-fns": "^2.6.3",
     "@types/jwt-decode": "^3.1.0",
     "@types/mongoose": "^5.11.97",
+    "@types/node": "^20.19.43",
     "@types/react": "^19.1.2",
     "@types/react-date-range": "^1.4.10",
     "@types/react-dom": "^19.1.2",
