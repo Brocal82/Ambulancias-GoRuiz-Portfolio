@@ -32,7 +32,6 @@
       "expo-notifications"
     ],
     "extra": {
-      "apiBaseUrl": "http://192.168.178.33:5000/api",
       "eas": {
         "projectId": "0ff15cb2-8ac8-4cab-9874-3969456b13d0"
       }
