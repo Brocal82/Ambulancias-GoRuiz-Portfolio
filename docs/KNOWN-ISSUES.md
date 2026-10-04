@@ -63,6 +63,31 @@ porque todos los padres los montan condicionalmente (`{abierto && <Modal isOpen 
 `isOpen` nunca cambia dentro de una misma instancia. Si se montaran siempre y se alternara
 `isOpen`, React lanzaría "Rendered fewer/more hooks than expected".
 
+### Dependencia implícita de `@types/node`
+
+`npm run build` (`tsc -b`) typechequea `vitest.config.ts`, que usa `node:path`/`node:url`, pero
+el `package.json` del frontend no declara `@types/node`: se resuelve desde el `node_modules` de la
+raíz (instalado por `npm ci` en la raíz, como hace el CI). Sin esa instalación previa el build
+falla. Documentado en `docs/RECOVERY.md` (A.3); la corrección sería declarar `@types/node` como
+devDependency del frontend.
+
+### Internacionalización incompleta (ES / DE / EN)
+
+La interfaz está traducida con i18next a español, alemán e inglés, pero quedan textos fijos en
+español que no cambian al seleccionar otro idioma:
+
+- `src/layouts/AdminSidebarLayout.tsx`: las 21 etiquetas y títulos de sección de la barra lateral
+  del admin (`Gestión`, `Usuarios`, `Equipos`, `Planificación`, …).
+- `src/modules/companies/pages/SuperadminCompaniesList.tsx`: cabeceras de la tabla de empresas
+  (`Nombre`, `Dominio`, `Módulos`, `Trabajadores`, …).
+- `src/modules/diensts/components/OperationalHealthBadge.tsx`: "Sin escanear" / "Escanear".
+- Probablemente otros textos sueltos: no se ha hecho una auditoría completa.
+
+Además, el selector de idioma muestra una **bandera turca decorativa** sin traducción asociada
+(`src/components/ui/LanguageSwitcher.tsx`, marcada en el código como "visual únicamente").
+
+Por eso las capturas del README usan la interfaz en español, que es la única coherente al 100 %.
+
 ### Recursos externos en tiempo de ejecución
 
 - Avatar por defecto desde `cdn-icons-png.flaticon.com` (4 layouts/páginas).
@@ -89,5 +114,6 @@ Si esos CDN cambian o desaparecen, el avatar por defecto o la UI de `/api/docs` 
 
 - **Node 20** está fuera de soporte desde abril de 2026. Versión verificada: `20.20.2` (`.nvmrc`).
   Node 24 compila, pasa typecheck y tests de frontend, pero la suite backend no se verificó con él.
-- **Documentación desactualizada:** `docs/frontend/WEBSOCKET.md` indica que el admin web no usa
-  WebSocket, pero existe `ambulancias-goruiz-frontend/src/hooks/useWebSocketSync.ts`.
+- **URL de despliegue histórica:** `ambulancias-goruiz-frontend/public/_redirects` sigue
+  apuntando al backend alojado históricamente, que se retira al archivar. Hay que sustituirla al volver a desplegar
+  (ver `docs/RECOVERY.md`, Part B).

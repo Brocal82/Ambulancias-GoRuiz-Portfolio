@@ -222,9 +222,9 @@ Usar estos primitivos antes de crear componentes nuevos de acción.
 
 ## Tiempo casi real — web admin
 
-El frontend web **no usa WebSocket**. El servidor WS solo tiene cliente en la app móvil.
+El frontend web abre una conexión **WebSocket** autenticada en las rutas protegidas (`useWebSocketSync`, montado por `RequireAuth`) y traduce cada evento `{ event }` a los emisores locales de refresco. Ver [WEBSOCKET.md](./WEBSOCKET.md).
 
-La web usa dos patrones para sincronización sin refresh:
+Además usa dos patrones complementarios para sincronización sin refresh:
 
 1. **Polling periódico:** hooks como `useUnreadMessagesCount` consultan la API cada 30s + en foco de ventana.
 2. **BroadcastChannel + CustomEvent:** cuando una acción en un tab produce un cambio (nuevo mensaje, baja, vacación, turno…), el módulo emite un evento. Otros tabs suscritos al mismo `BroadcastChannel` refrescan sus datos.
