@@ -30,6 +30,16 @@ Several companies (tenants) share one deployment, and each company's data is iso
 
 <sub>Captured from a local environment with fictitious demo data. UI shown in Spanish. The application also includes German and English localization; some interface strings remain untranslated and are documented as known technical debt.</sub>
 
+### Worker mobile app
+
+Crew members use an Expo / React Native app: today's shift at a glance, starting the workday (vehicle and odometer), and the weekly agenda.
+
+| Home | Start of workday | Weekly agenda |
+|:---:|:---:|:---:|
+| <img src="docs/images/mobile-home.png" alt="Worker app home" width="220"> | <img src="docs/images/mobile-workday-start.png" alt="Start of workday: vehicle and odometer" width="220"> | <img src="docs/images/mobile-agenda.png" alt="Weekly agenda" width="220"> |
+
+<sub>Android emulator, local backend, fictitious demo data.</sub>
+
 ## Main features
 
 **Planning and operations**
