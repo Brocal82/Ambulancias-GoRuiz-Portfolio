@@ -95,11 +95,7 @@ npm ci --prefix ambulancias-goruiz-frontend
 
 **Do not skip the root `npm ci`.** The frontend production build (`tsc -b`) also typechecks `vitest.config.ts`, which needs `@types/node`; the frontend package does not declare it and resolves it from the root `node_modules`. Without the root install, `npm run dev` works but `npm run build` fails with `Cannot find module 'node:path'`.
 
-Optional, only for the mobile app:
-
-```bash
-npm ci --prefix apps/app-worker
-```
+The root `npm ci` also installs the mobile app (`apps/app-worker` is an npm workspace). **Do not run `npm ci --prefix apps/app-worker` if you want to run the mobile app**: it creates a second copy of React inside `apps/app-worker/node_modules`, and the app then crashes with `Cannot read property 'useContext' of null`. (CI does run that command, but only to typecheck.) If it happened, delete `apps/app-worker/node_modules` and run `npm ci` in the root again.
 
 ### A.4 Configure the backend
 
@@ -200,9 +196,10 @@ Other scripts in `ambulancias-goruiz-backend/package.json` (`create:hospitals`, 
 The mobile app is for workers (role `worker`). Push notifications will not work locally without Part B.4; everything else talks to the local backend.
 
 ```bash
-npm ci --prefix apps/app-worker
-npm run dev:worker            # = expo start, from the repository root
+npm run dev:worker            # = expo start, from the repository root (dependencies come from the root npm ci)
 ```
+
+Verified in October 2026 with an Android 14 emulator (Pixel 3a image): a locally built debug app (`npx expo run:android`) connected to Metro and to the local backend through `adb reverse tcp:8081 tcp:8081` and `adb reverse tcp:5000 tcp:5000`, with `EXPO_PUBLIC_API_BASE_URL=http://localhost:5000/api`.
 
 - **API URL:** in development the app derives `http://<this computer's LAN IP>:5000/api` from the Expo dev server automatically. If that does not work (different network, emulator), copy `apps/app-worker/.env.example` to `apps/app-worker/.env.local` and set `EXPO_PUBLIC_API_BASE_URL` (Android emulator: `http://10.0.2.2:5000/api`).
 - The phone and the computer must be on the same network, and the firewall must allow inbound connections to port 5000.
@@ -223,7 +220,7 @@ JWT_SECRET=<any random value>
 | Full backend suite (893 tests, ~3 min) | `npm --prefix ambulancias-goruiz-backend run test:full` |
 | Tenant-isolation security tests | `npm --prefix ambulancias-goruiz-backend run test:security:isolation` |
 | Frontend tests | `npm --prefix ambulancias-goruiz-frontend run test:run` |
-| Typecheck (all three apps; needs root + mobile installs) | `npm run typecheck` |
+| Typecheck (all three apps) | `npm run typecheck` |
 | Backend production build | `npm --prefix ambulancias-goruiz-backend run build` |
 | Frontend production build | `npm --prefix ambulancias-goruiz-frontend run build` |
 | Mobile app checks | `npm --prefix apps/app-worker run validate` |
@@ -252,6 +249,7 @@ If you have to move to a newer Node version: install, run `npm ci` in each packa
 | `npm warn EBADENGINE` | Running a Node version other than 20.x. Usually harmless; prefer Node 20. |
 | Backend tests: `JavaScript heap out of memory` | Use `npm run test:full`, not `--runInBand`. |
 | Backend tests refuse to start | `.env.test` is missing (by design; tests never fall back to `.env`). |
+| Mobile app shows `Cannot read property 'useContext' of null` | Two copies of React: delete `apps/app-worker/node_modules`, run `npm ci` in the root, restart Metro with `npx expo start --clear` (A.3). |
 | Mobile app cannot reach the API | Wrong LAN IP, different network or firewall; set `EXPO_PUBLIC_API_BASE_URL`. |
 | Default avatar image missing | It is loaded from an external CDN (flaticon); cosmetic only. |
 

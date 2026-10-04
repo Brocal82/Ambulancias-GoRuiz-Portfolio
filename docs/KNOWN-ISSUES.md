@@ -103,8 +103,15 @@ Si esos CDN cambian o desaparecen, el avatar por defecto o la UI de `/api/docs` 
 - `expo-doctor`: `react-native-worklets` (peer de `react-native-reanimated`) no está declarado
   directamente (se instala de forma transitiva) y 3 paquetes difieren ligeramente de las
   versiones esperadas por Expo SDK 54.
-- El build nativo (Gradle/EAS) no se verificó durante el archivado; sí typecheck, `validate` y
-  `expo export --platform android`. `android/` se genera con `expo prebuild` y no está en Git.
+- **Instalación duplicada de React:** `apps/app-worker` es un workspace npm de la raíz y además tiene
+  su propio `package-lock.json`. `npm ci --prefix apps/app-worker` (lo que hace el CI para el
+  typecheck) instala una segunda copia de React y la app falla al ejecutarse
+  (`Cannot read property 'useContext' of null`). Para ejecutar la app basta con `npm ci` en la raíz;
+  ver `docs/RECOVERY.md` (A.3).
+- No se hizo un build nativo nuevo (Gradle/EAS) durante el archivado; sí typecheck, `validate` y
+  `expo export --platform android`. La app se ejecutó en un emulador Android 14 con un APK debug
+  local de mayo de 2026 cargando el JavaScript actual desde Metro; el visor de PDF
+  (`react-native-webview`, añadido después de ese APK) no se probó en ese entorno. `android/` se genera con `expo prebuild` y no está en Git.
 - Las notificaciones push dependen de Expo Push + Firebase Cloud Messaging (credenciales fuera del
   repositorio).
 
