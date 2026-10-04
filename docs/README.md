@@ -59,6 +59,10 @@ Para documentación específica del backend (dominio de negocio, seguridad), ver
 
 ---
 
+## Restaurar el proyecto
+
+→ [RECOVERY.md](./RECOVERY.md) — cómo reconstruir y ejecutar el sistema desde un clon limpio (local) y cómo volver a desplegarlo (en inglés).
+
 ## Deuda técnica conocida
 
 → [KNOWN-ISSUES.md](./KNOWN-ISSUES.md) — limitaciones y deuda técnica identificadas al archivar el proyecto.

@@ -3,12 +3,13 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const config = path.join(root, ".gitleaks.toml");
 
+// Relative paths + cwd: on Windows the command runs through a shell, where an
+// absolute path containing spaces would be split into several arguments.
 const result = spawnSync(
   "gitleaks",
-  ["detect", "--no-banner", "--redact", "--config", config, "--source", root],
-  { encoding: "utf8", shell: process.platform === "win32" },
+  ["detect", "--no-banner", "--redact", "--config", ".gitleaks.toml", "--source", "."],
+  { encoding: "utf8", shell: process.platform === "win32", cwd: root },
 );
 
 const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;

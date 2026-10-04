@@ -11,13 +11,13 @@ Backend WS (src/modules/notifications/ws-manager.ts)
          │
          │ ws://host/ws?token=<jwt>
          │
-    ┌────┴────┐
-    │  App    │  ← WebSocket activo (nuevo mensaje → badge + trigger)
-    │ worker  │
-    └─────────┘
-
-    Frontend    ← Sin WebSocket. Polling + BroadcastChannel.
-    web admin
+    ┌────┴─────────────┐
+    │                  │
+  App worker       Frontend web admin
+  (WorkerTabsShell) (useWebSocketSync, montado en RequireAuth)
+    │                  │
+  badge + refetch   evento → emisores locales de refresco
+                    (+ polling y sincronización entre pestañas)
 ```
 
 El servidor WebSocket y el servidor Express comparten el **mismo puerto HTTP**. No hay un proceso separado.
@@ -126,9 +126,13 @@ ws.onmessage = (event) => {
 
 ---
 
-## Frontend web admin — sin WebSocket
+## Frontend web admin — WebSocket + polling + sincronización entre pestañas
 
-El frontend web admin **no establece conexión WebSocket** con el servidor. Usa dos mecanismos alternativos:
+### 0. WebSocket
+
+El frontend web **sí** abre una conexión WebSocket autenticada en todas las rutas protegidas: `RequireAuth` monta `RealtimeSyncMount`, que usa `src/hooks/useWebSocketSync.ts` (reconexión con backoff exponencial de 1 s a 30 s). Cada frame `{ event }` se traduce en `src/utils/dispatchWebSocketEvent.ts` a los emisores locales de refresco ya existentes (mensajes, vacaciones, bajas, citas, turnos, jornada, nóminas, documentos, mecánicos, Prämien, contadores del dashboard y cambios de cuenta/empresa/módulos). El socket no transporta datos: solo indica qué refrescar.
+
+Los mecanismos siguientes siguen activos como complemento.
 
 ### 1. Polling periódico
 
@@ -155,7 +159,7 @@ Cuando una acción en un tab produce un cambio de datos, el módulo emite un eve
 | `diensts` | Cambio en asignaciones de turno |
 | `hospitals` | Cambio en catálogo |
 
-Estos hooks no conectan al WS del servidor; operan solo dentro del navegador del usuario.
+Estos emisores operan dentro del navegador del usuario; el WebSocket (apartado 0) los dispara también cuando el cambio procede de otro usuario.
 
 ---
 
