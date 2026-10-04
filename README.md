@@ -107,7 +107,7 @@ scripts/                       CI helper scripts (secret scan, OpenAPI and smoke
 - **Security-focused backend.** Token versioning for session revocation, company resolved from the database instead of trusting the JWT, TOTP MFA and step-up re-authentication for critical superadmin actions, time-limited support access with approval, a persistent audit log and rate limiting on sensitive endpoints.
 - **Private file handling.** Medical documents, PDFs and attachments are only served through an authenticated endpoint with ownership checks; the public uploads path is limited to images.
 - **Real-time updates.** A WebSocket channel pushes minimal `{ event }` signals so the web panel and the mobile app refresh only what changed, without sending data over the socket.
-- **One API, three clients.** The same backend serves the admin panel, the superadmin panel and the mobile app, with role-based routes for six roles.
+- **One API, three clients.** The same backend serves the admin panel, the superadmin panel and the mobile app, with role-based access control (company admins, workers, mechanics and the platform superadmin).
 - **Tested against a real database.** 893 backend tests (mostly integration tests with Supertest and MongoDB) and 432 frontend tests.
 
 ## Testing and quality
@@ -127,6 +127,7 @@ Known limitations and technical debt are documented in [docs/KNOWN-ISSUES.md](do
 Requirements: Node.js 20 (see `.nvmrc`), npm 10, MongoDB 6 running as a replica set.
 
 ```bash
+npm ci
 npm ci --prefix ambulancias-goruiz-backend
 npm ci --prefix ambulancias-goruiz-frontend
 # create ambulancias-goruiz-backend/.env and ambulancias-goruiz-frontend/.env from their .env.example files
