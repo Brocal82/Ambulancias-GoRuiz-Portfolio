@@ -18,15 +18,15 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        project: ["./tsconfig.app.json", "./tsconfig.node.json"],
+        tsconfigRootDir: __dirname,
+        sourceType: "module",
+      },
     },
     plugins: {
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
-    },
-    parserOptions: {
-      project: "./tsconfig.app.json",
-      tsconfigRootDir: __dirname,
-      sourceType: "module",
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
