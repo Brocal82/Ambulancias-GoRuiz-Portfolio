@@ -137,7 +137,6 @@ Known limitations and technical debt are documented in [docs/KNOWN-ISSUES.md](do
 Requirements: Node.js 20 (see `.nvmrc`), npm 10, MongoDB 6 running as a replica set.
 
 ```bash
-npm ci
 npm ci --prefix ambulancias-goruiz-backend
 npm ci --prefix ambulancias-goruiz-frontend
 # create ambulancias-goruiz-backend/.env and ambulancias-goruiz-frontend/.env from their .env.example files
@@ -168,4 +167,4 @@ Detailed technical documentation is written in Spanish.
 
 ## License
 
-This repository does not include an open-source license.
+© 2025–2026 Antonio Ruiz Brocal. Source available for portfolio and evaluation purposes. No license is granted to use, copy, modify or distribute this code.

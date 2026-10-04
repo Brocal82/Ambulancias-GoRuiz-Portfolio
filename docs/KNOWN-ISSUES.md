@@ -63,14 +63,6 @@ porque todos los padres los montan condicionalmente (`{abierto && <Modal isOpen 
 `isOpen` nunca cambia dentro de una misma instancia. Si se montaran siempre y se alternara
 `isOpen`, React lanzaría "Rendered fewer/more hooks than expected".
 
-### Dependencia implícita de `@types/node`
-
-`npm run build` (`tsc -b`) typechequea `vitest.config.ts`, que usa `node:path`/`node:url`, pero
-el `package.json` del frontend no declara `@types/node`: se resuelve desde el `node_modules` de la
-raíz (instalado por `npm ci` en la raíz, como hace el CI). Sin esa instalación previa el build
-falla. Documentado en `docs/RECOVERY.md` (A.3); la corrección sería declarar `@types/node` como
-devDependency del frontend.
-
 ### Internacionalización incompleta (ES / DE / EN)
 
 La interfaz está traducida con i18next a español, alemán e inglés, pero quedan textos fijos en

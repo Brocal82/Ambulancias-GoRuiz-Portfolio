@@ -9,7 +9,6 @@ Project overview and status: [../README.md](../README.md) · Full setup guide: [
 Requires Node.js 20 and the backend running on `http://localhost:5000`.
 
 ```bash
-(cd .. && npm ci)         # root install, needed by `npm run build` (see docs/KNOWN-ISSUES.md)
 npm ci
 cp .env.example .env      # VITE_API_URL=http://localhost:5000/api
 npm run dev               # http://localhost:5173
