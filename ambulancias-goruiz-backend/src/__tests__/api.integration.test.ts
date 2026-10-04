@@ -11,11 +11,13 @@ import bcrypt from "bcrypt";
 import { app } from "../app";
 import { env } from "../config/env";
 import {
+  createTestAdminUser,
   createTestAdminWithCompany,
   createTestWorkerInCompany,
   createTestSuperadmin,
   getTestUploadsDir,
   issueTestJwt,
+  issueTestStepUpToken,
 } from "./test-helpers";
 import Company from "../modules/companies/models/company.model";
 import User from "../modules/users/models/user.model";
@@ -32,6 +34,19 @@ async function loginWorker(email: string, password = "password123") {
     .post(`${API}/users/login`)
     .send({ email, password });
   return res.body.token;
+}
+
+/**
+ * Admin legacy real (sin companyId en DB). authenticateToken resuelve companyId desde DB,
+ * así que un JWT sin companyId de un admin CON empresa ya no reproduce el caso legacy.
+ */
+async function createLegacyAdminWithoutCompany(): Promise<{ id: string; token: string }> {
+  const legacyAdmin = await createTestAdminUser(
+    `legacy-admin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`,
+    "password123",
+  );
+  const id = String(legacyAdmin._id);
+  return { id, token: issueTestJwt(id, "admin") };
 }
 
 describe("API - Rutas críticas", () => {
@@ -369,15 +384,18 @@ describe("API - Rutas críticas", () => {
   });
 
   describe("Workday Summary - legacy admin blocked at controller (requireCompanyForAdmin)", () => {
-    /** JWT sin companyId: login real ya no permite admin sin empresa; el token simula el caso legacy en el payload. */
+    /** Admin legacy sin companyId en DB: login real ya no permite admin sin empresa. */
     let jwtAdminWithoutCompany: string;
+    let legacyAdminId: string;
 
-    beforeAll(() => {
-      jwtAdminWithoutCompany = jwt.sign(
-        { userId: adminId, role: "admin" },
-        env.JWT_SECRET,
-        { expiresIn: "1h" },
-      );
+    beforeAll(async () => {
+      const legacy = await createLegacyAdminWithoutCompany();
+      legacyAdminId = legacy.id;
+      jwtAdminWithoutCompany = legacy.token;
+    });
+
+    afterAll(async () => {
+      await User.deleteOne({ _id: legacyAdminId });
     });
 
     const dummyId = () => new mongoose.Types.ObjectId().toString();
@@ -409,14 +427,17 @@ describe("API - Rutas críticas", () => {
 
   describe("Dienst lifecycle - admin mutations require company (controller)", () => {
     let jwtAdminWithoutCompany: string;
+    let legacyAdminId: string;
     let lifecycleDienstId: string;
 
+    afterAll(async () => {
+      await User.deleteOne({ _id: legacyAdminId });
+    });
+
     beforeAll(async () => {
-      jwtAdminWithoutCompany = jwt.sign(
-        { userId: adminId, role: "admin" },
-        env.JWT_SECRET,
-        { expiresIn: "1h" },
-      );
+      const legacy = await createLegacyAdminWithoutCompany();
+      legacyAdminId = legacy.id;
+      jwtAdminWithoutCompany = legacy.token;
       const createRes = await request(app)
         .post(`${API}/diensts`)
         .set("Authorization", `Bearer ${adminToken}`)
@@ -531,6 +552,7 @@ describe("API - Rutas críticas", () => {
 
   describe("Dienst assignments - admin mutations require company (controller)", () => {
     let jwtAdminWithoutCompany: string;
+    let legacyAdminId: string;
     let assignmentDienstId: string;
     const ASSIGN_WEEK_START = "2031-05-04";
     const ASSIGN_DAY = "2031-05-06";
@@ -546,12 +568,14 @@ describe("API - Rutas críticas", () => {
       ],
     };
 
+    afterAll(async () => {
+      await User.deleteOne({ _id: legacyAdminId });
+    });
+
     beforeAll(async () => {
-      jwtAdminWithoutCompany = jwt.sign(
-        { userId: adminId, role: "admin" },
-        env.JWT_SECRET,
-        { expiresIn: "1h" },
-      );
+      const legacy = await createLegacyAdminWithoutCompany();
+      legacyAdminId = legacy.id;
+      jwtAdminWithoutCompany = legacy.token;
       const createRes = await request(app)
         .post(`${API}/diensts`)
         .set("Authorization", `Bearer ${adminToken}`)
@@ -1137,7 +1161,8 @@ describe("API - Rutas críticas", () => {
         .send({})
         .expect(400);
       expect(res.body).toHaveProperty("message");
-      expect(res.body.message).toContain("Fecha de inicio requerida");
+      // Validación Zod (validateBody(weekStartDateBodySchema)) en la ruta.
+      expect(res.body.message).toMatch(/weekStartDate: Required/);
     });
 
     it("POST /api/diensts/generate-week con weekStartDate inválida devuelve 400", async () => {
@@ -1147,7 +1172,7 @@ describe("API - Rutas críticas", () => {
         .send({ weekStartDate: "fecha-invalida" })
         .expect(400);
       expect(res.body).toHaveProperty("message");
-      expect(res.body.message).toContain("inválida");
+      expect(res.body.message).toMatch(/weekStartDate: .*YYYY-MM-DD/);
     });
 
     it("POST /api/diensts/generate-week si no hay plantillas activas devuelve 400", async () => {
@@ -1268,7 +1293,8 @@ describe("API - Rutas críticas", () => {
         .send({})
         .expect(400);
       expect(res.body).toHaveProperty("message");
-      expect(res.body.message).toContain("Faltan parámetros");
+      // Validación Zod (validateBody(assignTeamToWeekSchema)): primer campo obligatorio ausente.
+      expect(res.body.message).toMatch(/dienstNumber: /);
     });
 
     it("POST /api/diensts/assign-team-to-week con teamId inválido devuelve 400", async () => {
@@ -1282,7 +1308,7 @@ describe("API - Rutas críticas", () => {
         })
         .expect(400);
       expect(res.body).toHaveProperty("message");
-      expect(res.body.message).toContain("teamId inválido");
+      expect(res.body.message).toMatch(/teamId: ID inválido/);
     });
 
     it("POST /api/diensts/assign-team-to-week con team inexistente devuelve 404", async () => {
@@ -1588,14 +1614,16 @@ describe("API - Rutas críticas", () => {
   });
 
   describe("Company modules: automatic Praemien requires workday", () => {
+    // enabledModules/praemienMode/emailDomain son campos sensibles: la ruta exige step-up.
     it("PATCH /api/companies/:id devuelve 400 si Prämien automático sin workday", async () => {
-      const { superadminToken } = await createTestSuperadmin();
+      const { superadminId, superadminToken } = await createTestSuperadmin();
       const modulesMissingWorkday = V1_DEFAULT_MODULES.filter(
         (k) => k !== MODULE_KEYS.WORKDAY,
       );
       const res = await request(app)
         .patch(`${API}/companies/${companyId}`)
         .set("Authorization", `Bearer ${superadminToken}`)
+        .set("x-step-up-token", issueTestStepUpToken(superadminId))
         .send({
           enabledModules: modulesMissingWorkday,
           emailDomain: "@example.com",
@@ -1607,7 +1635,7 @@ describe("API - Rutas críticas", () => {
     });
 
     it("PATCH /api/companies/:id devuelve 200 con Prämien manual sin workday (papel)", async () => {
-      const { superadminToken } = await createTestSuperadmin();
+      const { superadminId, superadminToken } = await createTestSuperadmin();
       const modulesNoWorkday = V1_DEFAULT_MODULES.filter(
         (k) => k !== MODULE_KEYS.WORKDAY,
       );
@@ -1615,6 +1643,7 @@ describe("API - Rutas críticas", () => {
         const res = await request(app)
           .patch(`${API}/companies/${companyId}`)
           .set("Authorization", `Bearer ${superadminToken}`)
+          .set("x-step-up-token", issueTestStepUpToken(superadminId))
           .send({
             enabledModules: modulesNoWorkday,
             praemienMode: "manual",
