@@ -3,7 +3,7 @@
 **Multi-tenant operations platform for ambulance and patient-transport companies** — web admin panel, mobile app for crews, and a REST + WebSocket API.
 
 > **Project status: Archived · Not in production**
-> The project reached an advanced functional development stage and was later deliberately archived before production deployment. It never had real customers or production users. The previously hosted development instances are being retired; the whole system can be rebuilt and run locally by following [docs/RECOVERY.md](docs/RECOVERY.md).
+> The project reached an advanced functional development stage and was later deliberately archived before production deployment. It never had real customers or production users. A hosted development instance with fictitious demo data may remain available temporarily for demonstration purposes; the whole system can also be rebuilt and run locally by following [docs/RECOVERY.md](docs/RECOVERY.md).
 
 ![Weekly shift planning](docs/images/shift-planning.png)
 <sub>Weekly shift (Dienst) planning: teams, ambulances and shift times generated from templates with team rotation. All data shown is fictitious.</sub>
